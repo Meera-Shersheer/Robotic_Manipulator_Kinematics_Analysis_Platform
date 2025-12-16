@@ -42,3 +42,5 @@ import json # maybe deleted later if not used
 from datetime import datetime
 
 from random import randint
+from typing import List, Dict, Tuple
+from manipulators import *
