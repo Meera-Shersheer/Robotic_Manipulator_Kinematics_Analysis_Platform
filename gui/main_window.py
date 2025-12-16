@@ -73,15 +73,10 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         controls_widget.setContentsMargins(0, 0, 0, 0) 
         inputs_section.addLayout(controls_widget)
        
-        minpulator_chose_box = self.manipulator_list()
-        #Color("#e747c5", "minpulator list")
-        ik_fk = self.ik_fk_selector() 
-        #Color("#7010ed", "IK OR FK")
-        theta_system = self.rad_deg_selector()
-        #Color("#6f95f5", "Theta's unit")
-        sym_num = self.sym_num_selector()
-        # Color("#0b3bb4", "symbolic or not")
-       # controls_widget = QWidget()
+        minpulator_chose_box, self.manipulator_list_widget = self.manipulator_list()
+        ik_fk, self.ik_fk_widget = self.ik_fk_selector()
+        sym_num, self.sym_num_widget = self.sym_num_selector()
+        theta_system, self.theta_system_widget = self.rad_deg_selector()
        
         controls_widget.addWidget(minpulator_chose_box)
         controls_widget.addWidget(ik_fk)
@@ -135,318 +130,59 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         right_widget.addWidget(view2d_widget, 8)
 
 
-
     def manipulator_list(self):
-        widget = QWidget()
-        choosing_box = QVBoxLayout(widget)  
-        choosing_box.setSpacing(2)
-
-        widget.setStyleSheet("""
-            QWidget {
-                border: 1px solid #cccccc;
-                padding: 5px;
-                border-radius: 5px;
-                background-color: #f9f9f9;
-            }
-        """)
-
-        font = QFont()
-        font.setPointSize(14)
-        font.setFamily("Roboto")
-
-        Label = QLabel("Select a manipulator:")
-        Label.setFont(font)
-        Label.setStyleSheet("border: none; background: transparent;")
-        Label.setAlignment(Qt.AlignmentFlag.AlignJustify | Qt.AlignmentFlag.AlignVCenter)
-        choosing_box.addWidget(Label)
-
-        # Create QListWidget instead of QComboBox
-        manipulator_list = QListWidget()
-        font.setPointSize(12)
-        manipulator_list.setFont(font)
-
-        # Add items to the list
-        items = ["UR5", "ABB IRB1600", "ABB IRB2600"]
-        for item_text in items:
-            item = QListWidgetItem(item_text)
-            manipulator_list.addItem(item)
-
-        # Set the first item as selected by default
-        manipulator_list.setCurrentRow(0)
-
-        # Style the list widget
-        manipulator_list.setStyleSheet("""
-            QListWidget {
-                border: 2px solid #cccccc;
-                border-radius: 3px;
-                padding: 2px;
-                background-color: white;
-                outline: none;
-            }
-            QListWidget::item {
-                padding: 8px 8px 8px 30px;
-                border-bottom: 2px solid #f0f0f0;
-                background-color: white;
-            }
-            QListWidget::item:hover {
-                background-color: #e5f3ff;
-            }
-            QListWidget::item:selected {
-                background-color: #cce8ff;
-                color: black;
-            }
-        """)
-        manipulator_list.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-        manipulator_list.setMinimumHeight(manipulator_list.sizeHintForRow(0) * manipulator_list.count() + 2 * manipulator_list.frameWidth())
-
-        # Custom delegate to draw selection indicator
-        class SelectionIndicatorDelegate(QStyledItemDelegate):
-            def paint(self, painter, option, index):
-                # Call parent to draw the item
-                super().paint(painter, option, index)
-
-                # Draw custom indicator if item is selected
-                if option.state & QStyle.StateFlag.State_Selected:
-                    painter.save()
-
-                    # Draw a circle/dot indicator
-                    indicator_rect = QRect(option.rect.left() + 8, 
-                                         option.rect.center().y() - 4, 
-                                         8, 8)
-
-                    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-                    painter.setBrush(QColor("#0078d4"))
-                    painter.setPen(Qt.PenStyle.NoPen)
-                    painter.drawEllipse(indicator_rect)
-
-                    painter.restore()
-
-        manipulator_list.setItemDelegate(SelectionIndicatorDelegate())
-        choosing_box.addWidget(manipulator_list)
-        return widget
-
-
+        return self.create_selector("Select a manipulator:", ["UR5", "ABB IRB1600", "ABB IRB2600"])
 
     def ik_fk_selector(self):
-        widget = QWidget()
-        choosing_box = QVBoxLayout(widget)  
-        choosing_box.setSpacing(2)
-
-        widget.setStyleSheet("""
-            QWidget {
-                border: 1px solid #cccccc;
-                padding: 5px;
-                border-radius: 5px;
-                background-color: #f9f9f9;
-            }
-        """)
-
-        font = QFont()
-        font.setPointSize(14)
-        font.setFamily("Roboto")
-
-        Label = QLabel("Calculate:")
-        Label.setFont(font)
-        Label.setStyleSheet("border: none; background: transparent;")
-        Label.setAlignment(Qt.AlignmentFlag.AlignJustify | Qt.AlignmentFlag.AlignVCenter)
-        choosing_box.addWidget(Label)
-
-        # Create QListWidget instead of QComboBox
-        method = QListWidget()
-        font.setPointSize(12)
-        method.setFont(font)
-
-        # Add items to the list
-        items = ["Forward Kinamatics (FK)", "Inverse Kinamatics (IK)"]
-        for item_text in items:
-            item = QListWidgetItem(item_text)
-            method.addItem(item)
-
-        # Set the first item as selected by default
-        method.setCurrentRow(0)
-
-        # Style the list widget
-        method.setStyleSheet("""
-            QListWidget {
-                border: 2px solid #cccccc;
-                border-radius: 3px;
-                padding: 2px;
-                background-color: white;
-                outline: none;
-            }
-            QListWidget::item {
-                padding: 8px 8px 8px 30px;
-                border-bottom: 2px solid #f0f0f0;
-                background-color: white;
-            }
-            QListWidget::item:hover {
-                background-color: #e5f3ff;
-            }
-            QListWidget::item:selected {
-                background-color: #cce8ff;
-                color: black;
-            }
-        """)
-
-        method.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-        method.setMinimumHeight(method.sizeHintForRow(0) * method.count() + 2 * method.frameWidth())
-
-        # Custom delegate to draw selection indicator
-        class SelectionIndicatorDelegate(QStyledItemDelegate):
-            def paint(self, painter, option, index):
-                # Call parent to draw the item
-                super().paint(painter, option, index)
-
-                # Draw custom indicator if item is selected
-                if option.state & QStyle.StateFlag.State_Selected:
-                    painter.save()
-
-                    # Draw a circle/dot indicator
-                    indicator_rect = QRect(option.rect.left() + 8, 
-                                         option.rect.center().y() - 4, 
-                                         8, 8)
-
-                    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-                    painter.setBrush(QColor("#0078d4"))
-                    painter.setPen(Qt.PenStyle.NoPen)
-                    painter.drawEllipse(indicator_rect)
-
-                    painter.restore()
-
-        method.setItemDelegate(SelectionIndicatorDelegate())
-        choosing_box.addWidget(method)
-        return widget
+        return self.create_selector("Calculate:", ["Forward Kinamatics (FK)", "Inverse Kinamatics (IK)"])
 
     def sym_num_selector(self):
-        widget = QWidget()
-        choosing_box = QVBoxLayout(widget)  
-        choosing_box.setSpacing(2)
-
-        widget.setStyleSheet("""
-            QWidget {
-                border: 1px solid #cccccc;
-                padding: 5px;
-                border-radius: 5px;
-                background-color: #f9f9f9;
-            }
-        """)
-
-        font = QFont()
-        font.setPointSize(14)
-        font.setFamily("Roboto")
-
-        Label = QLabel("Computation Mode:")
-        Label.setFont(font)
-        Label.setStyleSheet("border: none; background: transparent;")
-        Label.setAlignment(Qt.AlignmentFlag.AlignJustify | Qt.AlignmentFlag.AlignVCenter)
-        choosing_box.addWidget(Label)
-
-        # Create QListWidget instead of QComboBox
-        method = QListWidget()
-        font.setPointSize(12)
-        method.setFont(font)
-
-        # Add items to the list
-        items = ["Symbolic", "Numeric"]
-        for item_text in items:
-            item = QListWidgetItem(item_text)
-            method.addItem(item)
-
-        # Set the first item as selected by default
-        method.setCurrentRow(0)
-
-        # Style the list widget
-        method.setStyleSheet("""
-            QListWidget {
-                border: 2px solid #cccccc;
-                border-radius: 3px;
-                padding: 2px;
-                background-color: white;
-                outline: none;
-            }
-            QListWidget::item {
-                padding: 8px 8px 8px 30px;
-                border-bottom: 2px solid #f0f0f0;
-                background-color: white;
-            }
-            QListWidget::item:hover {
-                background-color: #e5f3ff;
-            }
-            QListWidget::item:selected {
-                background-color: #cce8ff;
-                color: black;
-            }
-        """)
-        method.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-        method.setMinimumHeight(method.sizeHintForRow(0) * method.count() + 2 * method.frameWidth())
-
-        # Custom delegate to draw selection indicator
-        class SelectionIndicatorDelegate(QStyledItemDelegate):
-            def paint(self, painter, option, index):
-                # Call parent to draw the item
-                super().paint(painter, option, index)
-
-                # Draw custom indicator if item is selected
-                if option.state & QStyle.StateFlag.State_Selected:
-                    painter.save()
-
-                    # Draw a circle/dot indicator
-                    indicator_rect = QRect(option.rect.left() + 8, 
-                                         option.rect.center().y() - 4, 
-                                         8, 8)
-
-                    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-                    painter.setBrush(QColor("#0078d4"))
-                    painter.setPen(Qt.PenStyle.NoPen)
-                    painter.drawEllipse(indicator_rect)
-
-                    painter.restore()
-
-        method.setItemDelegate(SelectionIndicatorDelegate())
-        choosing_box.addWidget(method)
-        return widget
-
+        return self.create_selector("Computation Mode:", ["Symbolic", "Numeric"])
 
     def rad_deg_selector(self):
+        return self.create_selector("Given θ in:", ["Radians", "Degrees"])
+
+    def create_selector(self, label_text, items, label_font_size=14, list_font_size=12):
+        """
+        Create a QWidget with a label and a QListWidget.
+
+        Returns:
+            (QWidget, QListWidget): The container widget and the list widget for signal handling.
+        """
         widget = QWidget()
-        choosing_box = QVBoxLayout(widget)  
-        choosing_box.setSpacing(2)
+        layout = QVBoxLayout(widget)
+        layout.setSpacing(2)
 
         widget.setStyleSheet("""
-            QWidget {
+        QWidget {
                 border: 1px solid #cccccc;
                 padding: 5px;
                 border-radius: 5px;
                 background-color: #f9f9f9;
-            }
-        """)
-
+             }
+         """)
+        
         font = QFont()
-        font.setPointSize(14)
+        font.setPointSize(label_font_size)
         font.setFamily("Roboto")
 
-        Label = QLabel("Given θ in:")
-        Label.setFont(font)
-        Label.setStyleSheet("border: none; background: transparent;")
-        Label.setAlignment(Qt.AlignmentFlag.AlignJustify | Qt.AlignmentFlag.AlignVCenter)
-        choosing_box.addWidget(Label)
+        label = QLabel(label_text)
+        label.setFont(font)
+        label.setStyleSheet("border: none; background: transparent;")
+        label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        layout.addWidget(label)
 
-        # Create QListWidget instead of QComboBox
-        method = QListWidget()
-        font.setPointSize(12)
-        method.setFont(font)
+        # List widget
+        list_widget = QListWidget()
+        font.setPointSize(list_font_size)
+        list_widget.setFont(font)
+        for text in items:
+            item = QListWidgetItem(text)
+            list_widget.addItem(item)
+        list_widget.setCurrentRow(0)
 
-        # Add items to the list
-        items = ["Radians", "Degrees"]
-        for item_text in items:
-            item = QListWidgetItem(item_text)
-            method.addItem(item)
-
-        # Set the first item as selected by default
-        method.setCurrentRow(0)
-
-        # Style the list widget
-        method.setStyleSheet("""
+        # Style list
+        list_widget.setStyleSheet("""
             QListWidget {
                 border: 2px solid #cccccc;
                 border-radius: 3px;
@@ -467,38 +203,29 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                 color: black;
             }
         """)
+        
+        # Adjust height to remove empty space
+        list_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        list_widget.setMinimumHeight(
+            list_widget.sizeHintForRow(0) * list_widget.count() + 2 * list_widget.frameWidth())
 
-        method.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-        method.setMinimumHeight(method.sizeHintForRow(0) * method.count() + 2 * method.frameWidth())
-
-        # Custom delegate to draw selection indicator
+        # Custom selection indicator
         class SelectionIndicatorDelegate(QStyledItemDelegate):
             def paint(self, painter, option, index):
-                # Call parent to draw the item
-                super().paint(painter, option, index)
-
-                # Draw custom indicator if item is selected
+                super().paint(painter, option, index)  # Call parent to draw the item
                 if option.state & QStyle.StateFlag.State_Selected:
                     painter.save()
-
-                    # Draw a circle/dot indicator
-                    indicator_rect = QRect(option.rect.left() + 8, 
-                                         option.rect.center().y() - 4, 
-                                         8, 8)
-
+                    rect = QRect(option.rect.left() + 8, option.rect.center().y() - 4, 8, 8)
                     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
                     painter.setBrush(QColor("#0078d4"))
                     painter.setPen(Qt.PenStyle.NoPen)
-                    painter.drawEllipse(indicator_rect)
-
+                    painter.drawEllipse(rect)
                     painter.restore()
 
-        method.setItemDelegate(SelectionIndicatorDelegate())
-        choosing_box.addWidget(method)
-        return widget
+        list_widget.setItemDelegate(SelectionIndicatorDelegate())
+        layout.addWidget(list_widget)
 
-
-
+        return widget, list_widget
 
 
 
