@@ -271,7 +271,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
         # Create table
         self.dh_table = QTableWidget()
-        self.dh_table.setColumnCount(6)
+        self.dh_table.setColumnCount(7)
 
         # Set initial headers (will be updated based on angle unit selection)
         headers = ["Joint", "θ", "d", "a", "α", "Variable", "Value"]
@@ -309,7 +309,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
         # Enable alternating row colors for better readability
         self.dh_table.setAlternatingRowColors(True)
-        self.dh_table.verticalHeader().setVisible(True)
+        self.dh_table.verticalHeader().setVisible(False)
         layout.addWidget(self.dh_table)
 
         # Connect signals
@@ -321,130 +321,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         return widget
 
 
-
-    # def get_dh_parameters(self, manipulator_name):
-    #     """
-    #     Return DH parameters for different manipulators.
-    #     Format: list of dicts with keys: theta, d, a, alpha, variable
-    #     Variable can be: 'theta' or 'd' (for prismatic joints)
-    #     """
-    #     dh_params = {
-    #         "UR5": [
-    #             {"theta": 0, "d": 0.089159, "a": 0, "alpha": 90, "variable": "theta"},
-    #             {"theta": 0, "d": 0, "a": -0.42500, "alpha": 0, "variable": "theta"},
-    #             {"theta": 0, "d": 0, "a": -0.39225, "alpha": 0, "variable": "theta"},
-    #             {"theta": 0, "d": 0.10915, "a": 0, "alpha": 90, "variable": "theta"},
-    #             {"theta": 0, "d": 0.09465, "a": 0, "alpha": -90, "variable": "theta"},
-    #             {"theta": 0, "d": 0.0823, "a": 0, "alpha": 0, "variable": "theta"},
-    #         ],
-    #         "ABB IRB1600": [
-    #             {"theta": 0, "d": 0.4865, "a": 0.150, "alpha": -90, "variable": "theta"},
-    #             {"theta": 0, "d": 0, "a": 0.700, "alpha": 0, "variable": "theta"},
-    #             {"theta": 0, "d": 0, "a": 0.115, "alpha": -90, "variable": "theta"},
-    #             {"theta": 0, "d": 0.600, "a": 0, "alpha": 90, "variable": "theta"},
-    #             {"theta": 0, "d": 0, "a": 0, "alpha": -90, "variable": "theta"},
-    #             {"theta": 0, "d": 0.065, "a": 0, "alpha": 0, "variable": "theta"},
-    #         ],
-    #         "ABB IRB2600": [
-    #             {"theta": 0, "d": 0.445, "a": 0.150, "alpha": -90, "variable": "theta"},
-    #             {"theta": 0, "d": 0, "a": 0.700, "alpha": 0, "variable": "theta"},
-    #             {"theta": 0, "d": 0, "a": 0.115, "alpha": -90, "variable": "theta"},
-    #             {"theta": 0, "d": 0.795, "a": 0, "alpha": 90, "variable": "theta"},
-    #             {"theta": 0, "d": 0, "a": 0, "alpha": -90, "variable": "theta"},
-    #             {"theta": 0, "d": 0.085, "a": 0, "alpha": 0, "variable": "theta"},
-    #         ],
-    #     }
-    #     return dh_params.get(manipulator_name, [])
-
-    # def update_dh_table(self, index):
-    #     """Update DH table when manipulator selection changes"""
-    #     manipulators = ["UR5", "ABB IRB1600", "ABB IRB2600"]
-    #     if index < 0 or index >= len(manipulators):
-    #         return
-
-    #     manipulator = manipulators[index]
-    #     dh_params = self.get_dh_parameters(manipulator)
-
-    #     # Set number of rows
-    #     self.dh_table.setRowCount(len(dh_params))
-
-    #     # Get current angle unit (0 = Radians, 1 = Degrees)
-    #     angle_unit = self.theta_system_widget.currentRow()
-
-    #     for row, params in enumerate(dh_params):
-    #         # Column 0: Joint number
-    #         joint_item = QTableWidgetItem(str(row + 1))
-    #         joint_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-    #         joint_item.setFlags(Qt.ItemFlag.ItemIsEnabled)  # Non-editable
-    #         joint_item.setBackground(QColor("#f0f0f0"))
-    #         self.dh_table.setItem(row, 0, joint_item)
-
-    #         # Column 1: θ (theta)
-    #         theta_item = QTableWidgetItem(str(params["theta"]))
-    #         theta_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-    #         theta_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
-    #         theta_item.setBackground(QColor("#f0f0f0"))
-    #         self.dh_table.setItem(row, 1, theta_item)
-
-    #         # Column 2: d
-    #         d_item = QTableWidgetItem(str(params["d"]))
-    #         d_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-    #         d_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
-    #         d_item.setBackground(QColor("#f0f0f0"))
-    #         self.dh_table.setItem(row, 2, d_item)
-
-    #         # Column 3: a
-    #         a_item = QTableWidgetItem(str(params["a"]))
-    #         a_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-    #         a_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
-    #         a_item.setBackground(QColor("#f0f0f0"))
-    #         self.dh_table.setItem(row, 3, a_item)
-
-    #         # Column 4: α (alpha)
-    #         alpha_item = QTableWidgetItem(str(params["alpha"]))
-    #         alpha_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-    #         alpha_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
-    #         alpha_item.setBackground(QColor("#f0f0f0"))
-    #         self.dh_table.setItem(row, 4, alpha_item)
-
-    #         # Column 5: Variable (θ₁, θ₂, etc. or d₁, d₂ for prismatic)
-    #         if params["variable"] == "theta":
-    #             var_symbol = f"θ{row + 1}"
-    #         else:
-    #             var_symbol = f"d{row + 1}"
-
-    #         var_item = QTableWidgetItem(var_symbol)
-    #         var_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-    #         var_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
-    #         var_item.setBackground(QColor("#e3f2fd"))
-    #         var_item.setForeground(QColor("#0078d4"))
-    #         font = var_item.font()
-    #         font.setBold(True)
-    #         var_item.setFont(font)
-    #         self.dh_table.setItem(row, 5, var_item)
-
-    #         # Column 6: Value (EDITABLE)
-    #         value_item = QTableWidgetItem("0.0")
-    #         value_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-    #         value_item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable)
-    #         value_item.setBackground(QColor("#ffffff"))
-    #         self.dh_table.setItem(row, 6, value_item)
-
-    #     self.update_dh_headers()
-
-    # def update_dh_headers(self):
-    #     """Update table headers when angle unit changes"""
-    #     angle_unit = self.theta_system_widget.currentRow()
-
-    #     if angle_unit == 0:  # Radians
-    #         headers = ["Joint", "θ (rad)", "d (m)", "a (m)", "α (rad)", "Variable", "Value"]
-    #     else:  # Degrees
-    #         headers = ["Joint", "θ (deg)", "d (m)", "a (m)", "α (deg)", "Variable", "Value"]
-
-    #     self.dh_table.setHorizontalHeaderLabels(headers)
-
-    def update_dh_table(self, index):
-        """Update DH table when manipulator selection changes"""
+#  Update DH table when manipulator selection changes
+    def update_dh_table(self, index, update_headers=True):
         manipulators = ["UR5", "ABB_IRB_1600", "ABB_IRB_2600"]
         if index < 0 or index >= len(manipulators):
             return
@@ -463,10 +341,17 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         in_degrees = (angle_unit == 1)
 
         for row, params in enumerate(dh_params):
+            joint_item = QTableWidgetItem(str(row + 1))
+            joint_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            joint_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
+            joint_item.setBackground(QColor("#faf8f8"))
+            self.dh_table.setItem(row, 0, joint_item)
+        
+        
             # Column 0: θ (theta) - show ONLY if it's a FIXED value
             if params["variable"] == "theta":
-                # This is a variable joint, show empty or dash
-                theta_item = QTableWidgetItem("-")
+                var_symbol = f"θ{row + 1}"
+                theta_item = QTableWidgetItem(var_symbol)
             else:
                 # This is fixed, show the value
                 theta_val = params["theta"]
@@ -476,28 +361,29 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
             theta_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             theta_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
-            theta_item.setBackground(QColor("#f0f0f0"))
-            self.dh_table.setItem(row, 0, theta_item)
+            theta_item.setBackground(QColor("#faf8f8"))
+            self.dh_table.setItem(row, 1, theta_item)
 
             # Column 1: d - show ONLY if it's a FIXED value
             if params["variable"] == "d":
+                var_symbol = f"d{row + 1}"
                 # This is a variable joint, show empty or dash
-                d_item = QTableWidgetItem("-")
+                d_item = QTableWidgetItem(var_symbol)
             else:
                 # This is fixed, show the value
-                d_item = QTableWidgetItem(f"{params['d']:.6f}")
+                d_item = QTableWidgetItem(f"{params['d']:.4f}")
 
             d_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             d_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
-            d_item.setBackground(QColor("#f0f0f0"))
-            self.dh_table.setItem(row, 1, d_item)
+            d_item.setBackground(QColor("#faf8f8"))
+            self.dh_table.setItem(row, 2, d_item)
 
             # Column 2: a (always fixed)
-            a_item = QTableWidgetItem(f"{params['a']:.6f}")
+            a_item = QTableWidgetItem(f"{params['a']:.4f}")
             a_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             a_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
-            a_item.setBackground(QColor("#f0f0f0"))
-            self.dh_table.setItem(row, 2, a_item)
+            a_item.setBackground(QColor("#faf8f8"))
+            self.dh_table.setItem(row, 3, a_item)
 
             # Column 3: α (alpha) - always fixed
             alpha_val = params["alpha"]
@@ -506,8 +392,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             alpha_item = QTableWidgetItem(f"{alpha_val:.4f}")
             alpha_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             alpha_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
-            alpha_item.setBackground(QColor("#f0f0f0"))
-            self.dh_table.setItem(row, 3, alpha_item)
+            alpha_item.setBackground(QColor("#faf8f8"))
+            self.dh_table.setItem(row, 4, alpha_item)
 
             # Column 4: Variable (θ₁, θ₂, etc. or d₁, d₂ for prismatic)
             var_symbol = self.current_manipulator.get_joint_variable_name(row)
@@ -519,33 +405,34 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             font = var_item.font()
             font.setBold(True)
             var_item.setFont(font)
-            self.dh_table.setItem(row, 4, var_item)
+            self.dh_table.setItem(row, 5, var_item)
 
             # Column 5: Value (EDITABLE)
             value_item = QTableWidgetItem("0.0")
             value_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             value_item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable)
             value_item.setBackground(QColor("#ffffff"))
-            self.dh_table.setItem(row, 5, value_item)
+            self.dh_table.setItem(row, 6, value_item)
 
-        self.update_dh_headers()
+        if update_headers:
+            self.update_dh_headers()
 
 
+#Update table headers when angle unit changes
     def update_dh_headers(self):
-        """Update table headers when angle unit changes"""
         angle_unit = self.theta_system_widget.currentRow()
 
         if angle_unit == 0:  # Radians
-            headers = ["θ (rad)", "d (m)", "a (m)", "α (rad)", "Variable", "Value"]
+            headers = ["Joint", "θ (rad)", "d (m)", "a (m)", "α (rad)", "Variable", "Value"]
         else:  # Degrees
-            headers = ["θ (deg)", "d (m)", "a (m)", "α (deg)", "Variable", "Value"]
+            headers = ["Joint", "θ (deg)", "d (m)", "a (m)", "α (deg)", "Variable", "Value"]
 
         self.dh_table.setHorizontalHeaderLabels(headers)
 
         # Re-update the table to convert angle values
         if hasattr(self, 'current_manipulator') and self.current_manipulator:
             current_index = self.manipulator_list_widget.currentRow()
-           
+            self.update_dh_table(current_index, update_headers=False)
 
 
 
