@@ -182,6 +182,5 @@ results/
 figures/
 logs/
 *.csv
-*.png
 *.jpg
 *.mp4

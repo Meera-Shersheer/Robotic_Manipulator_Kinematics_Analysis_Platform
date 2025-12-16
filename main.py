@@ -1,10 +1,13 @@
 from imports import *
 from gui.main_window import MainWindow
-
+from gui.test_layout import TestMainWindow
 
 if __name__ == "__main__": # Only run this block if this file is executed directly,
     app = QApplication(sys.argv) # created once for managing UI stuff
-#    app.setStyle('Fusion')
+    #app.setStyle('Fusion')
+    #window = TestMainWindow() #To test Layout and areas
     window = MainWindow()
     window.show()
-    sys.exit(app.exec())
+
+    app.exec() # Start the event loop.
+    sys.exit()

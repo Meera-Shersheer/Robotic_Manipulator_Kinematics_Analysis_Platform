@@ -87,7 +87,7 @@ install:
 run:
 	@echo "$(YELLOW)[RUN] Launching Application...$(RESET)"
 	@$(PY) $(SRC)
-	@echo "$(YELLOW)[RUN] Application is Ready...$(RESET)"
+	@echo "$(YELLOW)[RUN] Application is Finished $(RESET)"
 
 # ================================
 #  CLEAN CACHE

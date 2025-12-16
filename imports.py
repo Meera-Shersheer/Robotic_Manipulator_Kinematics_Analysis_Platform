@@ -12,7 +12,8 @@ from sympy import symbols, Matrix, simplify, trigsimp
 import PyQt6
 from PyQt6.QtWidgets import *
 from PyQt6.QtCore import *
-from PyQt6.QtGui import QFontDatabase, QFont
+from PyQt6.QtGui import QAction, QColor, QPalette, QIcon, QKeySequence, QFont,QPainter
+
 
 # 3D Visualization
 import matplotlib.pyplot as plot
@@ -39,3 +40,5 @@ import sys  #for taking the command line args and exit from the program
 import os
 import json # maybe deleted later if not used
 from datetime import datetime
+
+from random import randint
