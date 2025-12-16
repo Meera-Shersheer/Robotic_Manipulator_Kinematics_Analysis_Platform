@@ -50,14 +50,14 @@ class TestMainWindow(QMainWindow): #defining our class (inheriting from QMainWin
         left_widget.setContentsMargins(0, 0, 0, 0) 
         main_layout.addLayout(left_widget, 2)
         
-        inputs_section = QHBoxLayout()
+        inputs_section = QVBoxLayout()
         inputs_section.setSpacing(0)
         inputs_section.setContentsMargins(0, 0, 0, 0)
         left_widget.addLayout(inputs_section, 8)
 
         
         # Row 1, coulmn 1 : Controls
-        controls_widget = QVBoxLayout()
+        controls_widget = QHBoxLayout()
         controls_widget.setSpacing(0)
         controls_widget.setContentsMargins(0, 0, 0, 0) 
         inputs_section.addLayout(controls_widget, 1)

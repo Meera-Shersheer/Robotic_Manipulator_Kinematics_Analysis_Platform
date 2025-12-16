@@ -26,12 +26,13 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         super().__init__()  # calling the parent constructor
         self.current_manipulator = None
         self.setWindowTitle("Robotics IK/FK Calculator")   # giving a title to the window 
-        self.resize(1600, 1200) # resizing the window
+        self.resize(1640, 1200) # resizing the window
        
         central = QWidget()  # Create a central widget (required in QMainWindow)
         #central = Color("yellow")
         self.setCentralWidget(central)
-
+        self.standard_font = QFont("Roboto", 12)  # or "Roboto", 11
+        self.label_font = QFont("Roboto", 14)
         outer_layout = QVBoxLayout(central)
 
         # Title
@@ -60,17 +61,17 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         # output_widget = self.create_output_widget()
         
         
-        inputs_section = QHBoxLayout()
+        inputs_section = QVBoxLayout()
         # inputs_section.setSpacing(0)
         # inputs_section.setContentsMargins(0, 0, 0, 0)
-        left_widget.addLayout(inputs_section, 8)
+        left_widget.addLayout(inputs_section, 7)
 
         
         # Row 1: Controls
-        controls_widget = QVBoxLayout()
-        controls_widget.setSpacing(0)
+        controls_widget = QHBoxLayout()
+        controls_widget.setSpacing(5)
         controls_widget.setContentsMargins(0, 0, 0, 0) 
-        inputs_section.addLayout(controls_widget)
+        inputs_section.addLayout(controls_widget, 2)
        
         minpulator_chose_box, self.manipulator_list_widget = self.manipulator_list()
         ik_fk, self.ik_fk_widget = self.ik_fk_selector()
@@ -99,11 +100,11 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
     #    output_layout = QVBoxLayout()
         #output_widget.setLayout(output_layout)
         # inputs_section.addWidget(controls_widget, 1)
-        inputs_section.addWidget(dh_widget, 2)  
+        inputs_section.addWidget(dh_widget, 5)  
 #        left_widget.addWidget(controls_widget, 1)
         # left_widget.addWidget(control_dh_widget, 3)
         left_widget.addWidget(execute_widget, 1)
-        left_widget.addWidget(output_widget, 6)
+        left_widget.addWidget(output_widget, 7)
         
         # ================= RIGHT COLUMN =================
         right_widget = QVBoxLayout()
@@ -128,6 +129,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         right_widget.addWidget(view3d_widget, 8)
         right_widget.addWidget(choose_2D_sec, 1)
         right_widget.addWidget(view2d_widget, 8)
+        self.toggle_value_column()
 
 
     def manipulator_list(self):
@@ -156,26 +158,22 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         widget.setStyleSheet("""
         QWidget {
                 border: 1px solid #cccccc;
-                padding: 5px;
+                padding: 3px;
                 border-radius: 5px;
                 background-color: #f9f9f9;
              }
          """)
         
-        font = QFont()
-        font.setPointSize(label_font_size)
-        font.setFamily("Roboto")
 
         label = QLabel(label_text)
-        label.setFont(font)
+        label.setFont(self.label_font)
         label.setStyleSheet("border: none; background: transparent;")
         label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         layout.addWidget(label)
 
         # List widget
         list_widget = QListWidget()
-        font.setPointSize(list_font_size)
-        list_widget.setFont(font)
+        list_widget.setFont(self.standard_font)
         for text in items:
             item = QListWidgetItem(text)
             list_widget.addItem(item)
@@ -227,20 +225,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
         return widget, list_widget
 
-#     def create_dh_table_widget(self):
-#         """Create DH parameters table"""
-#         widget = QWidget()
-#         layout = QVBoxLayout(widget)
-        
-#         layout.addWidget(QLabel("DH Parameters"))
-        
-#         table = QTableWidget(6, 4)
-#         table.setHorizontalHeaderLabels(["θ (deg)", "d (m)", "a (m)", "α (deg)"])
-#         layout.addWidget(table)
-        
-#         return widget
-
-
 
 # Create DH parameters table that auto-populates based on selected manipulator.
 # Fixed cells are non-editable, only the 'Value' column is editable.
@@ -248,6 +232,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         widget = QWidget()
         layout = QVBoxLayout(widget)
         layout.setSpacing(5)
+        layout.setContentsMargins(5, 5, 5, 5)
 
         widget.setStyleSheet("""
             QWidget {
@@ -259,12 +244,9 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         """)
 
         # Title
-        title_font = QFont()
-        title_font.setPointSize = 14
-        title_font.setFamily = "Roboto"
-        title_font.setWeight = QFont.Weight.Bold
+
         title_label = QLabel("DH Parameters Table")
-        title_label.setFont(title_font)
+        title_label.setFont(self.label_font)
         title_label.setStyleSheet("border: none; background: transparent;")
         title_label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter)
         layout.addWidget(title_label)
@@ -272,7 +254,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         # Create table
         self.dh_table = QTableWidget()
         self.dh_table.setColumnCount(7)
-
+        self.dh_table.setFont(self.standard_font) 
+         
         # Set initial headers (will be updated based on angle unit selection)
         headers = ["Joint", "θ", "d", "a", "α", "Variable", "Value"]
         self.dh_table.setHorizontalHeaderLabels(headers)
@@ -286,7 +269,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                 gridline-color: #e0e0e0;
             }
             QTableWidget::item {
-                padding: 2px;
+                padding: 4px;
             }
             QHeaderView::section {
                 background-color: #0078d4;
@@ -297,15 +280,11 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             }
         """)
 
-        # Set column widths
-        # header = self.dh_table.horizontalHeader()
-        # header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)  # Joint
-        # header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)  # θ
-        # header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)  # d
-        # header.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)  # a
-        # header.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)  # α
-        # header.setSectionResizeMode(5, QHeaderView.ResizeMode.ResizeToContents)  # Variable
-        # header.setSectionResizeMode(6, QHeaderView.ResizeMode.Stretch)  # Value
+        header = self.dh_table.horizontalHeader()
+        header.setFont(self.standard_font)
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch) 
+        self.dh_table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.dh_table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         # Enable alternating row colors for better readability
         self.dh_table.setAlternatingRowColors(True)
@@ -315,12 +294,20 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         # Connect signals
         self.manipulator_list_widget.currentRowChanged.connect(self.update_dh_table)
         self.theta_system_widget.currentRowChanged.connect(self.update_dh_headers)
-
+        self.sym_num_widget.currentRowChanged.connect(self.toggle_value_column)
         # Initialize table with first manipulator
         self.update_dh_table(0)
         return widget
 
+    def toggle_value_column(self):
+        """Show/hide the Value column based on computation mode"""
+        computation_mode = self.sym_num_widget.currentRow()
 
+        if computation_mode == 0:  # Symbolic
+            self.dh_table.setColumnHidden(6, True)  # Hide Value column
+        else:  # Numeric
+            self.dh_table.setColumnHidden(6, False)  # Show Value column
+            
 #  Update DH table when manipulator selection changes
     def update_dh_table(self, index, update_headers=True):
         manipulators = ["UR5", "ABB_IRB_1600", "ABB_IRB_2600"]
