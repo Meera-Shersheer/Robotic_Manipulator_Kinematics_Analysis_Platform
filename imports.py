@@ -43,4 +43,4 @@ from datetime import datetime
 
 from random import randint
 from typing import List, Dict, Tuple
-from manipulators import *
+from base_manipulator import *

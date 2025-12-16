@@ -1,6 +1,7 @@
 from imports import *
 
 
+
 # Base class for robotic manipulators.
 # Focuses on DH parameter management and interaction with GUI controls.
 class RoboticManipulator:
@@ -166,6 +167,84 @@ class RoboticManipulator:
 
 
 
+class UR5(RoboticManipulator):
+    """Universal Robots UR5 manipulator"""
+    
+    def __init__(self):
+        super().__init__()
+        self.name = "UR5"
+    
+    #   UR5 DH parameters (Modified DH convention)
+    def _initialize_dh_parameters(self) :
+        d1 = 0.089159
+        a2= 0.425
+        a3 = 0.392
+        d4 = 0.10915
+        d5 = 0.09465
+        d6 = 0.0823
+        return [
+            {"a": 0, "alpha": pi / 2,  "d": d1, "theta": 0.0, "variable": "theta"},
+            {"a": a2, "alpha": 0, "d": 0, "theta": 0.0, "variable": "theta"},
+            {"a": a3, "alpha": 0, "d": 0, "theta": 0.0, "variable": "theta"},
+            {"a": 0, "alpha": pi / 2,  "d": d4, "theta": 0.0, "variable": "theta"},
+            {"a": 0, "alpha": -pi / 2, "d": d5, "theta": 0.0, "variable": "theta"},
+            {"a": 0, "alpha": 0,   "d": d6, "theta": 0.0, "variable": "theta"},
+        ]
+
+
+
+#ABB IRB1600 industrial manipulator
+class ABB_IRB_1600(RoboticManipulator):
+    
+    def __init__(self):
+        super().__init__()
+        self.name = "ABB_IRB_1600"
+    
+        # ABB IRB1600 DH parameters
+    def _initialize_dh_parameters(self):
+        a1 = 0.150
+        d1 = 0.4865
+        a2 = 0.700
+        a3 = 0.115
+        d4 = 0.7200
+        d6 = 0.0850
+        return [
+            {"a": a1, "alpha": pi / 2,  "d": d1, "theta": 0.0, "variable": "theta"},
+            {"a": a2, "alpha": 0, "d": 0, "theta": 0.0, "variable": "theta"},
+            {"a": a3, "alpha": pi / 2 , "d": 0, "theta": 0.0, "variable": "theta"},
+            {"a": 0, "alpha": -pi / 2, "d": d4, "theta": 0.0, "variable": "theta"},
+            {"a": 0, "alpha": pi / 2,  "d": 0, "theta": 0.0, "variable": "theta"},
+            {"a": 0, "alpha": 0, "d": d6, "theta": 0.0, "variable": "theta"},
+        ]
+
+
+
+
+class ABB_IRB_2600(RoboticManipulator):
+    
+    def __init__(self):
+        super().__init__()
+        self.name = "ABB_IRB_2600"
+    
+        # ABB IRB2600 DH parameters
+    def _initialize_dh_parameters(self):
+        a1 = 0.150
+        d1 = 0.445
+        a2 = 0.700
+        a3 = 0.115
+        d4 = 0.7950
+        d6 = 0.0850
+        return [
+            {"a": a1, "alpha": pi / 2,  "d": d1, "theta": 0.0, "variable": "theta"},
+            {"a": a2, "alpha": 0, "d": 0, "theta": 0.0, "variable": "theta"},
+            {"a": a3, "alpha": pi / 2 , "d": 0, "theta": 0.0, "variable": "theta"},
+            {"a": 0, "alpha": -pi / 2, "d": d4, "theta": 0.0, "variable": "theta"},
+            {"a": 0, "alpha": pi / 2,  "d": 0, "theta": 0.0, "variable": "theta"},
+            {"a": 0, "alpha": 0, "d": d6, "theta": 0.0, "variable": "theta"},
+        ]
+
+
+
 
 # ==================== FACTORY FUNCTION ====================
 
@@ -178,8 +257,8 @@ def create_manipulator(name):
 
     manipulators = {
         "UR5": UR5,
-        "ABB IRB1600": ABB_IRB_1600,
-        "ABB IRB2600": ABB_IRB_2600,
+        "ABB_IRB_1600": ABB_IRB_1600,
+        "ABB_IRB_2600": ABB_IRB_2600,
     }
     
     manipulator_class = manipulators.get(name)
