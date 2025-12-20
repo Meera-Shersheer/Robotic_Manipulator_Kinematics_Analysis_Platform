@@ -26,13 +26,14 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         super().__init__()  # calling the parent constructor
         self.current_manipulator = None
         self.setWindowTitle("Robotics IK/FK Calculator")   # giving a title to the window 
-        self.resize(1640, 1200) # resizing the window
+        self.resize(1840, 1100) # resizing the window
        
         central = QWidget()  # Create a central widget (required in QMainWindow)
         #central = Color("yellow")
         self.setCentralWidget(central)
         self.standard_font = QFont("Roboto", 12)  # or "Roboto", 11
         self.label_font = QFont("Roboto", 14)
+        
         outer_layout = QVBoxLayout(central)
 
         # Title
@@ -42,10 +43,42 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         
         outer_layout.addWidget(title)
 
-        main_layout = QHBoxLayout()
+        self.tabs = QTabWidget()
+        self.tabs.setFont(self.standard_font) 
+        self.tabs.setStyleSheet("""
+            QTabWidget::pane {
+                border: 2px solid #cccccc;
+                border-radius: 3px;
+                background-color: white;
+            }
+            QTabBar {
+                background-color: white;
+            }
+            QTabBar::tab {
+                background-color: white;
+                color: black;
+                padding: 8px 20px;
+                margin-right: 2px;
+                border: 2px solid #cccccc;
+                border-bottom: none;
+                border-radius: 3px 3px 0px 0px;
+            }
+            QTabBar::tab:selected {
+                background-color: white;
+                border: 2px solid #cccccc;
+                border-bottom: 2px solid white;
+                font-weight: bold;
+                color: #0078d4;
+            }
+            QTabBar::tab:hover {
+                background-color: #e5f3ff;
+            }
+        """)
+        input_tab = QWidget()
+        main_layout = QHBoxLayout(input_tab)
         # main_layout.setSpacing(0)
         # main_layout.setContentsMargins(0, 0, 0, 0)
-        outer_layout.addLayout(main_layout)
+       # outer_layout.addLayout(main_layout)
         
         # ================= LEFT COLUMN =================
         left_widget = QVBoxLayout()
@@ -71,7 +104,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         controls_widget = QHBoxLayout()
         controls_widget.setSpacing(5)
         controls_widget.setContentsMargins(0, 0, 0, 0) 
-        inputs_section.addLayout(controls_widget, 2)
+        inputs_section.addLayout(controls_widget, 1)
        
         minpulator_chose_box, self.manipulator_list_widget = self.manipulator_list()
         ik_fk, self.ik_fk_widget = self.ik_fk_selector()
@@ -88,23 +121,28 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         
         # Row 2: DH Table
         #dh_widget = QWidget()
+        tables_matrix_Row = QHBoxLayout()
         dh_widget = self.create_dh_table_widget()
+        matrix_Widget = Color("#38edde", "T-matrix")
         #Color("blue", "dh_widget")
         # dh_layout = QVBoxLayout()
         #dh_widget.setLayout(dh_layout)
         
         # Row 3: Outputs
        # output_widget = QWidget()
-        output_widget = Color("orange", "OUTPUT")
+       # output_widget = Color("orange", "OUTPUT")
         execute_widget = Color("purple", "execute")
     #    output_layout = QVBoxLayout()
         #output_widget.setLayout(output_layout)
         # inputs_section.addWidget(controls_widget, 1)
-        inputs_section.addWidget(dh_widget, 5)  
+     ##   inputs_section.addWidget(dh_widget, 5)  
 #        left_widget.addWidget(controls_widget, 1)
         # left_widget.addWidget(control_dh_widget, 3)
+        tables_matrix_Row.addWidget(dh_widget, 1) 
+        tables_matrix_Row.addWidget(matrix_Widget, 1)   
+        inputs_section.addLayout(tables_matrix_Row, 2) 
         left_widget.addWidget(execute_widget, 1)
-        left_widget.addWidget(output_widget, 7)
+       # left_widget.addWidget(output_widget, 7)
         
         # ================= RIGHT COLUMN =================
         right_widget = QVBoxLayout()
@@ -129,11 +167,19 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         right_widget.addWidget(view3d_widget, 8)
         right_widget.addWidget(choose_2D_sec, 1)
         right_widget.addWidget(view2d_widget, 8)
+        self.tabs.addTab(input_tab, "Inputs")
+        output_tab = QWidget()
+        output_layout = QHBoxLayout(output_tab)
+        output_widget = Color("orange", "OUTPUT")
+        output_layout.addWidget(output_widget, 6)
+        self.tabs.addTab(output_tab, "Outputs")
+        outer_layout.addWidget(self.tabs)
+        
         self.toggle_value_column()
 
 
     def manipulator_list(self):
-        return self.create_selector("Select a manipulator:", ["UR5", "ABB IRB 1600", "ABB IRB 2600"])
+        return self.create_selector("Select a manipulator:", ["UR5", "ABB IRB 1600", "KUKA KR16"])
 
     def ik_fk_selector(self):
         return self.create_selector("Calculate:", ["Forward Kinamatics (FK)", "Inverse Kinamatics (IK)"])
@@ -254,6 +300,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         # Create table
         self.dh_table = QTableWidget()
         self.dh_table.setColumnCount(7)
+        self.numeric_delegate = NumericDelegate(self.dh_table)
+        self.dh_table.setItemDelegateForColumn(6, self.numeric_delegate)
         self.dh_table.setFont(self.standard_font) 
          
         # Set initial headers (will be updated based on angle unit selection)
@@ -310,7 +358,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             
 #  Update DH table when manipulator selection changes
     def update_dh_table(self, index, update_headers=True):
-        manipulators = ["UR5", "ABB_IRB_1600", "ABB_IRB_2600"]
+        manipulators = ["UR5", "ABB_IRB_1600", "KUKA_KR16"]
         if index < 0 or index >= len(manipulators):
             return
 
@@ -374,9 +422,10 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
             # Column 3: α (alpha) - always fixed
             alpha_val = params["alpha"]
+            alpha_val_num = float(alpha_val)
             if in_degrees:
-                alpha_val = np.rad2deg(alpha_val)
-            alpha_item = QTableWidgetItem(f"{alpha_val:.4f}")
+                alpha_val_num = np.rad2deg(alpha_val_num)
+            alpha_item = QTableWidgetItem(f"{alpha_val_num:.4f}")
             alpha_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             alpha_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
             alpha_item.setBackground(QColor("#faf8f8"))
@@ -400,10 +449,34 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             value_item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable)
             value_item.setBackground(QColor("#ffffff"))
             self.dh_table.setItem(row, 6, value_item)
-
         if update_headers:
             self.update_dh_headers()
 
+#    Returns numeric joint values (always in radians internally)
+    def get_joint_values(self):
+        if self.sym_num_widget.currentRow() == 0:
+            return None  # symbolic mode
+
+        values = []
+        angle_unit = self.theta_system_widget.currentRow()  # 0=rad, 1=deg
+
+        for row in range(self.dh_table.rowCount()):
+            item = self.dh_table.item(row, 6)
+
+            if item is None or item.text().strip() == "":
+                raise ValueError(f"Joint {row + 1} has no value")
+
+            value = float(item.text())
+            print(f"Joint {row+1}: raw =", item.text())
+
+            # Revolute joint → angle
+            joint_type = self.current_manipulator.get_joint_type(row)
+            if joint_type == "revolute" and angle_unit == 1:
+                value = np.deg2rad(value)
+
+            values.append(value)
+
+        return values
 
 #Update table headers when angle unit changes
     def update_dh_headers(self):
@@ -422,8 +495,16 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             self.update_dh_table(current_index, update_headers=False)
 
 
+##for execute button
+# def execute_fk(self):
+#     try:
+#         joint_values = self.get_joint_values()
+#     except ValueError as e:
+#         QMessageBox.warning(self, "Input Error", str(e))
+#         return
 
-
+#     T = self.current_manipulator.forward_kinematics(joint_values)
+#     self.display_matrix(T)
 
 
 # # class MainWindow(QMainWindow):

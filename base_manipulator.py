@@ -177,8 +177,8 @@ class UR5(RoboticManipulator):
     #   UR5 DH parameters (Modified DH convention)
     def _initialize_dh_parameters(self) :
         d1 = 0.089159
-        a2= 0.425
-        a3 = 0.392
+        a2= -0.425
+        a3 = -0.39225
         d4 = 0.10915
         d5 = 0.09465
         d6 = 0.0823
@@ -220,27 +220,27 @@ class ABB_IRB_1600(RoboticManipulator):
 
 
 
-class ABB_IRB_2600(RoboticManipulator):
+class KUKA_KR16(RoboticManipulator):
     
     def __init__(self):
         super().__init__()
-        self.name = "ABB_IRB_2600"
+        self.name = "KUKA_KR16"
     
-        # ABB IRB2600 DH parameters
+        # KUKA KR16 DH parameters
     def _initialize_dh_parameters(self):
-        a1 = 0.150
-        d1 = 0.445
-        a2 = 0.700
-        a3 = 0.115
-        d4 = 0.7950
-        d6 = 0.0850
+        a2 = 0.675
+        a3 = 0.680
+        a4 = 0.670
+        a6 = 0.115
+        d2 = 0.260
+        d4 = 0.035
         return [
-            {"a": a1, "alpha": pi / 2,  "d": d1, "theta": 0.0, "variable": "theta"},
-            {"a": a2, "alpha": 0, "d": 0, "theta": 0.0, "variable": "theta"},
-            {"a": a3, "alpha": pi / 2 , "d": 0, "theta": 0.0, "variable": "theta"},
-            {"a": 0, "alpha": -pi / 2, "d": d4, "theta": 0.0, "variable": "theta"},
+            {"a": 0, "alpha": 0 ,  "d": 0, "theta": 0.0, "variable": "theta"},
+            {"a": a2, "alpha":  pi / 2 , "d": d2, "theta": 0.0, "variable": "theta"},
+            {"a": a3, "alpha": 0 , "d": 0, "theta": 0.0, "variable": "theta"},
+            {"a": a4, "alpha":  pi / 2, "d": d4, "theta": 0.0, "variable": "theta"},
             {"a": 0, "alpha": pi / 2,  "d": 0, "theta": 0.0, "variable": "theta"},
-            {"a": 0, "alpha": 0, "d": d6, "theta": 0.0, "variable": "theta"},
+            {"a": a6, "alpha":  pi / 2, "d": 0, "theta": 0.0, "variable": "theta"},
         ]
 
 
@@ -258,7 +258,7 @@ def create_manipulator(name):
     manipulators = {
         "UR5": UR5,
         "ABB_IRB_1600": ABB_IRB_1600,
-        "ABB_IRB_2600": ABB_IRB_2600,
+        "KUKA_KR16": KUKA_KR16,
     }
     
     manipulator_class = manipulators.get(name)

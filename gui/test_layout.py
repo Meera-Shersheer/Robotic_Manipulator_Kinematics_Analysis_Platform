@@ -25,7 +25,7 @@ class TestMainWindow(QMainWindow): #defining our class (inheriting from QMainWin
         super().__init__()  # calling the parent constructor
 
         self.setWindowTitle("Robotics IK/FK Calculator")   # giving a title to the window 
-        self.resize(1400, 1000) # resizing the window
+        self.resize(1840, 1100) # resizing the window
         
         central = Color("yellow") # Create a central widget (required in QMainWindow)
         self.setCentralWidget(central)
@@ -39,10 +39,35 @@ class TestMainWindow(QMainWindow): #defining our class (inheriting from QMainWin
         
         outer_layout.addWidget(title)
 
-        main_layout = QHBoxLayout()
+        self.tabs = QTabWidget()
+        self.tabs.setStyleSheet("""
+            QTabWidget::pane {
+                border: 1px solid #cccccc;
+            }
+            QTabBar::tab {
+                background-color: #f0f0f0;
+                color: black;
+                padding: 8px 20px;
+                margin-right: 2px;
+                border: 1px solid #cccccc;
+                border-bottom: none;
+            }
+            QTabBar::tab:selected {
+                background-color: white;
+                border-bottom: 2px solid white;
+            }
+            QTabBar::tab:hover {
+                background-color: #e0e0e0;
+            }
+        """)
+
+
+
+        input_tab = QWidget()
+        main_layout = QHBoxLayout(input_tab)
         main_layout.setSpacing(0)
         main_layout.setContentsMargins(0, 0, 0, 0)
-        outer_layout.addLayout(main_layout)
+    #    outer_layout.addLayout(main_layout)
         
         # ================= LEFT COLUMN =================
         left_widget = QVBoxLayout()
@@ -72,16 +97,20 @@ class TestMainWindow(QMainWindow): #defining our class (inheriting from QMainWin
         controls_widget.addWidget(sym_num)
         controls_widget.addWidget(theta_system)
         
+        tables_matrix_Row = QHBoxLayout()
         # Row 1, coulmn 2 :DH Table
         dh_widget = Color("blue", "dh_widget")
-        
+        matrix_Wiget =  Color("#64f491", "input matrix")
         # Row 3: Outputs
-        output_widget = Color("orange", "OUTPUT")
+       
         execute_widget = Color("purple", "execute")
         
-        inputs_section.addWidget(dh_widget, 2)  
+        tables_matrix_Row.addWidget(dh_widget, 1) 
+        tables_matrix_Row.addWidget(matrix_Wiget, 1)
+        
+        inputs_section.addLayout(tables_matrix_Row, 2) 
         left_widget.addWidget(execute_widget, 1)
-        left_widget.addWidget(output_widget, 6)
+
         
         # ================= RIGHT COLUMN =================
         right_widget = QVBoxLayout()
@@ -96,7 +125,12 @@ class TestMainWindow(QMainWindow): #defining our class (inheriting from QMainWin
         right_widget.addWidget(view3d_widget, 8)
         right_widget.addWidget(choose_2D_sec, 1)
         right_widget.addWidget(view2d_widget, 8)
-
-
-
-
+        self.tabs.addTab(input_tab, "Inputs")
+        
+        output_tab = QWidget()
+        output_layout = QHBoxLayout(output_tab)
+        output_widget = Color("orange", "OUTPUT")
+        output_layout.addWidget(output_widget, 6)
+        self.tabs.addTab(output_tab, "Outputs")
+        
+        outer_layout.addWidget(self.tabs)
