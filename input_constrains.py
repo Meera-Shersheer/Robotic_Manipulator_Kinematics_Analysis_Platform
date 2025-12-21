@@ -11,3 +11,9 @@ class NumericDelegate(QStyledItemDelegate):
         editor.setValidator(self.validator)
         editor.setAlignment(Qt.AlignmentFlag.AlignCenter)
         return editor
+class MatrixDelegate(QStyledItemDelegate):
+    def createEditor(self, parent, option, index):
+        editor = QLineEdit(parent)
+        editor.setValidator(QDoubleValidator())
+        editor.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        return editor

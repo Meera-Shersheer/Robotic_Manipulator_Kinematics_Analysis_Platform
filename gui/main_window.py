@@ -31,8 +31,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         central = QWidget()  # Create a central widget (required in QMainWindow)
         #central = Color("yellow")
         self.setCentralWidget(central)
-        self.standard_font = QFont("Roboto", 12)  # or "Roboto", 11
-        self.label_font = QFont("Roboto", 14)
+        self.standard_font = QFont("Roboto", 13)  # or "Roboto", 11
+        self.label_font = QFont("Roboto", 15)
         
         outer_layout = QVBoxLayout(central)
 
@@ -123,7 +123,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         #dh_widget = QWidget()
         tables_matrix_Row = QHBoxLayout()
         dh_widget = self.create_dh_table_widget()
-        matrix_Widget = Color("#38edde", "T-matrix")
+        matrix_Widget = self.create_matrix_display_widget()
+        #Color("#38edde", "T-matrix")
         #Color("blue", "dh_widget")
         # dh_layout = QVBoxLayout()
         #dh_widget.setLayout(dh_layout)
@@ -131,16 +132,18 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         # Row 3: Outputs
        # output_widget = QWidget()
        # output_widget = Color("orange", "OUTPUT")
-        execute_widget = Color("purple", "execute")
+        #Color("purple", "execute")
     #    output_layout = QVBoxLayout()
         #output_widget.setLayout(output_layout)
         # inputs_section.addWidget(controls_widget, 1)
      ##   inputs_section.addWidget(dh_widget, 5)  
 #        left_widget.addWidget(controls_widget, 1)
         # left_widget.addWidget(control_dh_widget, 3)
-        tables_matrix_Row.addWidget(dh_widget, 1) 
-        tables_matrix_Row.addWidget(matrix_Widget, 1)   
+        tables_matrix_Row.addWidget(dh_widget, 6) 
+        tables_matrix_Row.addWidget(matrix_Widget, 4)   
         inputs_section.addLayout(tables_matrix_Row, 2) 
+        
+        execute_widget = self.create_execute_widget()
         left_widget.addWidget(execute_widget, 1)
        # left_widget.addWidget(output_widget, 7)
         
@@ -170,12 +173,14 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.tabs.addTab(input_tab, "Inputs")
         output_tab = QWidget()
         output_layout = QHBoxLayout(output_tab)
-        output_widget = Color("orange", "OUTPUT")
+        output_widget = self.create_output_widget()
+        #Color("orange", "OUTPUT")
         output_layout.addWidget(output_widget, 6)
         self.tabs.addTab(output_tab, "Outputs")
         outer_layout.addWidget(self.tabs)
         
         self.toggle_value_column()
+        self.hide_matrix()
 
 
     def manipulator_list(self):
@@ -317,7 +322,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                 gridline-color: #e0e0e0;
             }
             QTableWidget::item {
-                padding: 4px;
+                padding: 6px;
             }
             QHeaderView::section {
                 background-color: #0078d4;
@@ -494,7 +499,344 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             current_index = self.manipulator_list_widget.currentRow()
             self.update_dh_table(current_index, update_headers=False)
 
+# Create widget to display transformation matrix
+    def create_matrix_display_widget(self):
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        layout.setSpacing(5)
+        layout.setContentsMargins(5, 5, 5, 5)
 
+        widget.setStyleSheet("""
+            QWidget {
+                border: 1px solid #cccccc;
+                padding: 5px;
+                border-radius: 5px;
+                background-color: #f9f9f9;
+            }
+        """)
+
+        title_label = QLabel("Transformation Matrix T₀⁶")
+        title_label.setFont(self.label_font)
+        title_label.setStyleSheet("border: none; background: transparent;")
+        title_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        layout.addWidget(title_label)
+
+        self.matrix_placeholder = QLabel(
+            "Transformation matrix will be shown\n"
+            "when Numeric Inverse Kinematics is selected."
+        )
+        self.matrix_placeholder.setFont(self.standard_font)
+        self.matrix_placeholder.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignHCenter)
+        self.matrix_placeholder.setStyleSheet("""
+            QLabel {
+                border: none;
+                color: #333333;  
+                padding: 30px;
+                background: transparent;
+            }
+        """)
+        layout.addWidget(self.matrix_placeholder, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        # Matrix display table
+        self.matrix_table = QTableWidget(4, 4)
+        self.matrix_table.setItemDelegate(MatrixDelegate(self.matrix_table))
+        self.matrix_table.setFont(self.standard_font)
+        self.matrix_table.horizontalHeader().setVisible(False)
+        self.matrix_table.verticalHeader().setVisible(False)
+        
+        self.matrix_table.setStyleSheet("""
+            QTableWidget {
+                border: 1px solid #cccccc;
+                border-radius: 3px;
+                background-color: white;
+                gridline-color: #e0e0e0;
+            }
+            QTableWidget::item {
+                padding: 6px;
+                text-align: center;
+            }
+        """)
+
+        header = self.matrix_table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.matrix_table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        
+        # Initialize with zeros
+        for i in range(4):
+            for j in range(4):
+                item = QTableWidgetItem("0.0000")
+                item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                item.setFlags(
+                    Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable)
+                self.matrix_table.setItem(i, j, item)
+      
+        self.sym_num_widget.currentRowChanged.connect(self.hide_matrix)
+        self.ik_fk_widget.currentRowChanged.connect(self.hide_matrix)
+        layout.addWidget(self.matrix_table)
+        return widget
+
+    #Show/hide the T matrix based on mode mode
+    def hide_matrix(self):
+        computation_mode = self.sym_num_widget.currentRow()
+        kinematics_type = self.ik_fk_widget.currentRow()
+        
+        show_matrix = (computation_mode == 1 and kinematics_type == 1)
+        self.matrix_table.setVisible(show_matrix)
+        self.matrix_placeholder.setVisible(not show_matrix)
+
+            
+        # Create execute button widget
+    def create_execute_widget(self):
+        widget = QWidget()
+        layout = QHBoxLayout(widget)
+        layout.setSpacing(5)
+        layout.setContentsMargins(5, 5, 5, 5)
+
+        widget.setStyleSheet("""
+            QWidget {
+                border: #f5f5f5;;
+                padding: 5px;
+                border-radius: 5px;
+                background-color: white;
+            }
+        """)
+        # Execute button
+        self.execute_button = QPushButton("Calculate")
+        self.label_font.setWeight(QFont.Weight.DemiBold) 
+        self.execute_button.setFont(self.label_font)
+        self.execute_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.execute_button.setFixedSize(150, 50)  
+        self.execute_button.setStyleSheet("""
+            QPushButton {
+                background-color: #f9f9f9;
+                color: #0078d4; 
+                border: 2px solid #cccccc; 
+                border-radius: 5px;
+                padding: 10px 10px;
+            }
+            QPushButton:hover {
+                background-color: #e5f3ff;
+            }
+            QPushButton:pressed {
+                background-color: #cce8ff;
+            }
+            QPushButton:disabled {
+                background-color: #cccccc;
+                color: #666666;
+            }
+        """)
+    #    self.execute_button.clicked.connect(self.execute_calculation)
+        layout.addWidget(self.execute_button)
+
+        # Clear button
+        # clear_button = QPushButton("🗑️ Clear")
+        # clear_button.setFont(self.standard_font)
+        # clear_button.setMinimumHeight(60)
+        # clear_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        # clear_button.setStyleSheet("""
+        #     QPushButton {
+        #         background-color: #d32f2f;
+        #         color: white;
+        #         border: none;
+        #         border-radius: 5px;
+        #         padding: 10px 20px;
+        #     }
+        #     QPushButton:hover {
+        #         background-color: #b71c1c;
+        #     }
+        #     QPushButton:pressed {
+        #         background-color: #8b0000;
+        #     }
+        # """)
+        # # clear_button.clicked.connect(self.clear_inputs)
+        # layout.addWidget(clear_button, 1)
+
+        # layout.setStretch(0, 3)  # Execute button takes more space
+        # layout.setStretch(1, 1)  # Clear button smaller
+        
+        return widget
+
+    def create_output_widget(self):
+        """Create output display widget"""
+        widget = QWidget()
+        main_layout = QVBoxLayout(widget)
+        main_layout.setSpacing(10)
+        main_layout.setContentsMargins(10, 10, 10, 10)
+
+        widget.setStyleSheet("""
+            QWidget {
+                background-color: #f9f9f9;
+            }
+        """)
+
+        # Title
+        title = QLabel("Calculation Results")
+        title.setFont(self.label_font)
+        title.setStyleSheet("color: #0078d4; padding: 10px;")
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        main_layout.addWidget(title)
+
+        # Create scrollable area
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("""
+            QScrollArea {
+                border: 1px solid #cccccc;
+                border-radius: 5px;
+                background-color: white;
+            }
+        """)
+
+        scroll_content = QWidget()
+        self.output_layout = QVBoxLayout(scroll_content)
+        self.output_layout.setSpacing(15)
+        self.output_layout.setContentsMargins(15, 15, 15, 15)
+
+        # Add initial message
+        initial_msg = QLabel("No results yet. Click 'Calculate' to see results here.")
+        initial_msg.setFont(self.standard_font)
+        initial_msg.setStyleSheet("color: #666; padding: 20px;")
+        initial_msg.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.output_layout.addWidget(initial_msg)
+        self.output_layout.addStretch()
+
+        scroll.setWidget(scroll_content)
+        main_layout.addWidget(scroll)
+
+        return widget
+    
+    def execute_calculation(self):
+        """Execute FK or IK calculation based on selection"""
+        if self.current_manipulator is None:
+            QMessageBox.warning(self, "No Robot Selected", 
+                              "Please select a manipulator first.")
+            return
+
+        calc_mode = self.ik_fk_widget.currentRow()  # 0=FK, 1=IK
+        comp_mode = self.sym_num_widget.currentRow()  # 0=Symbolic, 1=Numeric
+
+        if calc_mode == 0:  # Forward Kinematics
+            if comp_mode == 0:  # Symbolic
+                self.execute_fk_symbolic()
+            else:  # Numeric
+                self.execute_fk_numeric()
+        else:  # Inverse Kinematics
+            QMessageBox.information(self, "Coming Soon", 
+                                   "Inverse Kinematics will be implemented next!")
+
+    def execute_fk_numeric(self):
+        """Execute numeric forward kinematics"""
+        try:
+            # Get joint values
+            joint_values = self.get_joint_values()
+            
+            if joint_values is None:
+                QMessageBox.warning(self, "Invalid Mode", 
+                                  "Numeric mode required for numeric calculation.")
+                return
+
+            # Compute FK
+            transforms, T_final = self.fk_engine.compute_numeric(joint_values)
+            
+            # Update matrix display
+            self.update_matrix_display(T_final)
+            
+            # Format and display results
+            results = self.fk_engine.format_results_numeric(transforms, T_final)
+            self.display_fk_results(results, joint_values)
+            
+            # Switch to output tab
+            self.tabs.setCurrentIndex(1)
+            
+            QMessageBox.information(self, "Success", 
+                                   "Forward Kinematics calculated successfully!")
+            
+        except ValueError as e:
+            QMessageBox.warning(self, "Input Error", str(e))
+        except Exception as e:
+            QMessageBox.critical(self, "Calculation Error", 
+                               f"An error occurred: {str(e)}")
+
+    def execute_fk_symbolic(self):
+        """Execute symbolic forward kinematics"""
+        try:
+            # Compute symbolic FK
+            transforms, T_final = self.fk_engine.compute_symbolic()
+            
+            # Display symbolic results
+            self.display_fk_symbolic_results(transforms, T_final)
+            
+            # Switch to output tab
+            self.tabs.setCurrentIndex(1)
+            
+            QMessageBox.information(self, "Success", 
+                                   "Symbolic Forward Kinematics computed!")
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Calculation Error", 
+                               f"An error occurred: {str(e)}")
+
+    def update_matrix_display(self, T):
+        """Update the transformation matrix display"""
+        for i in range(4):
+            for j in range(4):
+                item = QTableWidgetItem(f"{T[i, j]:.6f}")
+                item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                item.setFlags(Qt.ItemFlag.ItemIsEnabled)
+                
+                # Highlight rotation vs translation
+                if i < 3 and j < 3:
+                    item.setBackground(QColor("#e3f2fd"))  # Rotation (blue tint)
+                elif j == 3 and i < 3:
+                    item.setBackground(QColor("#fff3e0"))  # Translation (orange tint)
+                else:
+                    item.setBackground(QColor("#f5f5f5"))  # Bottom row
+                    
+                self.matrix_table.setItem(i, j, item)
+
+    def display_fk_results(self, results, joint_values):
+        """Display FK results in output panel"""
+        # Clear previous results
+        while self.output_layout.count():
+            child = self.output_layout.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
+
+        # Joint values section
+        joint_group = self.create_result_group("Input Joint Values")
+        joint_layout = QVBoxLayout()
+        
+        angle_unit = "deg" if self.theta_system_widget.currentRow() == 1 else "rad"
+        
+        for i, val in enumerate(joint_values):
+            params = self.current_manipulator.get_dh_parameters()[i]
+            if params['variable'] == 'theta':
+                display_val = np.rad2deg(val) if angle_unit == "deg" else val
+                label = QLabel(f"θ{i+1} = {display_val:.6f} {angle_unit}")
+            else:
+                label = QLabel(f"d{i+1} = {val:.6f} m")
+            label.setFont(self.standard_font)
+            joint_layout.addWidget(label)
+        
+        joint_group.layout().addLayout(joint_layout)
+        self.output_layout.addWidget(joint_group)
+
+        # End-effector position
+        pos_group = self.create_result_group("End-Effector Position")
+        pos_layout = QVBoxLayout()
+        position = results['position']
+        
+        for axis, val in zip(['X', 'Y', 'Z'], position):
+            label = QLabel(f"{axis} = {val:.6f} m")
+            label.setFont(QFont("Roboto", 12))
+            pos_layout.addWidget(label)
+        
+        pos_group.layout().addLayout(pos_layout)
+        self.output_layout.addWidget(pos_group)
+
+        # End-effector orientation
+        ori_group = self.create_
+    
 ##for execute button
 # def execute_fk(self):
 #     try:
