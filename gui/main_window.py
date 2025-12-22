@@ -74,6 +74,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                 background-color: #e5f3ff;
             }
         """)
+        
+
         input_tab = QWidget()
         main_layout = QHBoxLayout(input_tab)
         # main_layout.setSpacing(0)
@@ -104,17 +106,22 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         controls_widget = QHBoxLayout()
         controls_widget.setSpacing(5)
         controls_widget.setContentsMargins(0, 0, 0, 0) 
-        inputs_section.addLayout(controls_widget, 1)
+        inputs_section.addLayout(controls_widget, 2)
        
         minpulator_chose_box, self.manipulator_list_widget = self.manipulator_list()
         ik_fk, self.ik_fk_widget = self.ik_fk_selector()
         sym_num, self.sym_num_widget = self.sym_num_selector()
         theta_system, self.theta_system_widget = self.rad_deg_selector()
-       
+
+        fram_range = QVBoxLayout()
+        inputs_section.addLayout(fram_range, 1)
+        self.frame_range_selector = self.create_fk_frame_selector()
+        
         controls_widget.addWidget(minpulator_chose_box)
         controls_widget.addWidget(ik_fk)
         controls_widget.addWidget(sym_num)
         controls_widget.addWidget(theta_system)
+        fram_range.addWidget(self.frame_range_selector)
    #     controls_layout = QHBoxLayout()
         #controls_widget.setLayout(controls_layout)
    #     controls_widget.layout.addLayout(controls_layout)
@@ -141,7 +148,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         # left_widget.addWidget(control_dh_widget, 3)
         tables_matrix_Row.addWidget(dh_widget, 6) 
         tables_matrix_Row.addWidget(matrix_Widget, 4)   
-        inputs_section.addLayout(tables_matrix_Row, 2) 
+        inputs_section.addLayout(tables_matrix_Row, 8) 
         
         execute_widget = self.create_execute_widget()
         left_widget.addWidget(execute_widget, 1)
@@ -627,32 +634,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         """)
     #    self.execute_button.clicked.connect(self.execute_calculation)
         layout.addWidget(self.execute_button)
-
-        # Clear button
-        # clear_button = QPushButton("🗑️ Clear")
-        # clear_button.setFont(self.standard_font)
-        # clear_button.setMinimumHeight(60)
-        # clear_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        # clear_button.setStyleSheet("""
-        #     QPushButton {
-        #         background-color: #d32f2f;
-        #         color: white;
-        #         border: none;
-        #         border-radius: 5px;
-        #         padding: 10px 20px;
-        #     }
-        #     QPushButton:hover {
-        #         background-color: #b71c1c;
-        #     }
-        #     QPushButton:pressed {
-        #         background-color: #8b0000;
-        #     }
-        # """)
-        # # clear_button.clicked.connect(self.clear_inputs)
-        # layout.addWidget(clear_button, 1)
-
-        # layout.setStretch(0, 3)  # Execute button takes more space
-        # layout.setStretch(1, 1)  # Clear button smaller
         
         return widget
 
@@ -705,137 +686,612 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
         return widget
     
-    def execute_calculation(self):
-        """Execute FK or IK calculation based on selection"""
-        if self.current_manipulator is None:
-            QMessageBox.warning(self, "No Robot Selected", 
-                              "Please select a manipulator first.")
-            return
+    def create_fk_frame_selector(self, dof=6):
+        # Container widget
+        
+        group = QGroupBox()
+        layout = QVBoxLayout(group)
+        
+        group.setStyleSheet("""
+        QGroupBox {
+            border: 1px solid #cccccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        """)
+        
+        # ---- Title ----
+        title = QLabel("Selected Frames Whose Transformation Matrices Will Be Displayed:")
+        title.setFont(self.label_font)
+        title.setStyleSheet("border: none; background: transparent;")
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(title)
 
-        calc_mode = self.ik_fk_widget.currentRow()  # 0=FK, 1=IK
-        comp_mode = self.sym_num_widget.currentRow()  # 0=Symbolic, 1=Numeric
+        # Mode selector: All / Range
+        radio_layout = QHBoxLayout()
+        self.fk_all_radio = QRadioButton("All")
+        self.fk_range_radio = QRadioButton("Range")
+        self.fk_all_radio.setChecked(True)  # default
+        
+        self.fk_all_radio.setFont(self.standard_font)
+        self.fk_all_radio.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.fk_range_radio.setFont(self.standard_font)
+        self.fk_range_radio.setCursor(Qt.CursorShape.PointingHandCursor)
 
-        if calc_mode == 0:  # Forward Kinematics
-            if comp_mode == 0:  # Symbolic
-                self.execute_fk_symbolic()
-            else:  # Numeric
-                self.execute_fk_numeric()
-        else:  # Inverse Kinematics
-            QMessageBox.information(self, "Coming Soon", 
-                                   "Inverse Kinematics will be implemented next!")
 
-    def execute_fk_numeric(self):
-        """Execute numeric forward kinematics"""
-        try:
-            # Get joint values
-            joint_values = self.get_joint_values()
-            
-            if joint_values is None:
-                QMessageBox.warning(self, "Invalid Mode", 
-                                  "Numeric mode required for numeric calculation.")
-                return
+        radio_layout.addWidget(self.fk_all_radio)
+        radio_layout.setSpacing(200)
+        radio_layout.addWidget(self.fk_range_radio)
+        radio_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        # From/To spinboxes
+        spin_layout = QHBoxLayout()
+        
+        self.fk_from_spin = QSpinBox()
+        self.fk_from_spin.setRange(0, dof)
+        self.fk_from_spin.setValue(0)
+    
+        self.fk_to_spin = QSpinBox()
+        self.fk_to_spin.setRange(0, dof)
+        self.fk_to_spin.setValue(dof)
+        
+        from_label = QLabel("From:")
+        to_label = QLabel("To:")
+        from_label.setFont(self.standard_font)
+        to_label.setFont(self.standard_font)
+    
+        self.fk_from_spin.setFont(self.standard_font)
+        self.fk_from_spin.setFixedWidth(100)
+        self.fk_to_spin.setFont(self.standard_font)
+        self.fk_to_spin.setFixedWidth(100)
+      
+        spin_layout.addSpacing(275)  
+        spin_layout.addWidget(from_label)
+        spin_layout.addSpacing(5)
+        spin_layout.addWidget(self.fk_from_spin)
+        spin_layout.addSpacing(60)
+        spin_layout.addWidget(to_label)
+        spin_layout.addSpacing(5)
+        spin_layout.addWidget(self.fk_to_spin)
+        spin_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            # QSpinBox {
+            #     padding: 4px;
+            # }
+        
+        self.setStyleSheet("""
+            QRadioButton {
+                padding: 20px 40px;
+                border-radius: 5px;
+            }
 
-            # Compute FK
-            transforms, T_final = self.fk_engine.compute_numeric(joint_values)
-            
-            # Update matrix display
-            self.update_matrix_display(T_final)
-            
-            # Format and display results
-            results = self.fk_engine.format_results_numeric(transforms, T_final)
-            self.display_fk_results(results, joint_values)
-            
-            # Switch to output tab
-            self.tabs.setCurrentIndex(1)
-            
-            QMessageBox.information(self, "Success", 
-                                   "Forward Kinematics calculated successfully!")
-            
-        except ValueError as e:
-            QMessageBox.warning(self, "Input Error", str(e))
-        except Exception as e:
-            QMessageBox.critical(self, "Calculation Error", 
-                               f"An error occurred: {str(e)}")
-
-    def execute_fk_symbolic(self):
-        """Execute symbolic forward kinematics"""
-        try:
-            # Compute symbolic FK
-            transforms, T_final = self.fk_engine.compute_symbolic()
-            
-            # Display symbolic results
-            self.display_fk_symbolic_results(transforms, T_final)
-            
-            # Switch to output tab
-            self.tabs.setCurrentIndex(1)
-            
-            QMessageBox.information(self, "Success", 
-                                   "Symbolic Forward Kinematics computed!")
-            
-        except Exception as e:
-            QMessageBox.critical(self, "Calculation Error", 
-                               f"An error occurred: {str(e)}")
-
-    def update_matrix_display(self, T):
-        """Update the transformation matrix display"""
-        for i in range(4):
-            for j in range(4):
-                item = QTableWidgetItem(f"{T[i, j]:.6f}")
-                item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-                item.setFlags(Qt.ItemFlag.ItemIsEnabled)
+            QRadioButton::indicator:checked {
+                background-color: #0078d4;
+                border-radius: 7px;
+                border: 2px solid #0078d4;
+            }
+                     QSpinBox {
+                padding: 6px 10px;
+                border: 1px solid #cccccc;
+                border-radius: 4px;
+                background-color: #ffffff;
+                min-height: 32px;
+            }
+         
+            QSpinBox::up-button, QSpinBox::down-button {
+                width: 24px;
+                border-left: 1px solid #cccccc;
+                background-color: #f0f0f0;
+            }
+         
+            QSpinBox::up-button:hover, QSpinBox::down-button:hover {
+                background-color: #e5f3ff;
+            }
+         
+            QSpinBox::up-arrow {
+                image: none;
+                width: 0;
+                height: 0;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-bottom: 7px solid #555555;
+            }
+         
+            QSpinBox::down-arrow {
+                image: none;
+                width: 0;
+                height: 0;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-top: 7px solid #555555;
+            }
+                """)
                 
-                # Highlight rotation vs translation
-                if i < 3 and j < 3:
-                    item.setBackground(QColor("#e3f2fd"))  # Rotation (blue tint)
-                elif j == 3 and i < 3:
-                    item.setBackground(QColor("#fff3e0"))  # Translation (orange tint)
-                else:
-                    item.setBackground(QColor("#f5f5f5"))  # Bottom row
+        layout.addLayout(radio_layout)
+        layout.addLayout(spin_layout)
+        # --- Tooltips ---
+        self.fk_all_radio.setToolTip("Display all FK frames")
+        self.fk_range_radio.setToolTip("Display only a specific frame range")
+        self.fk_from_spin.setToolTip("Start frame (0–6)")
+        self.fk_to_spin.setToolTip("End frame (0–6)")
+    
+
+        # Initially disable From/To if "All" is selected
+        self.fk_from_spin.setEnabled(False)
+        self.fk_to_spin.setEnabled(False)
+        
+        # --- Connections ---
+        self.fk_all_radio.toggled.connect(self.update_fk_spinbox_state)
+        return group
+
+    def update_fk_spinbox_state(self, text):
+        is_range = self.fk_range_radio.isChecked()
+        self.fk_from_spin.setEnabled(is_range)
+        self.fk_to_spin.setEnabled(is_range)
+
+
+
+
+
+
+
+
+
+
+    # def create_fk_frame_selector(self, dof=6):
+    #     """
+    #     Create FK frame selection widget with centered title and consistent styling.
+
+    #     Args:
+    #         dof: Degrees of freedom (number of joints)
+
+    #     Returns:
+    #         QWidget containing the frame selector
+    #     """
+    #     # Main container widget
+    #     widget = QWidget()
+    #     main_layout = QVBoxLayout(widget)
+    #     main_layout.setSpacing(5)
+    #     main_layout.setContentsMargins(5, 5, 5, 5)
+
+    #     # Apply consistent widget styling
+    #     widget.setStyleSheet("""
+    #         QWidget {
+    #             border: 1px solid #cccccc;
+    #             padding: 5px;
+    #             border-radius: 5px;
+    #             background-color: #f9f9f9;
+    #         }
+    #     """)
+
+    #     # Title label - centered
+    #     title_label = QLabel("FK Frame Selection")
+    #     title_label.setFont(self.label_font)
+    #     title_label.setStyleSheet("border: none; background: transparent;")
+    #     title_label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter)
+    #     main_layout.addWidget(title_label)
+
+    #     # Content container for radio buttons and spinboxes
+    #     content_widget = QWidget()
+    #     content_widget.setStyleSheet("QWidget { border: none; background: transparent; }")
+    #     content_layout = QVBoxLayout(content_widget)
+    #     content_layout.setSpacing(10)
+    #     content_layout.setContentsMargins(10, 5, 10, 5)
+
+    #     # --- Radio Button Section ---
+    #     radio_container = QWidget()
+    #     radio_container.setStyleSheet("QWidget { border: none; background: transparent; }")
+    #     radio_layout = QHBoxLayout(radio_container)
+    #     radio_layout.setContentsMargins(0, 0, 0, 0)
+
+    #     # Add stretch to center the radio buttons
+    #     radio_layout.addStretch(1)
+
+    #     self.fk_all_radio = QRadioButton("All frames")
+    #     self.fk_all_radio.setFont(self.standard_font)
+    #     self.fk_all_radio.setChecked(True)  # default
+    #     self.fk_all_radio.setToolTip("Display all FK transformation matrices (T₀¹ to T₀⁶)")
+    #     radio_layout.addWidget(self.fk_all_radio)
+
+    #     # Spacer between radio buttons
+    #     radio_layout.addSpacing(20)
+
+    #     self.fk_range_radio = QRadioButton("Custom range")
+    #     self.fk_range_radio.setFont(self.standard_font)
+    #     self.fk_range_radio.setToolTip("Display only specific frames in the selected range")
+    #     radio_layout.addWidget(self.fk_range_radio)
+
+    #     radio_layout.addStretch(1)
+
+    #     # Style radio buttons
+    #     radio_style = """
+    #         QRadioButton {
+    #             border: none;
+    #             background: transparent;
+    #             padding: 5px;
+    #         }
+    #         QRadioButton::indicator {
+    #             width: 16px;
+    #             height: 16px;
+    #         }
+    #         QRadioButton::indicator::unchecked {
+    #             border: 2px solid #0078d4;
+    #             border-radius: 8px;
+    #             background: white;
+    #         }
+    #         QRadioButton::indicator::checked {
+    #             border: 2px solid #0078d4;
+    #             border-radius: 8px;
+    #             background: #0078d4;
+    #         }
+    #         QRadioButton::indicator::unchecked:hover {
+    #             background: #e5f3ff;
+    #         }
+    #     """
+    #     self.fk_all_radio.setStyleSheet(radio_style)
+    #     self.fk_range_radio.setStyleSheet(radio_style)
+
+    #     content_layout.addWidget(radio_container)
+
+    #     # --- Spinbox Section ---
+    #     spin_container = QWidget()
+    #     spin_container.setStyleSheet("QWidget { border: none; background: transparent; }")
+    #     spin_layout = QHBoxLayout(spin_container)
+    #     spin_layout.setContentsMargins(0, 0, 0, 0)
+    #     spin_layout.setSpacing(10)
+
+    #     # Add stretch to center the spinboxes
+    #     spin_layout.addStretch(1)
+
+    #     # From label and spinbox
+    #     from_label = QLabel("From:")
+    #     from_label.setFont(self.standard_font)
+    #     from_label.setStyleSheet("border: none; background: transparent;")
+    #     spin_layout.addWidget(from_label)
+
+    #     self.fk_from_spin = QSpinBox()
+    #     self.fk_from_spin.setRange(0, dof)
+    #     self.fk_from_spin.setValue(0)
+    #     self.fk_from_spin.setFont(self.standard_font)
+    #     self.fk_from_spin.setEnabled(False)  # Initially disabled
+    #     self.fk_from_spin.setToolTip(f"Start frame (0 to {dof})")
+    #     self.fk_from_spin.setMinimumWidth(70)
+    #     self.fk_from_spin.setStyleSheet("""
+    #         QSpinBox {
+    #             border: 2px solid #cccccc;
+    #             border-radius: 3px;
+    #             padding: 5px;
+    #             background-color: white;
+    #         }
+    #         QSpinBox:focus {
+    #             border: 2px solid #0078d4;
+    #         }
+    #         QSpinBox:disabled {
+    #             background-color: #f0f0f0;
+    #             color: #999999;
+    #             border: 2px solid #e0e0e0;
+    #         }
+    #     """)
+    #     spin_layout.addWidget(self.fk_from_spin)
+
+    #     # Spacer between From and To
+    #     spin_layout.addSpacing(15)
+
+    #     # To label and spinbox
+    #     to_label = QLabel("To:")
+    #     to_label.setFont(self.standard_font)
+    #     to_label.setStyleSheet("border: none; background: transparent;")
+    #     spin_layout.addWidget(to_label)
+
+    #     self.fk_to_spin = QSpinBox()
+    #     self.fk_to_spin.setRange(0, dof)
+    #     self.fk_to_spin.setValue(dof)
+    #     self.fk_to_spin.setFont(self.standard_font)
+    #     self.fk_to_spin.setEnabled(False)  # Initially disabled
+    #     self.fk_to_spin.setToolTip(f"End frame (0 to {dof})")
+    #     self.fk_to_spin.setMinimumWidth(70)
+    #     self.fk_to_spin.setStyleSheet("""
+    #         QSpinBox {
+    #             border: 2px solid #cccccc;
+    #             border-radius: 3px;
+    #             padding: 5px;
+    #             background-color: white;
+    #         }
+    #         QSpinBox:focus {
+    #             border: 2px solid #0078d4;
+    #         }
+    #         QSpinBox:disabled {
+    #             background-color: #f0f0f0;
+    #             color: #999999;
+    #             border: 2px solid #e0e0e0;
+    #         }
+    #     """)
+    #     spin_layout.addWidget(self.fk_to_spin)
+
+    #     spin_layout.addStretch(1)
+
+    #     content_layout.addWidget(spin_container)
+
+    #     # Add content to main layout
+    #     main_layout.addWidget(content_widget)
+
+    #     # --- Connections ---
+    #     self.fk_all_radio.toggled.connect(self.update_fk_spinbox_state)
+    #     self.fk_from_spin.valueChanged.connect(self.validate_fk_range)
+    #     self.fk_to_spin.valueChanged.connect(self.validate_fk_range)
+
+    #     # Store DOF for later updates
+    #     self.fk_max_frames = dof
+
+    #     return widget
+
+
+    # def update_fk_spinbox_state(self, checked):
+    #     """Enable/disable spinboxes based on radio button selection"""
+    #     is_range = self.fk_range_radio.isChecked()
+    #     self.fk_from_spin.setEnabled(is_range)
+    #     self.fk_to_spin.setEnabled(is_range)
+
+    #     # If switching to range mode, validate current values
+    #     if is_range:
+    #         self.validate_fk_range()
+
+
+    # def validate_fk_range(self):
+    #     """Validate that From <= To and show visual feedback"""
+    #     from_val = self.fk_from_spin.value()
+    #     to_val = self.fk_to_spin.value()
+
+    #     # Update spinbox styling based on validity
+    #     if from_val > to_val:
+    #         # Invalid range - show error styling
+    #         error_style = """
+    #             QSpinBox {
+    #                 border: 2px solid #d32f2f;
+    #                 border-radius: 3px;
+    #                 padding: 5px;
+    #                 background-color: #ffebee;
+    #             }
+    #             QSpinBox:focus {
+    #                 border: 2px solid #d32f2f;
+    #             }
+    #         """
+    #         self.fk_from_spin.setStyleSheet(error_style)
+    #         self.fk_to_spin.setStyleSheet(error_style)
+    #         return False
+    #     else:
+    #         # Valid range - show normal styling
+    #         normal_style = """
+    #             QSpinBox {
+    #                 border: 2px solid #cccccc;
+    #                 border-radius: 3px;
+    #                 padding: 5px;
+    #                 background-color: white;
+    #             }
+    #             QSpinBox:focus {
+    #                 border: 2px solid #0078d4;
+    #             }
+    #             QSpinBox:disabled {
+    #                 background-color: #f0f0f0;
+    #                 color: #999999;
+    #                 border: 2px solid #e0e0e0;
+    #             }
+    #         """
+    #         self.fk_from_spin.setStyleSheet(normal_style)
+    #         self.fk_to_spin.setStyleSheet(normal_style)
+    #         return True
+
+
+    # def get_fk_frame_selection(self):
+    #     """
+    #     Get the current FK frame selection.
+
+    #     Returns:
+    #         tuple: (display_all: bool, from_frame: int, to_frame: int)
+    #                or None if range is invalid
+    #     """
+    #     if self.fk_all_radio.isChecked():
+    #         return (True, 0, self.fk_max_frames)
+    #     else:
+    #         from_val = self.fk_from_spin.value()
+    #         to_val = self.fk_to_spin.value()
+
+    #         if from_val > to_val:
+    #             return None  # Invalid range
+
+    #         return (False, from_val, to_val)
+
+
+    # def update_fk_max_frames(self, max_frames):
+    #     """Update the maximum frame value when manipulator changes"""
+    #     self.fk_max_frames = max_frames
+    #     self.fk_from_spin.setMaximum(max_frames)
+    #     self.fk_to_spin.setMaximum(max_frames)
+
+    #     # Update tooltips
+    #     self.fk_from_spin.setToolTip(f"Start frame (0 to {max_frames})")
+    #     self.fk_to_spin.setToolTip(f"End frame (0 to {max_frames})")
+
+    #     # Update radio button text to show current max
+    #     self.fk_all_radio.setText(f"All frames (0 to {max_frames})")
+
+    #     # Reset to default values
+    #     self.fk_to_spin.setValue(max_frames)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#    if self.fk_all_radio.isChecked():
+#     frame_range = range(1, self.current_manipulator.dof + 1)
+# else:
+#     start = self.fk_from_spin.value()
+#     end = self.fk_to_spin.value()
+
+#     if start > end:
+#         QMessageBox.warning(self, "Invalid Range", "'From' must be ≤ 'To'")
+#         return
+
+#     frame_range = range(start, end + 1)
+ 
+    
+    # def execute_calculation(self):
+    #     """Execute FK or IK calculation based on selection"""
+    #     if self.current_manipulator is None:
+    #         QMessageBox.warning(self, "No Robot Selected", 
+    #                           "Please select a manipulator first.")
+    #         return
+
+    #     calc_mode = self.ik_fk_widget.currentRow()  # 0=FK, 1=IK
+    #     comp_mode = self.sym_num_widget.currentRow()  # 0=Symbolic, 1=Numeric
+
+    #     if calc_mode == 0:  # Forward Kinematics
+    #         if comp_mode == 0:  # Symbolic
+    #             self.execute_fk_symbolic()
+    #         else:  # Numeric
+    #             self.execute_fk_numeric()
+    #     else:  # Inverse Kinematics
+    #         QMessageBox.information(self, "Coming Soon", 
+    #                                "Inverse Kinematics will be implemented next!")
+
+    # def execute_fk_numeric(self):
+    #     """Execute numeric forward kinematics"""
+    #     try:
+    #         # Get joint values
+    #         joint_values = self.get_joint_values()
+            
+    #         if joint_values is None:
+    #             QMessageBox.warning(self, "Invalid Mode", 
+    #                               "Numeric mode required for numeric calculation.")
+    #             return
+
+    #         # Compute FK
+    #         transforms, T_final = self.fk_engine.compute_numeric(joint_values)
+            
+    #         # Update matrix display
+    #         self.update_matrix_display(T_final)
+            
+    #         # Format and display results
+    #         results = self.fk_engine.format_results_numeric(transforms, T_final)
+    #         self.display_fk_results(results, joint_values)
+            
+    #         # Switch to output tab
+    #         self.tabs.setCurrentIndex(1)
+            
+    #         QMessageBox.information(self, "Success", 
+    #                                "Forward Kinematics calculated successfully!")
+            
+    #     except ValueError as e:
+    #         QMessageBox.warning(self, "Input Error", str(e))
+    #     except Exception as e:
+    #         QMessageBox.critical(self, "Calculation Error", 
+    #                            f"An error occurred: {str(e)}")
+
+    # def execute_fk_symbolic(self):
+    #     """Execute symbolic forward kinematics"""
+    #     try:
+    #         # Compute symbolic FK
+    #         transforms, T_final = self.fk_engine.compute_symbolic()
+            
+    #         # Display symbolic results
+    #         self.display_fk_symbolic_results(transforms, T_final)
+            
+    #         # Switch to output tab
+    #         self.tabs.setCurrentIndex(1)
+            
+    #         QMessageBox.information(self, "Success", 
+    #                                "Symbolic Forward Kinematics computed!")
+            
+    #     except Exception as e:
+    #         QMessageBox.critical(self, "Calculation Error", 
+    #                            f"An error occurred: {str(e)}")
+
+    # def update_matrix_display(self, T):
+    #     """Update the transformation matrix display"""
+    #     for i in range(4):
+    #         for j in range(4):
+    #             item = QTableWidgetItem(f"{T[i, j]:.6f}")
+    #             item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+    #             item.setFlags(Qt.ItemFlag.ItemIsEnabled)
+                
+    #             # Highlight rotation vs translation
+    #             if i < 3 and j < 3:
+    #                 item.setBackground(QColor("#e3f2fd"))  # Rotation (blue tint)
+    #             elif j == 3 and i < 3:
+    #                 item.setBackground(QColor("#fff3e0"))  # Translation (orange tint)
+    #             else:
+    #                 item.setBackground(QColor("#f5f5f5"))  # Bottom row
                     
-                self.matrix_table.setItem(i, j, item)
+    #             self.matrix_table.setItem(i, j, item)
 
-    def display_fk_results(self, results, joint_values):
-        """Display FK results in output panel"""
-        # Clear previous results
-        while self.output_layout.count():
-            child = self.output_layout.takeAt(0)
-            if child.widget():
-                child.widget().deleteLater()
+    # def display_fk_results(self, results, joint_values):
+    #     """Display FK results in output panel"""
+    #     # Clear previous results
+    #     while self.output_layout.count():
+    #         child = self.output_layout.takeAt(0)
+    #         if child.widget():
+    #             child.widget().deleteLater()
 
-        # Joint values section
-        joint_group = self.create_result_group("Input Joint Values")
-        joint_layout = QVBoxLayout()
+    #     # Joint values section
+    #     joint_group = self.create_result_group("Input Joint Values")
+    #     joint_layout = QVBoxLayout()
         
-        angle_unit = "deg" if self.theta_system_widget.currentRow() == 1 else "rad"
+    #     angle_unit = "deg" if self.theta_system_widget.currentRow() == 1 else "rad"
         
-        for i, val in enumerate(joint_values):
-            params = self.current_manipulator.get_dh_parameters()[i]
-            if params['variable'] == 'theta':
-                display_val = np.rad2deg(val) if angle_unit == "deg" else val
-                label = QLabel(f"θ{i+1} = {display_val:.6f} {angle_unit}")
-            else:
-                label = QLabel(f"d{i+1} = {val:.6f} m")
-            label.setFont(self.standard_font)
-            joint_layout.addWidget(label)
+    #     for i, val in enumerate(joint_values):
+    #         params = self.current_manipulator.get_dh_parameters()[i]
+    #         if params['variable'] == 'theta':
+    #             display_val = np.rad2deg(val) if angle_unit == "deg" else val
+    #             label = QLabel(f"θ{i+1} = {display_val:.6f} {angle_unit}")
+    #         else:
+    #             label = QLabel(f"d{i+1} = {val:.6f} m")
+    #         label.setFont(self.standard_font)
+    #         joint_layout.addWidget(label)
         
-        joint_group.layout().addLayout(joint_layout)
-        self.output_layout.addWidget(joint_group)
+    #     joint_group.layout().addLayout(joint_layout)
+    #     self.output_layout.addWidget(joint_group)
 
-        # End-effector position
-        pos_group = self.create_result_group("End-Effector Position")
-        pos_layout = QVBoxLayout()
-        position = results['position']
+    #     # End-effector position
+    #     pos_group = self.create_result_group("End-Effector Position")
+    #     pos_layout = QVBoxLayout()
+    #     position = results['position']
         
-        for axis, val in zip(['X', 'Y', 'Z'], position):
-            label = QLabel(f"{axis} = {val:.6f} m")
-            label.setFont(QFont("Roboto", 12))
-            pos_layout.addWidget(label)
+    #     for axis, val in zip(['X', 'Y', 'Z'], position):
+    #         label = QLabel(f"{axis} = {val:.6f} m")
+    #         label.setFont(QFont("Roboto", 12))
+    #         pos_layout.addWidget(label)
         
-        pos_group.layout().addLayout(pos_layout)
-        self.output_layout.addWidget(pos_group)
+    #     pos_group.layout().addLayout(pos_layout)
+    #     self.output_layout.addWidget(pos_group)
 
-        # End-effector orientation
-        ori_group = self.create_
+    #     # End-effector orientation
+    #     ori_group = self.create_
     
 ##for execute button
 # def execute_fk(self):
