@@ -9,6 +9,7 @@ if __name__ == "__main__": # Only run this block if this file is executed direct
     #window = TestMainWindow() #To test Layout and areas
     window = MainWindow()
     window.show()
+
     
     app.exec() # Start the event loop.
     sys.exit()
