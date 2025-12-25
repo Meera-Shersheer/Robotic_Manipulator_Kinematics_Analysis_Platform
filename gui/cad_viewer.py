@@ -45,6 +45,11 @@ class CADViewer(QWidget):
         if self.initialized:
             print("VTK already initialized")
             return True
+        
+        # CRITICAL: Ensure widget is visible first
+        if not self.isVisible():
+            print("Error: Widget must be visible before VTK initialization")
+            return False
             
         try:
             print("Initializing VTK...")
@@ -58,6 +63,9 @@ class CADViewer(QWidget):
             # Create VTK widget
             self.vtk_widget = QVTKRenderWindowInteractor(self)
             self.main_layout.addWidget(self.vtk_widget)
+            
+            # IMPORTANT: Process events to ensure widget is in layout
+            QApplication.processEvents()
             
             # Create renderer
             self.renderer = vtk.vtkRenderer()
@@ -73,7 +81,10 @@ class CADViewer(QWidget):
             # Setup camera
             self._setup_camera()
             
-            # Initialize - THIS is where the X11 window is created
+            # IMPORTANT: Start the interactor first
+            self.interactor.Start()
+            
+            # THEN initialize
             self.interactor.Initialize()
             
             # Set interaction style

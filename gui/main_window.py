@@ -995,8 +995,40 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             print(f"Error applying joint rotation: {e}")
             import traceback
             traceback.print_exc()
+    def test_vtk_load(self):
+        """Test VTK initialization and robot loading"""
+        print("\n" + "="*50)
+        print("TESTING VTK INITIALIZATION")
+        print("="*50)
+        
+        # Ensure we're on the right tab
+        self.tabs.setCurrentIndex(0)  # Switch to Inputs tab
+        
+        # Process events to ensure UI is updated
+        QApplication.processEvents()
+        
+        # Small delay to ensure widget is fully rendered
+        QTimer.singleShot(100, self._do_vtk_init)
+
+    def _do_vtk_init(self):
+        """Actual VTK initialization after delay"""
+        if self.view3d_widget.initialize_vtk():
+            print("✓ VTK initialized successfully")
             
-  
+            # Load robot after another small delay
+            QTimer.singleShot(100, self._do_robot_load)
+        else:
+            print("✗ Failed to initialize VTK")
+    
+    def _do_robot_load(self):
+        """Load robot after VTK is ready"""
+        if self.load_robot():
+            print("✓ Robot model loaded successfully")
+            QTimer.singleShot(500, self.test_rotation)
+        else:
+            print("✗ Failed to load robot model")
+                
+    
           
 def test_output_widget(self):
     # Clear previous content
