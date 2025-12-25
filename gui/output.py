@@ -1,4 +1,4 @@
-from gui.imports import *
+from imports import *
 
 
 def run_output_test(self):

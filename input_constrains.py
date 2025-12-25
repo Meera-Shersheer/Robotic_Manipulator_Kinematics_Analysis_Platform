@@ -1,4 +1,4 @@
-from gui.imports import *
+from imports import *
 
 class NumericDelegate(QStyledItemDelegate):
     def __init__(self, parent=None):

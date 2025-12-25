@@ -2,7 +2,7 @@
 # import math
 # import numpy as np
 # import sympy as sp
-from gui.imports import *
+from imports import *
  
 PI = math.pi
 

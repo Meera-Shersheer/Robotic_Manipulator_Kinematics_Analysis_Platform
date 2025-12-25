@@ -1,0 +1,78 @@
+# MTL file - created by a modified js OBJExporter
+
+newmtl color-3
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.16
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0 0 0.752941
+Ke 0 0 0
+
+newmtl color-14
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.16
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0 0 0.501961
+Ke 0 0 0
+
+newmtl color-2
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.16
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.501961 0 0
+Ke 0 0 0
+
+newmtl color-8
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.16
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 1 1 0
+Ke 0 0 0
+
+newmtl color-6
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.16
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.752941 0 0
+Ke 0 0 0
+
+newmtl color-18
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.16
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 1 0 0
+Ke 0 0 0
+
+newmtl color-11
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.16
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.752941 0.752941 0
+Ke 0 0 0
