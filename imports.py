@@ -16,12 +16,15 @@ from PyQt6.QtWidgets import *
 from PyQt6.QtCore import *
 from PyQt6.QtGui import QAction, QColor, QPalette, QIcon, QKeySequence, QFont,QPainter, QDoubleValidator
 
+from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
+import vtk
 
 # 3D Visualization
 import matplotlib.pyplot as plot
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.animation as animation
+from matplotlib.figure import Figure
 
 
 from scipy.spatial.transform import Rotation as R

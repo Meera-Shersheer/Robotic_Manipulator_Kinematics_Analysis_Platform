@@ -1,4 +1,7 @@
 from imports import *
+from gui.output import *
+from gui.cad_viewer import *
+
 
 
 class Color(QWidget):
@@ -33,6 +36,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.setCentralWidget(central)
         self.standard_font = QFont("Roboto", 13)  # or "Roboto", 11
         self.label_font = QFont("Roboto", 15)
+        self.large_font = QFont("Roboto", 18)
         
         outer_layout = QVBoxLayout(central)
 
@@ -78,27 +82,12 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
         input_tab = QWidget()
         main_layout = QHBoxLayout(input_tab)
-        # main_layout.setSpacing(0)
-        # main_layout.setContentsMargins(0, 0, 0, 0)
-       # outer_layout.addLayout(main_layout)
         
         # ================= LEFT COLUMN =================
         left_widget = QVBoxLayout()
-        # left_widget.setSpacing(0)
-        # left_widget.setContentsMargins(0, 0, 0, 0) 
         main_layout.addLayout(left_widget, 2)
         
-        
-        # ganna create those
-        #  controls_widget = self.create_controls_widget()
-        # dh_widget = self.create_dh_table_widget()
-        # execute_widget = self.create_execute_widget()
-        # output_widget = self.create_output_widget()
-        
-        
         inputs_section = QVBoxLayout()
-        # inputs_section.setSpacing(0)
-        # inputs_section.setContentsMargins(0, 0, 0, 0)
         left_widget.addLayout(inputs_section, 7)
 
         
@@ -123,47 +112,26 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         controls_widget.addWidget(theta_system)
         fram_range.addWidget(self.frame_range_selector)
         
-   #     controls_layout = QHBoxLayout()
-        #controls_widget.setLayout(controls_layout)
-   #     controls_widget.layout.addLayout(controls_layout)
-        
         # Row 2: DH Table
-        #dh_widget = QWidget()
         tables_matrix_Row = QHBoxLayout()
         dh_widget = self.create_dh_table_widget()
         matrix_Widget = self.create_matrix_display_widget()
-        #Color("#38edde", "T-matrix")
-        #Color("blue", "dh_widget")
-        # dh_layout = QVBoxLayout()
-        #dh_widget.setLayout(dh_layout)
-        
-        # Row 3: Outputs
-       # output_widget = QWidget()
-       # output_widget = Color("orange", "OUTPUT")
-        #Color("purple", "execute")
-    #    output_layout = QVBoxLayout()
-        #output_widget.setLayout(output_layout)
-        # inputs_section.addWidget(controls_widget, 1)
-     ##   inputs_section.addWidget(dh_widget, 5)  
-#        left_widget.addWidget(controls_widget, 1)
-        # left_widget.addWidget(control_dh_widget, 3)
+
         tables_matrix_Row.addWidget(dh_widget, 6) 
         tables_matrix_Row.addWidget(matrix_Widget, 4)   
         inputs_section.addLayout(tables_matrix_Row, 8) 
         
         execute_widget = self.create_execute_widget()
         left_widget.addWidget(execute_widget, 1)
-       # left_widget.addWidget(output_widget, 7)
         
         # ================= RIGHT COLUMN =================
         right_widget = QVBoxLayout()
-        # right_widget.setSpacing(0)
-        # right_widget.setContentsMargins(0, 0, 0, 0)
         main_layout.addLayout(right_widget, 1)
        
         # right_widget.setSpacing(0)
         # right_widget.setContentsMargins(0, 0, 0, 0)
-        view3d_widget = Color("#1cccec", "3D VIEW") 
+        self.view3d_widget = CADViewer()
+        #Color("#1cccec", "3D VIEW") 
         choose_2D_sec = Color("#ec1c31", "2D_section") 
       #  view3d_widget = QWidget()
       #  view2d_widget = QWidget()
@@ -174,8 +142,10 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         # choose_2d_widget = self.create_2d_selector_widget()
         # view2d_widget = self.create_2d_view_widget()
         
-        
+
         right_widget.addWidget(view3d_widget, 8)
+        
+        
         right_widget.addWidget(choose_2D_sec, 1)
         right_widget.addWidget(view2d_widget, 8)
         self.tabs.addTab(input_tab, "Inputs")
@@ -186,7 +156,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         output_layout.addWidget(output_widget, 6)
         self.tabs.addTab(output_tab, "Outputs")
         outer_layout.addWidget(self.tabs)
-        
+        # test_output_widget(self)
         self.toggle_value_column()
         self.hide_matrix()
         self.hide_frame_selector()
@@ -604,43 +574,49 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         widget.setStyleSheet("""
             QWidget {
                 border: #f5f5f5;;
-                padding: 5px;
-                border-radius: 5px;
+                padding: 10px;
+                border-radius: 10px;
                 background-color: white;
+                
             }
         """)
         # Execute button
         self.execute_button = QPushButton("Calculate")
-        self.label_font.setWeight(QFont.Weight.DemiBold) 
         self.execute_button.setFont(self.label_font)
         self.execute_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.execute_button.setFixedSize(150, 50)  
         self.execute_button.setStyleSheet("""
             QPushButton {
-                background-color: #f9f9f9;
-                color: #0078d4; 
-                border: 2px solid #cccccc; 
-                border-radius: 5px;
-                padding: 10px 10px;
+                background-color: #0078d4;
+                color: #f9f9f9; 
+                border: 2px solid #0078d4; 
+                border-radius: 7px;
+                padding: 10px 14px;
+                font-weight: 600;
             }
             QPushButton:hover {
-                background-color: #e5f3ff;
+                background-color: #106ebe;
+                border-color: #106ebe;
             }
+
             QPushButton:pressed {
-                background-color: #cce8ff;
+                background-color: #005a9e;
+                border-color: #005a9e;
             }
             QPushButton:disabled {
                 background-color: #cccccc;
                 color: #666666;
+                border-color: #cccccc;
             }
-        """)
-    #    self.execute_button.clicked.connect(self.execute_calculation)
+            """)
+        self.execute_button.clicked.connect( lambda: run_output_test(self))
+        self.execute_button.clicked.connect(self.test_rotation)
         layout.addWidget(self.execute_button)
         
         return widget
 
+#Create output display widget
     def create_output_widget(self):
-        """Create output display widget"""
         widget = QWidget()
         main_layout = QVBoxLayout(widget)
         main_layout.setSpacing(10)
@@ -654,8 +630,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
         # Title
         title = QLabel("Calculation Results")
-        title.setFont(self.label_font)
-        title.setStyleSheet("color: #0078d4; padding: 10px;")
+        title.setFont(self.large_font)
+        title.setStyleSheet("color: #0078d4; padding: 10px; font-weight: 600;")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         main_layout.addWidget(title)
 
@@ -663,13 +639,38 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setStyleSheet("""
-            QScrollArea {
-                border: 1px solid #cccccc;
-                border-radius: 5px;
-                background-color: white;
-            }
+        QScrollArea {
+            border:none;
+            border-radius: 10px;
+            background-color: #fdf7fa;
+        }
+        QScrollBar:vertical {
+            border:1px solid  #d17fa3;
+            background-color: #f9e9f2;
+            width: 14px;
+            border-radius: 6px;
+            margin: 0px;
+        }
+        QScrollBar::handle:vertical {
+            background: #c96b8f;
+            border-radius: 6px;
+            min-height: 30px;
+        }
+        QScrollBar::handle:vertical:hover {
+            background: #a81d5a;
+        }
+        QScrollBar::handle:vertical:pressed {
+            background-color: #a81d5a;
+        }
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+            border: none;
+            background: none;
+            height: 0px;
+        }
+        QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+            background: none;
+        }
         """)
-
         scroll_content = QWidget()
         self.output_layout = QVBoxLayout(scroll_content)
         self.output_layout.setSpacing(15)
@@ -891,14 +892,64 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             self.fk_from_spin.setStyleSheet(normal_style)
             self.fk_to_spin.setStyleSheet(normal_style)
             return True
+        
     def hide_frame_selector(self):
         kinematics_type = self.ik_fk_widget.currentRow()
         
         show_selector = (kinematics_type == 0)
         self.frame_range_selector.setVisible(show_selector)
-          
+    
+    def load_robot(self):
+        self.robot_actors = self.view3d_widget.load_glb("cad_models/ur5.glb")
 
-   
+  
+    def test_rotation(self):
+        load_robot(self)
+        
+        if not self.robot_actors:
+            return
+
+        actor = self.robot_actors[0]
+        actor.RotateZ(30)
+        actor.RotateX(15)
+
+        self.vtk_viewer.vtk_widget.GetRenderWindow().Render()
+        
+    def apply_joint_rotation(self, actor, theta_deg):
+        transform = vtk.vtkTransform()
+        transform.Identity()
+        transform.RotateZ(theta_deg)
+
+        actor.SetUserTransform(transform)
+        self.vtk_viewer.vtk_widget.GetRenderWindow().Render()
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+          
+def test_output_widget(self):
+    # Clear previous content
+    for i in reversed(range(self.output_layout.count())):
+        item = self.output_layout.itemAt(i)
+        widget = item.widget()
+        if widget:
+            widget.setParent(None)
+    
+    # Add some test results
+    for i in range(5):
+        label = QLabel(f"FK frame {i+1} transformation matrix:\n[[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]")
+        label.setFont(self.standard_font)
+        label.setStyleSheet("color: #333; padding: 5px; border: 1px solid #ddd; border-radius: 4px;")
+        label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+        self.output_layout.insertWidget(self.output_layout.count()-1, label)  # insert before the stretch
+
 
 
 
