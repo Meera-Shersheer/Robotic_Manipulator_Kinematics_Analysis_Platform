@@ -436,31 +436,31 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         if update_headers:
             self.update_dh_headers()
 
-#    Returns numeric joint values (always in radians internally)
-    def get_joint_values(self):
-        if self.sym_num_widget.currentRow() == 0:
-            return None  # symbolic mode
+# #    Returns numeric joint values (always in radians internally)
+#     def get_joint_values(self):
+#         if self.sym_num_widget.currentRow() == 0:
+#             return None  # symbolic mode
 
-        values = []
-        angle_unit = self.theta_system_widget.currentRow()  # 0=rad, 1=deg
+#         values = []
+#         angle_unit = self.theta_system_widget.currentRow()  # 0=rad, 1=deg
 
-        for row in range(self.dh_table.rowCount()):
-            item = self.dh_table.item(row, 6)
+#         for row in range(self.dh_table.rowCount()):
+#             item = self.dh_table.item(row, 6)
 
-            if item is None or item.text().strip() == "":
-                raise ValueError(f"Joint {row + 1} has no value")
+#             if item is None or item.text().strip() == "":
+#                 raise ValueError(f"Joint {row + 1} has no value")
 
-            value = float(item.text())
-            print(f"Joint {row+1}: raw =", item.text())
+#             value = float(item.text())
+#             print(f"Joint {row+1}: raw =", item.text())
 
-            # Revolute joint → angle
-            joint_type = self.current_manipulator.get_joint_type(row)
-            if joint_type == "revolute" and angle_unit == 1:
-                value = np.deg2rad(value)
+#             # Revolute joint → angle
+#             joint_type = self.current_manipulator.get_joint_type(row)
+#             if joint_type == "revolute" and angle_unit == 1:
+#                 value = np.deg2rad(value)
 
-            values.append(value)
+#             values.append(value)
 
-        return values
+#         return values
 
 #Update table headers when angle unit changes
     def update_dh_headers(self):
@@ -609,7 +609,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                 border-color: #cccccc;
             }
             """)
-        self.execute_button.clicked.connect( lambda: run_output_test(self))
+        self.execute_button.clicked.connect(self.execute_calculation)
         #self.execute_button.clicked.connect(self.test_rotation)
         layout.addWidget(self.execute_button)
         
@@ -919,87 +919,169 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         show_selector = (kinematics_type == 0)
         self.frame_range_selector.setVisible(show_selector)
     
-    # def load_robot(self):
-    #     """Load the robot 3D model"""
-    #     try:
-    #         print("=" * 50)
-    #         print("Loading robot...")
+    """Execute FK or IK calculation based on current settings"""
+    def execute_calculation(self):
+        if self.current_manipulator is None:
+            QMessageBox.warning(self, "No Robot Selected", 
+                              "Please select a manipulator first.")
+            return
 
-    #         if not self.view3d_widget.initialized:
-    #             print("View3DWidget not initialized yet (wait for showEvent)")
-    #             return False
+        calc_mode = self.ik_fk_widget.currentRow()  # 0=FK, 1=IK
+        comp_mode = self.sym_num_widget.currentRow()  # 0=Symbolic, 1=Numeric
 
-    #         self.robot_actors = self.view3d_widget.load_glb("cad_models/ur5.glb")
+        try:
+            if calc_mode == 0:  # Forward Kinematics
+                if comp_mode == 0:  # Symbolic
+                    self.execute_fk_symbolic()
+                else:  # Numeric
+                    self.execute_fk_numeric()
+            else:  # Inverse Kinematics
+                if comp_mode == 0:  # Symbolic
+                    QMessageBox.information(self, "Not Available Yet", 
+                        "Symbolic IK shows equations only. Use Numeric mode for solutions.")
+                else:  # Numeric
+                    self.execute_ik_numeric()
+        except Exception as e:
+            QMessageBox.critical(self, "Calculation Error", 
+                               f"An error occurred:\n{str(e)}")
+            import traceback
+            traceback.print_exc()
+    def execute_fk_numeric(self):
+        """Execute numeric forward kinematics"""
+        # Get joint values
+        try:
+            joint_values = self.get_joint_values()
+        except ValueError as e:
+            QMessageBox.warning(self, "Input Error", str(e))
+            return
+        
+        # Get frame range
+        if self.fk_all_radio.isChecked():
+            frame_range = None
+        else:
+            start = self.fk_from_spin.value()
+            end = self.fk_to_spin.value()
+            if start >= end:
+                QMessageBox.warning(self, "Invalid Range", 
+                                  "Start frame must be less than end frame.")
+                return
+            frame_range = (start, end)
+        
+        # Compute FK using the manipulator's own method
+        transforms, final_T = self.current_manipulator.compute_fk_numeric(joint_values, frame_range)
+        
+        # Display results
+        display_fk_numeric_results(self, transforms, final_T, joint_values, frame_range)
+        
+        # Switch to output tab
+        self.tabs.setCurrentIndex(1)
+        
+        QMessageBox.information(self, "Success", 
+                               "Forward Kinematics calculated successfully!")
 
-    #         if self.robot_actors:
-    #             print("Successfully loaded robot model")
-    #             return True
-    #         else:
-    #             print("No actors loaded from GLB file")
-    #             return False
+    def execute_fk_symbolic(self):
+        """Execute symbolic forward kinematics"""
+        # Get frame range
+        if self.fk_all_radio.isChecked():
+            frame_range = None
+        else:
+            start = self.fk_from_spin.value()
+            end = self.fk_to_spin.value()
+            if start >= end:
+                QMessageBox.warning(self, "Invalid Range", 
+                                  "Start frame must be less than end frame.")
+                return
+            frame_range = (start, end)
 
-    #     except Exception as e:
-    #         print(f"Error in load_robot: {e}")
-    #         import traceback
-    #         traceback.print_exc()
-    #         return False
+        # Compute symbolic FK using the manipulator's own method
+        transforms, final_T, q_symbols = self.current_manipulator.compute_fk_symbolic(frame_range)
 
+        # Display results
+        display_fk_symbolic_results(self, transforms, final_T, q_symbols, frame_range)
 
-    #     # Update the test_rotation method:
-    # def test_rotation(self):
-    #     """Test rotation of loaded robot"""
-    #     print("=" * 50)
-    #     print("Testing rotation...")
+        # Switch to output tab
+        self.tabs.setCurrentIndex(1)
 
-    #     if not self.view3d_widget.initialized:
-    #         print("PyVista not initialized yet")
-    #         return
+        QMessageBox.information(self, "Success", 
+                               "Symbolic Forward Kinematics computed!")
 
-    #     if not hasattr(self, 'robot_actors') or not self.robot_actors:
-    #         print("Robot not loaded yet")
-    #         return
+    def execute_ik_numeric(self):
+        """Execute numeric inverse kinematics"""
+        # Get target matrix from the matrix table
+        try:
+            target_matrix = self.get_matrix_from_table()
+        except ValueError as e:
+            QMessageBox.warning(self, "Input Error", str(e))
+            return
 
-    #     self.view3d_widget.apply_joint_rotation(0, 30, 'z')
-    #     self.view3d_widget.apply_joint_rotation(0, 15, 'x')
-    #     print("Rotation applied")
+        # Compute IK using the manipulator's own method
+        try:
+            solutions = self.current_manipulator.compute_ik_numeric(target_matrix)
+        except NotImplementedError as e:
+            QMessageBox.warning(self, "Not Implemented", str(e))
+            return
 
-    # def on_tab_changed(self, index):
-    #     if index == 0 and self.view3d_widget.initialized:
-    #         if not hasattr(self, 'robot_actors'):
-    #             self.load_robot()
+        if not solutions:
+            QMessageBox.warning(self, "No Solution", 
+                              "No valid IK solution found for the given target pose.")
+            display_ik_no_solution(self, target_matrix)
+        else:
+            # Display results
+            display_ik_numeric_results(self, solutions, target_matrix)
+            QMessageBox.information(self, "Success", 
+                                   f"Found {len(solutions)} IK solution(s)!")
 
-    # # Update apply_joint_rotation method:
-    # def apply_joint_rotation(self, joint_index, theta_deg):
-    #     """Apply rotation to a joint"""
-    #     try:
-    #         if self.view3d_widget.initialized:
-    #             self.view3d_widget.apply_joint_rotation(joint_index, theta_deg, 'z')
-    #     except Exception as e:
-    #         print(f"Error applying joint rotation: {e}")
+        # Switch to output tab
+        self.tabs.setCurrentIndex(1)
 
-    
-    # def initialize_3d_view(self):
-    #     """Initialize PyVista and load the robot model"""
-    #     if not hasattr(self, 'view3d_widget') or not self.view3d_widget:
-    #         print("Error: view3d_widget not found")
-    #         return
+    def get_matrix_from_table(self):
+        """Extract 4x4 matrix from the matrix input table"""
+        matrix = np.zeros((4, 4))
 
-    #     # Initialize PyVista if not done yet
-    #     if not self.view3d_widget.initialized:
-    #         if not self.view3d_widget.initialize_pyvista():
-    #             print("Failed to initialize 3D view")
-    #             return
+        for i in range(4):
+            for j in range(4):
+                item = self.matrix_table.item(i, j)
+                if item is None or item.text().strip() == "":
+                    raise ValueError(f"Matrix element [{i},{j}] is empty")
 
-    #     # Load robot model
-    #     if not hasattr(self, 'robot_actors') or not self.robot_actors:
-    #         self.robot_actors = self.view3d_widget.load_glb("cad_models/ur5.glb")
-    #         if not self.robot_actors:
-    #             print("Failed to load robot model")
-    #             return
+                try:
+                    matrix[i, j] = float(item.text())
+                except ValueError:
+                    raise ValueError(f"Invalid number at matrix element [{i},{j}]: {item.text()}")
 
-    #     print("3D view initialized and robot loaded successfully")
+        # Validate that it's a valid transformation matrix
+        if not np.allclose(matrix[3, :], [0, 0, 0, 1]):
+            raise ValueError("Last row of transformation matrix must be [0, 0, 0, 1]")
 
-    
+        return matrix
+
+    def get_joint_values(self):
+        """Get joint values from the DH table (for numeric mode only)"""
+        if self.sym_num_widget.currentRow() == 0:  # Symbolic mode
+            return None
+
+        values = []
+        angle_unit = self.theta_system_widget.currentRow()  # 0=rad, 1=deg
+
+        for row in range(self.dh_table.rowCount()):
+            item = self.dh_table.item(row, 6)  # Value column
+
+            if item is None or item.text().strip() == "":
+                raise ValueError(f"Joint {row + 1} value is empty")
+
+            try:
+                value = float(item.text())
+            except ValueError:
+                raise ValueError(f"Invalid number for Joint {row + 1}: {item.text()}")
+
+            # Convert degrees to radians if necessary
+            params = self.current_manipulator.get_dh_parameters()[row]
+            if params['variable'] == 'theta' and angle_unit == 1:  # degrees
+                value = np.deg2rad(value)
+
+            values.append(value)
+
+        return values
     
     
     

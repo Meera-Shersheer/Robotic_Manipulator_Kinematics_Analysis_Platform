@@ -9,6 +9,7 @@ import math
 # Symbolic mathematics (for deriving and verifying equations)
 import sympy as sp
 from sympy import *
+from scipy.spatial.transform import Rotation as R
 
 # GUI Framework
 import PyQt6

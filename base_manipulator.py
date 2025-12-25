@@ -125,6 +125,199 @@ class RoboticManipulator:
         for i in range(self.num_joints):
             values.append(self.get_joint_value(i, in_degrees))
         return values
+        # ==================== FORWARD KINEMATICS ====================
+    
+    def compute_fk_numeric(self, joint_values, frame_range=None):
+        """
+        Compute forward kinematics numerically
+        
+        Args:
+            joint_values: List of joint values (in radians for revolute, meters for prismatic)
+            frame_range: Tuple (start, end) or None for all frames
+            
+        Returns:
+            (transforms, final_transform) where transforms is list of 4x4 transformation matrices
+        """
+        if len(joint_values) != self.num_joints:
+            raise ValueError(f"Expected {self.num_joints} joint values, got {len(joint_values)}")
+        
+        transforms = []
+        T = np.eye(4)
+        
+        for i, (params, q_val) in enumerate(zip(self._dh_params, joint_values)):
+            # Get DH parameters
+            if params['variable'] == 'theta':
+                theta = q_val
+                d = params['d']
+            else:  # prismatic joint
+                theta = params['theta']
+                d = q_val
+            
+            a = params['a']
+            alpha = params['alpha']
+            
+            # Compute transformation matrix using DH convention
+            A = self._T_matrix(theta, d, a, alpha)
+            T = T @ A
+            transforms.append(T.copy())
+        
+        # Apply frame range filter if specified
+        if frame_range is not None:
+            start, end = frame_range
+            transforms = transforms[start:end+1]
+        
+        return transforms, T
+    
+    def compute_fk_symbolic(self, frame_range=None):
+        """
+        Compute forward kinematics symbolically
+        
+        Args:
+            frame_range: Tuple (start, end) or None for all frames
+            
+        Returns:
+            (transforms, final_transform, joint_symbols) as symbolic matrices
+        """
+        # Create symbolic joint variables
+        q_symbols = []
+        for i, params in enumerate(self._dh_params):
+            if params['variable'] == 'theta':
+                q_symbols.append(sp.Symbol(f'θ{i+1}', real=True))
+            else:
+                q_symbols.append(sp.Symbol(f'd{i+1}', real=True))
+        
+        transforms = []
+        T = sp.eye(4)
+        
+        for i, params in enumerate(self._dh_params):
+            # Get DH parameters
+            if params['variable'] == 'theta':
+                theta = q_symbols[i]
+                d = params['d']
+            else:
+                theta = params['theta']
+                d = q_symbols[i]
+            
+            a = params['a']
+            alpha = params['alpha']
+            
+            # Compute symbolic transformation matrix
+            A = self._T_matrix_symbolic(theta, d, a, alpha)
+            T = T * A
+            T = sp.simplify(T)
+            transforms.append(T.copy())
+        
+        # Apply frame range filter if specified
+        if frame_range is not None:
+            start, end = frame_range
+            transforms = transforms[start:end+1]
+        
+        return transforms, T, q_symbols
+
+    def _T_matrix(self, theta, d, a, alpha):
+        """
+        Compute DH transformation matrix (numeric)
+        Standard DH convention
+        """
+        ct, st = np.cos(theta), np.sin(theta)
+        ca, sa = np.cos(alpha), np.sin(alpha)
+        
+        return np.array([
+            [ct, -st*ca,  st*sa, a*ct],
+            [st,  ct*ca, -ct*sa, a*st],
+            [0,      sa,     ca,    d],
+            [0,       0,      0,    1]
+        ], dtype=float)
+    
+    def _T_matrix_symbolic(self, theta, d, a, alpha):
+        """
+        Compute DH transformation matrix (symbolic)
+        """
+        ct, st = sp.cos(theta), sp.sin(theta)
+        ca, sa = sp.cos(alpha), sp.sin(alpha)
+        
+        return sp.Matrix([
+            [ct, -st*ca,  st*sa, a*ct],
+            [st,  ct*ca, -ct*sa, a*st],
+            [0,      sa,     ca,    d],
+            [0,       0,      0,    1]
+        ])
+        
+    def compute_ik_numeric(self, target_matrix):
+        """
+        Compute inverse kinematics numerically
+        Override this in child classes with specific IK solutions
+        
+        Args:
+            target_matrix: 4x4 target transformation matrix
+            
+        Returns:
+            List of solution arrays, each containing joint values
+        """
+        raise NotImplementedError(f"IK not yet implemented for {self.name}")
+    
+    # ==================== UTILITY FUNCTIONS ====================
+    
+    def extract_position(self, T):
+        """Extract position vector from transformation matrix"""
+        return T[:3, 3]
+    
+    def extract_rotation(self, T):
+        """Extract rotation matrix from transformation matrix"""
+        return T[:3, :3]
+    
+    def rotation_to_euler(self, R, order='xyz'):
+        """
+        Convert rotation matrix to Euler angles
+        
+        Args:
+            R: 3x3 rotation matrix
+            order: Euler angle convention ('xyz', 'zyx', etc.)
+            
+        Returns:
+            Tuple of (roll, pitch, yaw) in radians
+        """
+        from scipy.spatial.transform import Rotation as Rot
+        r = Rot.from_matrix(R)
+        return r.as_euler(order, degrees=False)
+    
+    def euler_to_rotation(self, roll, pitch, yaw, order='xyz'):
+        """
+        Convert Euler angles to rotation matrix
+        
+        Args:
+            roll, pitch, yaw: Angles in radians
+            order: Euler angle convention
+            
+        Returns:
+            3x3 rotation matrix
+        """
+        from scipy.spatial.transform import Rotation as Rot
+        r = Rot.from_euler(order, [roll, pitch, yaw], degrees=False)
+        return r.as_matrix()
+    
+    def pose_to_matrix(self, x, y, z, roll, pitch, yaw):
+        """
+        Convert pose (position + orientation) to transformation matrix
+        
+        Args:
+            x, y, z: Position in meters
+            roll, pitch, yaw: Orientation in radians
+            
+        Returns:
+            4x4 transformation matrix
+        """
+        R = self.euler_to_rotation(roll, pitch, yaw)
+        T = np.eye(4)
+        T[:3, :3] = R
+        T[:3, 3] = [x, y, z]
+        return T
+    
+    def _wrap_angle(self, angle):
+        """Wrap angle to [-pi, pi]"""
+        return (angle + np.pi) % (2*np.pi) - np.pi
+
+    
     
     # Reset all joint values to zero (home position)
     # def reset_joint_values(self):
@@ -190,6 +383,147 @@ class UR5(RoboticManipulator):
             {"a": 0, "alpha": -pi / 2, "d": d5, "theta": 0.0, "variable": "theta"},
             {"a": 0, "alpha": 0,   "d": d6, "theta": 0.0, "variable": "theta"},
         ]
+        
+    def compute_ik_numeric(self, T06):
+        """
+        Closed-form IK solution for UR5 (6-DOF manipulator)
+        Based on geometric approach - consistent with FK
+        
+        Args:
+            T06: 4x4 target transformation matrix
+            
+        Returns:
+            List of valid joint configurations (each is a list of 6 joint angles in radians)
+        """
+        dh = self._dh_params
+        
+        # Extract UR5 DH parameters
+        d1 = dh[0]['d']
+        a2 = dh[1]['a']
+        a3 = dh[2]['a']
+        d4 = dh[3]['d']
+        d5 = dh[4]['d']
+        d6 = dh[5]['d']
+        
+        R06 = T06[:3, :3]
+        p06 = T06[:3, 3]
+        px, py, pz = float(p06[0]), float(p06[1]), float(p06[2])
+        
+        solutions = []
+        
+        # Calculate wrist center (p05)
+        p05 = p06 - d6 * R06[:, 2]
+        rxy = np.hypot(p05[0], p05[1])
+        
+        if rxy < 1e-12:
+            return []
+        
+        # θ1 (two solutions)
+        c = d4 / rxy
+        if abs(c) > 1.0 + 1e-9:
+            return []
+        c = max(-1.0, min(1.0, c))
+        
+        phi = np.arccos(c)
+        psi = np.arctan2(p05[1], p05[0])
+        q1_candidates = [
+            self._wrap_angle(psi + phi + np.pi/2),
+            self._wrap_angle(psi - phi + np.pi/2)
+        ]
+        
+        for q1 in q1_candidates:
+            s1, c1 = np.sin(q1), np.cos(q1)
+            
+            # θ5 (two solutions)
+            c5 = (px*s1 - py*c1 - d4) / d6
+            if abs(c5) > 1.0 + 1e-9:
+                continue
+            c5 = max(-1.0, min(1.0, c5))
+            
+            q5a = np.arccos(c5)
+            q5_candidates = [self._wrap_angle(q5a), self._wrap_angle(-q5a)]
+            
+            for q5 in q5_candidates:
+                s5 = np.sin(q5)
+                if abs(s5) < 1e-10:
+                    continue
+                
+                # θ6
+                q6 = np.arctan2(
+                    (-R06[0,1]*s1 + R06[1,1]*c1) / s5,
+                    (R06[0,0]*s1 - R06[1,0]*c1) / s5
+                )
+                q6 = self._wrap_angle(q6)
+                
+                # Compute T14 = inv(T01)*T06*inv(T45*T56)
+                T01 = self._T_matrix(q1, d1, 0.0, np.pi/2)
+                T45 = self._T_matrix(q5, d5, 0.0, -np.pi/2)
+                T56 = self._T_matrix(q6, d6, 0.0, 0.0)
+                
+                T14 = np.linalg.inv(T01) @ T06 @ np.linalg.inv(T45 @ T56)
+                
+                # θ2, θ3 from planar geometry in frame 1
+                p14 = T14[:3, 3]
+                x, y = float(p14[0]), float(p14[1])
+                
+                D = (x*x + y*y - a2*a2 - a3*a3) / (2*a2*a3)
+                if abs(D) > 1.0 + 1e-9:
+                    continue
+                D = max(-1.0, min(1.0, D))
+                
+                for q3 in [np.arccos(D), -np.arccos(D)]:
+                    q2 = np.arctan2(y, x) - np.arctan2(a3*np.sin(q3), a2 + a3*np.cos(q3))
+                    q2, q3 = self._wrap_angle(q2), self._wrap_angle(q3)
+                    
+                    # θ4 from rotation
+                    qtemp = [q1, q2, q3, 0.0, 0.0, 0.0]
+                    Ts, _ = self.compute_fk_numeric(qtemp)
+                    R03 = Ts[2][:3, :3]
+                    R04 = (T01 @ T14)[:3, :3]
+                    R34 = R03.T @ R04
+                    q4 = self._wrap_angle(np.arctan2(R34[1,0], R34[0,0]))
+                    
+                    candidate = [
+                        self._wrap_angle(q1),
+                        self._wrap_angle(q2),
+                        self._wrap_angle(q3),
+                        self._wrap_angle(q4),
+                        self._wrap_angle(q5),
+                        self._wrap_angle(q6)
+                    ]
+                    
+                    # Validate by FK to guarantee consistency
+                    _, Tchk = self.compute_fk_numeric(candidate)
+                    if np.allclose(Tchk, T06, atol=1e-6, rtol=0):
+                        solutions.append(candidate)
+        
+        # Remove duplicates (wrap-aware)
+        unique_solutions = []
+        for s in solutions:
+            is_duplicate = False
+            for u in unique_solutions:
+                if sum((self._wrap_angle(si-ui))**2 for si, ui in zip(s, u)) < 1e-10:
+                    is_duplicate = True
+                    break
+            if not is_duplicate:
+                unique_solutions.append(s)
+        
+        return unique_solutions
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
