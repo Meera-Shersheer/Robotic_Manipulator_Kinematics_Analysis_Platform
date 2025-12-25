@@ -143,7 +143,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         # view2d_widget = self.create_2d_view_widget()
         
 
-        right_widget.addWidget(view3d_widget, 8)
+        right_widget.addWidget(self.view3d_widget, 8)
         
         
         right_widget.addWidget(choose_2D_sec, 1)
@@ -900,21 +900,30 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.frame_range_selector.setVisible(show_selector)
     
     def load_robot(self):
-        self.robot_actors = self.view3d_widget.load_glb("cad_models/ur5.glb")
-
+        """Load the robot 3D model"""
+        try:
+            self.robot_actors = self.view3d_widget.load_glb("cad_models/ur5.glb")
+            return True
+        except Exception as e:
+            print(f"Error loading robot: {e}")
+            return False
   
     def test_rotation(self):
-        load_robot(self)
-        
-        if not self.robot_actors:
-            return
-
-        actor = self.robot_actors[0]
-        actor.RotateZ(30)
-        actor.RotateX(15)
-
-        self.vtk_viewer.vtk_widget.GetRenderWindow().Render()
-        
+        """Test rotation of loaded robot"""
+        if not hasattr(self, 'robot_actors') or not self.robot_actors:
+            # Try to load if not already loaded
+            if not self.load_robot():
+                print("Could not load robot model")
+                return
+    
+        if self.robot_actors:
+            actor = self.robot_actors[0]
+            actor.RotateZ(30)
+            actor.RotateX(15)
+            self.view3d_widget.vtk_widget.GetRenderWindow().Render()
+    
+            self.vtk_viewer.vtk_widget.GetRenderWindow().Render()
+            
     def apply_joint_rotation(self, actor, theta_deg):
         transform = vtk.vtkTransform()
         transform.Identity()
