@@ -1,5 +1,5 @@
 
-from imports import *
+from gui.imports import *
 from gui.main_window import MainWindow
 from gui.test_layout import TestMainWindow
 from gui.output import *

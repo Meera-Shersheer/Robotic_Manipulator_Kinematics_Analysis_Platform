@@ -1,4 +1,4 @@
-from imports import *
+from gui.imports import *
 
 class Color(QWidget):
     def __init__(self, color, text=None):
