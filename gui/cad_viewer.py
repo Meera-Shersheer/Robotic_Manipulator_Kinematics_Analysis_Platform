@@ -45,59 +45,57 @@ class CADViewer(QWidget):
         if self.initialized:
             print("VTK already initialized")
             return True
-        
+
         # CRITICAL: Ensure widget is visible first
         if not self.isVisible():
             print("Error: Widget must be visible before VTK initialization")
             return False
-            
+
         try:
             print("Initializing VTK...")
-            
+
             # Remove placeholder
             if self.placeholder:
                 self.main_layout.removeWidget(self.placeholder)
                 self.placeholder.deleteLater()
                 self.placeholder = None
-            
+
             # Create VTK widget
             self.vtk_widget = QVTKRenderWindowInteractor(self)
             self.main_layout.addWidget(self.vtk_widget)
-            
+
             # IMPORTANT: Process events to ensure widget is in layout
             QApplication.processEvents()
-            
+
             # Create renderer
             self.renderer = vtk.vtkRenderer()
             self.renderer.SetBackground(0.95, 0.95, 0.95)
-            
+
             # Setup render window
             render_window = self.vtk_widget.GetRenderWindow()
             render_window.AddRenderer(self.renderer)
-            
+
             # Get interactor
             self.interactor = render_window.GetInteractor()
-            
+
             # Setup camera
             self._setup_camera()
-            
-            # IMPORTANT: Start the interactor first
-            self.interactor.Start()
-            
-            # THEN initialize
-            self.interactor.Initialize()
-            
+
             # Set interaction style
             style = vtk.vtkInteractorStyleTrackballCamera()
             self.interactor.SetInteractorStyle(style)
-            
+
+            # THEN initialize
+            self.interactor.Initialize()
+
+
             # Force a render
             render_window.Render()
-            
+
             self.initialized = True
             print("VTK initialized successfully")
             return True
-            
+
         except Exception as e:
             print(f"Error initializing VTK: {e}")
             import traceback

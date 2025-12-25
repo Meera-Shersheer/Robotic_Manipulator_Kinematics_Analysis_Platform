@@ -613,26 +613,27 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.execute_button.clicked.connect( lambda: run_output_test(self))
         #self.execute_button.clicked.connect(self.test_rotation)
         layout.addWidget(self.execute_button)
-        # self.test_vtk_button = QPushButton("Initialize 3D View")
-        # self.test_vtk_button.setFont(self.label_font)
-        # self.test_vtk_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        # self.test_vtk_button.setFixedSize(150, 50)
-        # self.test_vtk_button.setStyleSheet("""
-        #     QPushButton {
-        #         background-color: #00897b;
-        #         color: #f9f9f9; 
-        #         border: 2px solid #00897b; 
-        #         border-radius: 7px;
-        #         padding: 10px 14px;
-        #         font-weight: 600;
-        #     }
-        #     QPushButton:hover {
-        #         background-color: #00695c;
-        #         border-color: #00695c;
-        #     }
-        # """)
-        # self.test_vtk_button.clicked.connect(self.test_vtk_load)
-        # layout.addWidget(self.test_vtk_button)
+        
+        self.test_vtk_button = QPushButton("Initialize 3D View")
+        self.test_vtk_button.setFont(self.label_font)
+        self.test_vtk_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.test_vtk_button.setFixedSize(300, 50)
+        self.test_vtk_button.setStyleSheet("""
+            QPushButton {
+                background-color: #00897b;
+                color: #f9f9f9; 
+                border: 2px solid #00897b; 
+                border-radius: 7px;
+                padding: 10px 14px;
+                font-weight: 600;
+            }
+            QPushButton:hover {
+                background-color: #00695c;
+                border-color: #00695c;
+            }
+        """)
+        self.test_vtk_button.clicked.connect(self.test_vtk_load)
+        layout.addWidget(self.test_vtk_button)
         return widget
 
 #Create output display widget
