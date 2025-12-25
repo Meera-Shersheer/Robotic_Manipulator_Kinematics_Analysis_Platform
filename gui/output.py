@@ -52,12 +52,13 @@ def add_section_header(self, title, color="#6d3d52"):
         QLabel {{
             background-color: {color};
             color: white;
-            padding: 12px;
+            padding: 6px;
             border-radius: 5px;
-            margin-top: 10px;
+            margin-top: 5px;
         }}
     """)
     header.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    header.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
     self.output_layout.addWidget(header)
 
 def add_joint_values_section(self):
@@ -494,10 +495,10 @@ def create_result_group(self, title):
             color: #0078d4;
         }
     """)
-    group.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
     layout = QVBoxLayout(group)
-    layout.setSpacing(8)
-    layout.setContentsMargins(10, 15, 10, 10) 
+    group.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+    # layout.setSpacing(4)
+    # layout.setContentsMargins(10, 15, 10, 5) 
     group.setLayout(layout)
     
     title_label = QLabel(title)
@@ -563,7 +564,7 @@ def display_fk_symbolic_results(self, transforms, final_T, q_symbols, frame_rang
     group = create_result_group(self, "Joint Variables")
 
     var_layout = QHBoxLayout()
-    var_layout.setSpacing(10)
+    #var_layout.setSpacing(10)
     for sym in q_symbols:
         var_box = QLabel(str(sym))
         var_box.setFont(QFont(self.standard_font))
@@ -571,19 +572,23 @@ def display_fk_symbolic_results(self, transforms, final_T, q_symbols, frame_rang
         var_box.setStyleSheet("""
             QLabel {
                 background-color: #e3f2fd;
-                border: 2px solid #0078d4;
+                border: 2px solid #2196f3;
                 border-radius: 5px;
-                padding: 10px 20px;
-                color: #0078d4;
+                padding: 2px 6px;
+                color: #1976d2;
             }
         """)
-    var_layout.addWidget(var_box)
-    var_layout.addStretch()
+        var_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        var_layout.addWidget(var_box)
+    
+    
+
+    # var_layout.addStretch()
     group.layout().addLayout(var_layout)
     
     
     self.output_layout.addWidget(group)
-    add_spacing(self, self.output_layout, 15)
+    # add_spacing(self, self.output_layout, 10)
     # Display each transformation matrix
     if frame_range is None:
         start_frame = 0
@@ -593,8 +598,8 @@ def display_fk_symbolic_results(self, transforms, final_T, q_symbols, frame_rang
         display_transforms = transforms
     for i, T in enumerate(display_transforms):
         frame_num = start_frame + i + 1
-    add_symbolic_transformation_matrix_simple(self, T, f"Symbolic Matrix T<sub>{frame_num  -1}</sub><sup>{frame_num}</sup>")
-    add_spacing(self, self.output_layout, 15)
+        add_symbolic_transformation_matrix_simple(self, T, f"Symbolic Matrix T<sub>{frame_num  -1}</sub><sup>{frame_num}</sup>")
+        add_spacing(self, self.output_layout, 10)
 
 
 def display_ik_numeric_results(self, solutions, target_matrix):
@@ -867,11 +872,11 @@ def add_symbolic_matrix_details(self, group, T_sym):
     grid_layout.setContentsMargins(10, 10, 10, 10)
     
     # Labels for sections
-    rotation_label = QLabel("🟪 Rotation Matrix (3×3)")
+    rotation_label = QLabel("Rotation Matrix (3×3)")
     rotation_label.setFont(QFont("Roboto", 11, QFont.Weight.Bold))
     rotation_label.setStyleSheet("color: #9c27b0; padding: 5px;")
     
-    translation_label = QLabel("🟧 Translation Vector (3×1)")
+    translation_label = QLabel("Translation Vector (3×1)")
     translation_label.setFont(QFont("Roboto", 11, QFont.Weight.Bold))
     translation_label.setStyleSheet("color: #ff9800; padding: 5px; margin-top: 10px;")
     
@@ -902,7 +907,7 @@ def add_symbolic_matrix_details(self, group, T_sym):
             
             label = QLabel(element_str)
             label.setFont(QFont("Courier New", 10))
-            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            label.setAlignment(Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignJustify)
             label.setStyleSheet(f"""
                 QLabel {{
                     background-color: {colors_rotation[i][j]};
@@ -911,6 +916,7 @@ def add_symbolic_matrix_details(self, group, T_sym):
                     padding: 8px;
                     min-width: 120px;
                     min-height: 40px;
+                    color: #000000;
                 }}
             """)
             label.setWordWrap(True)
@@ -954,6 +960,7 @@ def add_symbolic_matrix_details(self, group, T_sym):
                 padding: 8px;
                 min-width: 100px;
                 min-height: 40px;
+                color: #000000;
             }}
         """)
         value_label.setWordWrap(True)
@@ -1044,6 +1051,7 @@ def add_symbolic_transformation_matrix_simple(self, T_sym, title):
                     padding: 12px;
                     min-width: 100px;
                     min-height: 50px;
+                    color: #000000;
                 }}
             """)
             label.setWordWrap(True)
@@ -1057,9 +1065,9 @@ def add_symbolic_transformation_matrix_simple(self, T_sym, title):
     legend_layout.setSpacing(15)
     
     legend_items = [
-        ("🟪 Rotation (3×3)", "#f6e3fd"),
-        ("🟧 Translation (3×1)", "#fff3e0"),
-        ("⬜ Homogeneous (1×4)", "#f5f5f5")
+        (" Rotation (3×3)", "#f6e3fd"),
+        (" Translation (3×1)", "#fff3e0"),
+        (" Homogeneous (1×4)", "#f5f5f5")
     ]
     
     for text, color in legend_items:
@@ -1080,8 +1088,8 @@ def add_symbolic_transformation_matrix_simple(self, T_sym, title):
     
     group.layout().addWidget(container)
     
-    # Add expandable detailed view
-    add_symbolic_matrix_details(self, group, T_sym)
+    # # Add expandable detailed view
+    # add_symbolic_matrix_details(self, group, T_sym)
     
     self.output_layout.addWidget(group)
 
