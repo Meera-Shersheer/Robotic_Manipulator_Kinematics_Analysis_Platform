@@ -563,6 +563,7 @@ def display_fk_symbolic_results(self, transforms, final_T, q_symbols, frame_rang
     group = create_result_group(self, "Joint Variables")
 
     var_layout = QHBoxLayout()
+    var_layout.setSpacing(10)
     for sym in q_symbols:
         var_box = QLabel(str(sym))
         var_box.setFont(QFont(self.standard_font))
@@ -579,6 +580,8 @@ def display_fk_symbolic_results(self, transforms, final_T, q_symbols, frame_rang
     var_layout.addWidget(var_box)
     var_layout.addStretch()
     group.layout().addLayout(var_layout)
+    
+    
     self.output_layout.addWidget(group)
     add_spacing(self, self.output_layout, 15)
     # Display each transformation matrix
@@ -590,7 +593,7 @@ def display_fk_symbolic_results(self, transforms, final_T, q_symbols, frame_rang
         display_transforms = transforms
     for i, T in enumerate(display_transforms):
         frame_num = start_frame + i + 1
-    add_symbolic_transformation_matrix(self, T, f"Symbolic Matrix T<sub>{frame_num  -1}</sub><sup>{frame_num}</sup>")
+    add_symbolic_transformation_matrix_simple(self, T, f"Symbolic Matrix T<sub>{frame_num  -1}</sub><sup>{frame_num}</sup>")
     add_spacing(self, self.output_layout, 15)
 
 
