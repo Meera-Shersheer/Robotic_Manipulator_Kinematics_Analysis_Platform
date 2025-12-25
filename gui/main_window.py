@@ -610,7 +610,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             }
             """)
         self.execute_button.clicked.connect( lambda: run_output_test(self))
-        self.execute_button.clicked.connect(self.test_rotation)
+        #self.execute_button.clicked.connect(self.test_rotation)
         layout.addWidget(self.execute_button)
         
         return widget
@@ -898,47 +898,83 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         
         show_selector = (kinematics_type == 0)
         self.frame_range_selector.setVisible(show_selector)
-    
+
     def load_robot(self):
         """Load the robot 3D model"""
         try:
+            print("=" * 50)
+            print("Loading robot...")
+            
+            # First ensure VTK is initialized
+            if not self.view3d_widget.initialized:
+                print("Initializing VTK first...")
+                if not self.view3d_widget.initialize_vtk():
+                    print("Failed to initialize VTK")
+                    return False
+            
+            # Now load the model
             self.robot_actors = self.view3d_widget.load_glb("cad_models/ur5.glb")
-            return True
+            
+            if self.robot_actors:
+                print(f"Successfully loaded {len(self.robot_actors)} actors")
+                return True
+            else:
+                print("No actors loaded from GLB file")
+                return False
+                
         except Exception as e:
-            print(f"Error loading robot: {e}")
+            print(f"Error in load_robot: {e}")
+            import traceback
+            traceback.print_exc()
             return False
   
     def test_rotation(self):
         """Test rotation of loaded robot"""
-        if not hasattr(self, 'robot_actors') or not self.robot_actors:
-            # Try to load if not already loaded
-            if not self.load_robot():
-                print("Could not load robot model")
-                return
-    
-        if self.robot_actors:
-            actor = self.robot_actors[0]
-            actor.RotateZ(30)
-            actor.RotateX(15)
-            self.view3d_widget.vtk_widget.GetRenderWindow().Render()
-    
-            self.vtk_viewer.vtk_widget.GetRenderWindow().Render()
+        print("=" * 50)
+        print("Testing rotation...")
+        
+        try:
+            # Load robot if not already loaded
+            if not hasattr(self, 'robot_actors') or not self.robot_actors:
+                print("Robot not loaded, loading now...")
+                if not self.load_robot():
+                    print("Could not load robot model")
+                    return
+
+            if self.robot_actors and len(self.robot_actors) > 0:
+                print(f"Rotating first actor (of {len(self.robot_actors)})")
+                actor = self.robot_actors[0]
+                actor.RotateZ(30)
+                actor.RotateX(15)
+                
+                if self.view3d_widget.initialized:
+                    self.view3d_widget.render()
+                    print("Rotation applied and rendered")
+                else:
+                    print("VTK not initialized, cannot render")
+            else:
+                print("No robot actors available")
+                
+        except Exception as e:
+            print(f"Error in test_rotation: {e}")
+            import traceback
+            traceback.print_exc()
             
     def apply_joint_rotation(self, actor, theta_deg):
-        transform = vtk.vtkTransform()
-        transform.Identity()
-        transform.RotateZ(theta_deg)
-
-        actor.SetUserTransform(transform)
-        self.vtk_viewer.vtk_widget.GetRenderWindow().Render()
-
-  
-  
-  
-  
-  
-  
-  
+        """Apply rotation to a joint actor"""
+        try:
+            transform = vtk.vtkTransform()
+            transform.Identity()
+            transform.RotateZ(theta_deg)
+            actor.SetUserTransform(transform)
+            
+            if self.view3d_widget.initialized:
+                self.view3d_widget.render()
+                
+        except Exception as e:
+            print(f"Error applying joint rotation: {e}")
+            import traceback
+            traceback.print_exc()
   
   
   
