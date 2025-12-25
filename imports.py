@@ -14,10 +14,18 @@ from sympy import *
 import PyQt6
 from PyQt6.QtWidgets import *
 from PyQt6.QtCore import *
-from PyQt6.QtGui import QAction, QColor, QPalette, QIcon, QKeySequence, QFont,QPainter, QDoubleValidator
+from PyQt6.QtGui import QAction, QColor, QPalette, QIcon, QKeySequence, QFont,QPainter, QDoubleValidator, QVector3D
 
-from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
-import vtk
+from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout
+from PySide6.Qt3DExtras import (
+    Qt3DWindow,
+    QOrbitCameraController,
+    QCuboidMesh,
+    QPhongMaterial
+)
+from PySide6.Qt3DCore import QEntity
+from PySide6.QtGui import QVector3D
+from PySide6.Qt3DRender import QCamera
 
 # 3D Visualization
 import matplotlib.pyplot as plot

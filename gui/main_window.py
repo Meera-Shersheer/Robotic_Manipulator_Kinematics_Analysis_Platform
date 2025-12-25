@@ -130,7 +130,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
        
         # right_widget.setSpacing(0)
         # right_widget.setContentsMargins(0, 0, 0, 0)
-        self.view3d_widget = CADViewer()
+        self.view3d_widget = CADViewer("cad_models/ur5.glb")
         #Color("#1cccec", "3D VIEW") 
         choose_2D_sec = Color("#ec1c31", "2D_section") 
       #  view3d_widget = QWidget()
@@ -614,26 +614,26 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         #self.execute_button.clicked.connect(self.test_rotation)
         layout.addWidget(self.execute_button)
         
-        self.test_vtk_button = QPushButton("Initialize 3D View")
-        self.test_vtk_button.setFont(self.label_font)
-        self.test_vtk_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.test_vtk_button.setFixedSize(300, 50)
-        self.test_vtk_button.setStyleSheet("""
-            QPushButton {
-                background-color: #00897b;
-                color: #f9f9f9; 
-                border: 2px solid #00897b; 
-                border-radius: 7px;
-                padding: 10px 14px;
-                font-weight: 600;
-            }
-            QPushButton:hover {
-                background-color: #00695c;
-                border-color: #00695c;
-            }
-        """)
-        self.test_vtk_button.clicked.connect(self.test_vtk_load)
-        layout.addWidget(self.test_vtk_button)
+        # self.test_3d_button = QPushButton("Rotate 3D View")
+        # self.test_3d_button.setFont(self.label_font)
+        # self.test_3d_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        # self.test_3d_button.setFixedSize(300, 50)
+        # self.test_3d_button.setStyleSheet("""
+        #     QPushButton {
+        #         background-color: #00897b;
+        #         color: #f9f9f9; 
+        #         border: 2px solid #00897b; 
+        #         border-radius: 7px;
+        #         padding: 10px 14px;
+        #         font-weight: 600;
+        #     }
+        #     QPushButton:hover {
+        #         background-color: #00695c;
+        #         border-color: #00695c;
+        #     }
+        # """)
+        #self.test_3d_button.clicked.connect(lambda: self.view3d_widget.rotate_mesh(0, 30, 'z'))
+        #layout.addWidget(self.test_3d_button)
         return widget
 
 #Create output display widget
@@ -919,116 +919,101 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         
         show_selector = (kinematics_type == 0)
         self.frame_range_selector.setVisible(show_selector)
-
-    def load_robot(self):
-        """Load the robot 3D model"""
-        try:
-            print("=" * 50)
-            print("Loading robot...")
-            
-            # First ensure VTK is initialized
-            if not self.view3d_widget.initialized:
-                print("Initializing VTK first...")
-                if not self.view3d_widget.initialize_vtk():
-                    print("Failed to initialize VTK")
-                    return False
-            
-            # Now load the model
-            self.robot_actors = self.view3d_widget.load_glb("cad_models/ur5.glb")
-            
-            if self.robot_actors:
-                print(f"Successfully loaded {len(self.robot_actors)} actors")
-                return True
-            else:
-                print("No actors loaded from GLB file")
-                return False
-                
-        except Exception as e:
-            print(f"Error in load_robot: {e}")
-            import traceback
-            traceback.print_exc()
-            return False
-  
-    def test_rotation(self):
-        """Test rotation of loaded robot"""
-        print("=" * 50)
-        print("Testing rotation...")
-        
-        try:
-            # Load robot if not already loaded
-            if not hasattr(self, 'robot_actors') or not self.robot_actors:
-                print("Robot not loaded, loading now...")
-                if not self.load_robot():
-                    print("Could not load robot model")
-                    return
-
-            if self.robot_actors and len(self.robot_actors) > 0:
-                print(f"Rotating first actor (of {len(self.robot_actors)})")
-                actor = self.robot_actors[0]
-                actor.RotateZ(30)
-                actor.RotateX(15)
-                
-                if self.view3d_widget.initialized:
-                    self.view3d_widget.render()
-                    print("Rotation applied and rendered")
-                else:
-                    print("VTK not initialized, cannot render")
-            else:
-                print("No robot actors available")
-                
-        except Exception as e:
-            print(f"Error in test_rotation: {e}")
-            import traceback
-            traceback.print_exc()
-            
-    def apply_joint_rotation(self, actor, theta_deg):
-        """Apply rotation to a joint actor"""
-        try:
-            transform = vtk.vtkTransform()
-            transform.Identity()
-            transform.RotateZ(theta_deg)
-            actor.SetUserTransform(transform)
-            
-            if self.view3d_widget.initialized:
-                self.view3d_widget.render()
-                
-        except Exception as e:
-            print(f"Error applying joint rotation: {e}")
-            import traceback
-            traceback.print_exc()
-    def test_vtk_load(self):
-        """Test VTK initialization and robot loading"""
-        print("\n" + "="*50)
-        print("TESTING VTK INITIALIZATION")
-        print("="*50)
-        
-        # Ensure we're on the right tab
-        self.tabs.setCurrentIndex(0)  # Switch to Inputs tab
-        
-        # Process events to ensure UI is updated
-        QApplication.processEvents()
-        
-        # Small delay to ensure widget is fully rendered
-        QTimer.singleShot(100, self._do_vtk_init)
-
-    def _do_vtk_init(self):
-        """Actual VTK initialization after delay"""
-        if self.view3d_widget.initialize_vtk():
-            print("✓ VTK initialized successfully")
-            
-            # Load robot after another small delay
-            QTimer.singleShot(100, self._do_robot_load)
-        else:
-            print("✗ Failed to initialize VTK")
     
-    def _do_robot_load(self):
-        """Load robot after VTK is ready"""
-        if self.load_robot():
-            print("✓ Robot model loaded successfully")
-            QTimer.singleShot(500, self.test_rotation)
-        else:
-            print("✗ Failed to load robot model")
-                
+    # def load_robot(self):
+    #     """Load the robot 3D model"""
+    #     try:
+    #         print("=" * 50)
+    #         print("Loading robot...")
+
+    #         if not self.view3d_widget.initialized:
+    #             print("View3DWidget not initialized yet (wait for showEvent)")
+    #             return False
+
+    #         self.robot_actors = self.view3d_widget.load_glb("cad_models/ur5.glb")
+
+    #         if self.robot_actors:
+    #             print("Successfully loaded robot model")
+    #             return True
+    #         else:
+    #             print("No actors loaded from GLB file")
+    #             return False
+
+    #     except Exception as e:
+    #         print(f"Error in load_robot: {e}")
+    #         import traceback
+    #         traceback.print_exc()
+    #         return False
+
+
+    #     # Update the test_rotation method:
+    # def test_rotation(self):
+    #     """Test rotation of loaded robot"""
+    #     print("=" * 50)
+    #     print("Testing rotation...")
+
+    #     if not self.view3d_widget.initialized:
+    #         print("PyVista not initialized yet")
+    #         return
+
+    #     if not hasattr(self, 'robot_actors') or not self.robot_actors:
+    #         print("Robot not loaded yet")
+    #         return
+
+    #     self.view3d_widget.apply_joint_rotation(0, 30, 'z')
+    #     self.view3d_widget.apply_joint_rotation(0, 15, 'x')
+    #     print("Rotation applied")
+
+    # def on_tab_changed(self, index):
+    #     if index == 0 and self.view3d_widget.initialized:
+    #         if not hasattr(self, 'robot_actors'):
+    #             self.load_robot()
+
+    # # Update apply_joint_rotation method:
+    # def apply_joint_rotation(self, joint_index, theta_deg):
+    #     """Apply rotation to a joint"""
+    #     try:
+    #         if self.view3d_widget.initialized:
+    #             self.view3d_widget.apply_joint_rotation(joint_index, theta_deg, 'z')
+    #     except Exception as e:
+    #         print(f"Error applying joint rotation: {e}")
+
+    
+    # def initialize_3d_view(self):
+    #     """Initialize PyVista and load the robot model"""
+    #     if not hasattr(self, 'view3d_widget') or not self.view3d_widget:
+    #         print("Error: view3d_widget not found")
+    #         return
+
+    #     # Initialize PyVista if not done yet
+    #     if not self.view3d_widget.initialized:
+    #         if not self.view3d_widget.initialize_pyvista():
+    #             print("Failed to initialize 3D view")
+    #             return
+
+    #     # Load robot model
+    #     if not hasattr(self, 'robot_actors') or not self.robot_actors:
+    #         self.robot_actors = self.view3d_widget.load_glb("cad_models/ur5.glb")
+    #         if not self.robot_actors:
+    #             print("Failed to load robot model")
+    #             return
+
+    #     print("3D view initialized and robot loaded successfully")
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
           
 def test_output_widget(self):
