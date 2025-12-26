@@ -973,159 +973,213 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
         try:
             if calc_mode == 0:  # Forward Kinematics
-                if comp_mode == 0:  # Symbolic
-                    self.execute_fk_symbolic()
-                else:  # Numeric
-                    self.execute_fk_numeric()
+               self.current_manipulator.do_fk(self)
             else:  # Inverse Kinematics
-                self.current_T = self.read_T_matrix_from_table()
-                #self.solve_numeric_ik(self.current_T)
-                if comp_mode == 0:  # Symbolic
-                    QMessageBox.information(self, "Not Available Yet", 
-                        "Symbolic IK shows equations only. Use Numeric mode for solutions.")
-                else:  # Numeric
-                    self.execute_ik_numeric()
+                pass
+                # self.current_T = self.read_T_matrix_from_table()
+                # self.current_manipulator.do_ik(self)
         except Exception as e:
             QMessageBox.critical(self, "Calculation Error", 
                                f"An error occurred:\n{str(e)}")
-            import traceback
-            traceback.print_exc()
-    def execute_fk_numeric(self):
-        """Execute numeric forward kinematics"""
-        # Get joint values
-        try:
-            joint_values = self.get_joint_values()
-        except ValueError as e:
-            QMessageBox.warning(self, "Input Error", str(e))
-            return
+
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+    # def execute_fk_numeric(self):
+    #     """Execute numeric forward kinematics"""
+    #     # Get joint values
+    #     try:
+    #         joint_values = self.get_joint_values()
+    #     except ValueError as e:
+    #         QMessageBox.warning(self, "Input Error", str(e))
+    #         return
         
-        # Get frame range
-        if self.fk_all_radio.isChecked():
-            frame_range = None
-        else:
-            start = self.fk_from_spin.value()
-            end = self.fk_to_spin.value()
-            if start >= end:
-                QMessageBox.warning(self, "Invalid Range", 
-                                  "Start frame must be less than end frame.")
-                return
-            frame_range = (start, end)
+    #     # Get frame range
+    #     if self.fk_all_radio.isChecked():
+    #         frame_range = None
+    #     else:
+    #         start = self.fk_from_spin.value()
+    #         end = self.fk_to_spin.value()
+    #         if start >= end:
+    #             QMessageBox.warning(self, "Invalid Range", 
+    #                               "Start frame must be less than end frame.")
+    #             return
+    #         frame_range = (start, end)
         
-        # Compute FK using the manipulator's own method
-        transforms, final_T = self.current_manipulator.compute_fk_numeric(joint_values, frame_range)
+    #     # Compute FK using the manipulator's own method
+    #     transforms, final_T = self.current_manipulator.compute_fk_numeric(joint_values, frame_range)
         
-        # Display results
-        display_fk_numeric_results(self, transforms, final_T, joint_values, frame_range)
+    #     # Display results
+    #     display_fk_numeric_results(self, transforms, final_T, joint_values, frame_range)
         
-        # Switch to output tab
-        self.tabs.setCurrentIndex(1)
+    #     # Switch to output tab
+    #     self.tabs.setCurrentIndex(1)
         
-        QMessageBox.information(self, "Success", 
-                               "Forward Kinematics calculated successfully!")
+    #     QMessageBox.information(self, "Success", 
+    #                            "Forward Kinematics calculated successfully!")
 
-    def execute_fk_symbolic(self):
-        """Execute symbolic forward kinematics"""
-        # Get frame range
-        if self.fk_all_radio.isChecked():
-            frame_range = None
-        else:
-            start = self.fk_from_spin.value()
-            end = self.fk_to_spin.value()
-            if start >= end:
-                QMessageBox.warning(self, "Invalid Range", 
-                                  "Start frame must be less than end frame.")
-                return
-            frame_range = (start, end)
+    # def execute_fk_symbolic(self):
+    #     """Execute symbolic forward kinematics"""
+    #     # Get frame range
+    #     if self.fk_all_radio.isChecked():
+    #         frame_range = None
+    #     else:
+    #         start = self.fk_from_spin.value()
+    #         end = self.fk_to_spin.value()
+    #         if start >= end:
+    #             QMessageBox.warning(self, "Invalid Range", 
+    #                               "Start frame must be less than end frame.")
+    #             return
+    #         frame_range = (start, end)
 
-        # Compute symbolic FK using the manipulator's own method
-        transforms, final_T, q_symbols = self.current_manipulator.compute_fk_symbolic(frame_range)
+    #     # Compute symbolic FK using the manipulator's own method
+    #     transforms, final_T, q_symbols = self.current_manipulator.compute_fk_symbolic(frame_range)
 
-        # Display results
-        display_fk_symbolic_results(self, transforms, final_T, q_symbols, frame_range)
+    #     # Display results
+    #     display_fk_symbolic_results(self, transforms, final_T, q_symbols, frame_range)
 
-        # Switch to output tab
-        self.tabs.setCurrentIndex(1)
+    #     # Switch to output tab
+    #     self.tabs.setCurrentIndex(1)
 
-        QMessageBox.information(self, "Success", 
-                               "Symbolic Forward Kinematics computed!")
+    #     QMessageBox.information(self, "Success", 
+    #                            "Symbolic Forward Kinematics computed!")
 
-    def execute_ik_numeric(self):
-        """Execute numeric inverse kinematics"""
-        # Get target matrix from the matrix table
-        try:
-            target_matrix = self.get_matrix_from_table()
-        except ValueError as e:
-            QMessageBox.warning(self, "Input Error", str(e))
-            return
+    # def execute_ik_numeric(self):
+    #     """Execute numeric inverse kinematics"""
+    #     # Get target matrix from the matrix table
+    #     try:
+    #         target_matrix = self.get_matrix_from_table()
+    #     except ValueError as e:
+    #         QMessageBox.warning(self, "Input Error", str(e))
+    #         return
 
-        # Compute IK using the manipulator's own method
-        try:
-            solutions = self.current_manipulator.compute_ik_numeric(target_matrix)
-        except NotImplementedError as e:
-            QMessageBox.warning(self, "Not Implemented", str(e))
-            return
+    #     # Compute IK using the manipulator's own method
+    #     try:
+    #         solutions = self.current_manipulator.compute_ik_numeric(target_matrix)
+    #     except NotImplementedError as e:
+    #         QMessageBox.warning(self, "Not Implemented", str(e))
+    #         return
 
-        if not solutions:
-            QMessageBox.warning(self, "No Solution", 
-                              "No valid IK solution found for the given target pose.")
-            display_ik_no_solution(self, target_matrix)
-        else:
-            # Display results
-            display_ik_numeric_results(self, solutions, target_matrix)
-            QMessageBox.information(self, "Success", 
-                                   f"Found {len(solutions)} IK solution(s)!")
+    #     if not solutions:
+    #         QMessageBox.warning(self, "No Solution", 
+    #                           "No valid IK solution found for the given target pose.")
+    #         display_ik_no_solution(self, target_matrix)
+    #     else:
+    #         # Display results
+    #         display_ik_numeric_results(self, solutions, target_matrix)
+    #         QMessageBox.information(self, "Success", 
+    #                                f"Found {len(solutions)} IK solution(s)!")
 
-        # Switch to output tab
-        self.tabs.setCurrentIndex(1)
+    #     # Switch to output tab
+    #     self.tabs.setCurrentIndex(1)
 
-    def get_matrix_from_table(self):
-        """Extract 4x4 matrix from the matrix input table"""
-        matrix = np.zeros((4, 4))
+    # def get_matrix_from_table(self):
+    #     """Extract 4x4 matrix from the matrix input table"""
+    #     matrix = np.zeros((4, 4))
 
-        for i in range(4):
-            for j in range(4):
-                item = self.matrix_table.item(i, j)
-                if item is None or item.text().strip() == "":
-                    raise ValueError(f"Matrix element [{i},{j}] is empty")
+    #     for i in range(4):
+    #         for j in range(4):
+    #             item = self.matrix_table.item(i, j)
+    #             if item is None or item.text().strip() == "":
+    #                 raise ValueError(f"Matrix element [{i},{j}] is empty")
 
-                try:
-                    matrix[i, j] = float(item.text())
-                except ValueError:
-                    raise ValueError(f"Invalid number at matrix element [{i},{j}]: {item.text()}")
+    #             try:
+    #                 matrix[i, j] = float(item.text())
+    #             except ValueError:
+    #                 raise ValueError(f"Invalid number at matrix element [{i},{j}]: {item.text()}")
 
-        # Validate that it's a valid transformation matrix
-        if not np.allclose(matrix[3, :], [0, 0, 0, 1]):
-            raise ValueError("Last row of transformation matrix must be [0, 0, 0, 1]")
+    #     # Validate that it's a valid transformation matrix
+    #     if not np.allclose(matrix[3, :], [0, 0, 0, 1]):
+    #         raise ValueError("Last row of transformation matrix must be [0, 0, 0, 1]")
 
-        return matrix
+    #     return matrix
 
-    def get_joint_values(self):
-        """Get joint values from the DH table (for numeric mode only)"""
-        if self.sym_num_widget.currentRow() == 0:  # Symbolic mode
-            return None
+    # def get_joint_values(self):
+    #     """Get joint values from the DH table (for numeric mode only)"""
+    #     if self.sym_num_widget.currentRow() == 0:  # Symbolic mode
+    #         return None
 
-        values = []
-        angle_unit = self.theta_system_widget.currentRow()  # 0=rad, 1=deg
+    #     values = []
+    #     angle_unit = self.theta_system_widget.currentRow()  # 0=rad, 1=deg
 
-        for row in range(self.dh_table.rowCount()):
-            item = self.dh_table.item(row, 6)  # Value column
+    #     for row in range(self.dh_table.rowCount()):
+    #         item = self.dh_table.item(row, 6)  # Value column
 
-            if item is None or item.text().strip() == "":
-                raise ValueError(f"Joint {row + 1} value is empty")
+    #         if item is None or item.text().strip() == "":
+    #             raise ValueError(f"Joint {row + 1} value is empty")
 
-            try:
-                value = float(item.text())
-            except ValueError:
-                raise ValueError(f"Invalid number for Joint {row + 1}: {item.text()}")
+    #         try:
+    #             value = float(item.text())
+    #         except ValueError:
+    #             raise ValueError(f"Invalid number for Joint {row + 1}: {item.text()}")
 
-            # Convert degrees to radians if necessary
-            params = self.current_manipulator.get_dh_parameters()[row]
-            if params['variable'] == 'theta' and angle_unit == 1:  # degrees
-                value = np.deg2rad(value)
+    #         # Convert degrees to radians if necessary
+    #         params = self.current_manipulator.get_dh_parameters()[row]
+    #         if params['variable'] == 'theta' and angle_unit == 1:  # degrees
+    #             value = np.deg2rad(value)
 
-            values.append(value)
+    #         values.append(value)
 
-        return values
+    #     return values
     
     
     

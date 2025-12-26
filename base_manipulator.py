@@ -1,5 +1,57 @@
 from imports import *
 
+def wrap_angle(angle):
+    """Wrap angle to [-pi, pi]"""
+    return (angle + np.pi) % (2*np.pi) - np.pi
+
+def dhA(theta, d, a, alpha, sym=False):
+    if sym:
+        ct, st = sp.cos(theta), sp.sin(theta)
+        ca, sa = sp.cos(alpha), sp.sin(alpha)
+        return sp.Matrix([
+            [ct, -st*ca,  st*sa, a*ct],
+            [st,  ct*ca, -ct*sa, a*st],
+            [0,      sa,     ca,    d],
+            [0,       0,      0,    1]
+        ])
+    else:
+        ct, st = math.cos(theta), math.sin(theta)
+        ca, sa = math.cos(alpha), math.sin(alpha)
+        return np.array([
+            [ct, -st*ca,  st*sa, a*ct],
+            [st,  ct*ca, -ct*sa, a*st],
+            [0,      sa,     ca,    d],
+            [0,       0,      0,    1]
+        ], dtype=float)
+        
+def rot_x(a, sym=False):
+    c = sp.cos(a) if sym else math.cos(a)
+    s = sp.sin(a) if sym else math.sin(a)
+    return sp.Matrix([[1,0,0],[0,c,-s],[0,s,c]]) if sym else np.array([[1,0,0],[0,c,-s],[0,s,c]])
+
+def rot_y(a, sym=False):
+    c = sp.cos(a) if sym else math.cos(a)
+    s = sp.sin(a) if sym else math.sin(a)
+    return sp.Matrix([[c,0,s],[0,1,0],[-s,0,c]]) if sym else np.array([[c,0,s],[0,1,0],[-s,0,c]])
+
+def rot_z(a, sym=False):
+    c = sp.cos(a) if sym else math.cos(a)
+    s = sp.sin(a) if sym else math.sin(a)
+    return sp.Matrix([[c,-s,0],[s,c,0],[0,0,1]]) if sym else np.array([[c,-s,0],[s,c,0],[0,0,1]])
+
+def rpy_to_R(alpha, beta, gamma, sym=False):
+    # ZYX: Rz(gamma)*Ry(beta)*Rx(alpha)
+    return rot_z(gamma, sym) @ rot_y(beta, sym) @ rot_x(alpha, sym)
+
+
+def in_limits(robot, q):
+    msgs = []
+    ok = True
+    for i,(lo,hi) in enumerate(robot.lim):
+        if q[i] < lo-1e-9 or q[i] > hi+1e-9:
+            ok = False
+            msgs.append(f"θ{i+1} out of limits [{lo:.3f}, {hi:.3f}]")
+    return ok, msgs
 
 
 # Base class for robotic manipulators.
@@ -127,17 +179,15 @@ class RoboticManipulator:
         return values
         # ==================== FORWARD KINEMATICS ====================
     
+
+        # Compute forward kinematics numerically       
+        # Args:
+        #     joint_values: List of joint values (in radians for revolute, meters for prismatic)
+        #     frame_range: Tuple (start, end) or None for all frames   
+        # Returns:
+        #     (transforms, final_transform) where transforms is list of 4x4 transformation matrices
+
     def compute_fk_numeric(self, joint_values, frame_range=None):
-        """
-        Compute forward kinematics numerically
-        
-        Args:
-            joint_values: List of joint values (in radians for revolute, meters for prismatic)
-            frame_range: Tuple (start, end) or None for all frames
-            
-        Returns:
-            (transforms, final_transform) where transforms is list of 4x4 transformation matrices
-        """
         if len(joint_values) != self.num_joints:
             raise ValueError(f"Expected {self.num_joints} joint values, got {len(joint_values)}")
         
@@ -168,16 +218,12 @@ class RoboticManipulator:
         
         return transforms, T
     
+        # Compute forward kinematics symbolically
+        # Args:
+        #     frame_range: Tuple (start, end) or None for all frames  
+        # Returns:
+        #     (transforms, final_transform, joint_symbols) as symbolic matrices
     def compute_fk_symbolic(self, frame_range=None):
-        """
-        Compute forward kinematics symbolically
-        
-        Args:
-            frame_range: Tuple (start, end) or None for all frames
-            
-        Returns:
-            (transforms, final_transform, joint_symbols) as symbolic matrices
-        """
         # Create symbolic joint variables
         q_symbols = []
         for i, params in enumerate(self._dh_params):
@@ -243,18 +289,18 @@ class RoboticManipulator:
             [0,       0,      0,    1]
         ])
         
-    def compute_ik_numeric(self, target_matrix):
-        """
-        Compute inverse kinematics numerically
-        Override this in child classes with specific IK solutions
+    # def compute_ik_numeric(self, target_matrix):
+    #     """
+    #     Compute inverse kinematics numerically
+    #     Override this in child classes with specific IK solutions
         
-        Args:
-            target_matrix: 4x4 target transformation matrix
+    #     Args:
+    #         target_matrix: 4x4 target transformation matrix
             
-        Returns:
-            List of solution arrays, each containing joint values
-        """
-        raise NotImplementedError(f"IK not yet implemented for {self.name}")
+    #     Returns:
+    #         List of solution arrays, each containing joint values
+    #     """
+    #     raise NotImplementedError(f"IK not yet implemented for {self.name}")
     
     # ==================== UTILITY FUNCTIONS ====================
     
@@ -266,104 +312,48 @@ class RoboticManipulator:
         """Extract rotation matrix from transformation matrix"""
         return T[:3, :3]
     
+
+        # Convert rotation matrix to Euler angles
+        # Args:
+        #     R: 3x3 rotation matrix
+        #     order: Euler angle convention ('xyz', 'zyx', etc.)
+        # Returns:
+        #     Tuple of (roll, pitch, yaw) in radians
+
     def rotation_to_euler(self, R, order='xyz'):
-        """
-        Convert rotation matrix to Euler angles
-        
-        Args:
-            R: 3x3 rotation matrix
-            order: Euler angle convention ('xyz', 'zyx', etc.)
-            
-        Returns:
-            Tuple of (roll, pitch, yaw) in radians
-        """
         from scipy.spatial.transform import Rotation as Rot
         r = Rot.from_matrix(R)
         return r.as_euler(order, degrees=False)
     
+
+        # Convert Euler angles to rotation matrix
+        # Args:
+        #     roll, pitch, yaw: Angles in radians
+        #     order: Euler angle convention    
+        # Returns:
+        #     3x3 rotation matrix
     def euler_to_rotation(self, roll, pitch, yaw, order='xyz'):
-        """
-        Convert Euler angles to rotation matrix
-        
-        Args:
-            roll, pitch, yaw: Angles in radians
-            order: Euler angle convention
-            
-        Returns:
-            3x3 rotation matrix
-        """
         from scipy.spatial.transform import Rotation as Rot
         r = Rot.from_euler(order, [roll, pitch, yaw], degrees=False)
         return r.as_matrix()
+   
     
-    def pose_to_matrix(self, x, y, z, roll, pitch, yaw):
-        """
-        Convert pose (position + orientation) to transformation matrix
+        # Convert pose (position + orientation) to transformation matrix
+        # Args:
+        #     x, y, z: Position in meters
+        #     roll, pitch, yaw: Orientation in radians  
+        # Returns:
+        #     4x4 transformation matrix
         
-        Args:
-            x, y, z: Position in meters
-            roll, pitch, yaw: Orientation in radians
-            
-        Returns:
-            4x4 transformation matrix
-        """
+    def pose_to_matrix(self, x, y, z, roll, pitch, yaw):
         R = self.euler_to_rotation(roll, pitch, yaw)
         T = np.eye(4)
         T[:3, :3] = R
         T[:3, 3] = [x, y, z]
         return T
     
-    def _wrap_angle(self, angle):
-        """Wrap angle to [-pi, pi]"""
-        return (angle + np.pi) % (2*np.pi) - np.pi
-    
-    def rot_x(a, sym=False):
-        c = sp.cos(a) if sym else math.cos(a)
-        s = sp.sin(a) if sym else math.sin(a)
-        return sp.Matrix([[1,0,0],[0,c,-s],[0,s,c]]) if sym else np.array([[1,0,0],[0,c,-s],[0,s,c]])
 
-    def rot_y(a, sym=False):
-        c = sp.cos(a) if sym else math.cos(a)
-        s = sp.sin(a) if sym else math.sin(a)
-        return sp.Matrix([[c,0,s],[0,1,0],[-s,0,c]]) if sym else np.array([[c,0,s],[0,1,0],[-s,0,c]])
 
-    def rot_z(a, sym=False):
-        c = sp.cos(a) if sym else math.cos(a)
-        s = sp.sin(a) if sym else math.sin(a)
-        return sp.Matrix([[c,-s,0],[s,c,0],[0,0,1]]) if sym else np.array([[c,-s,0],[s,c,0],[0,0,1]])
-
-    def rpy_to_R(alpha, beta, gamma, sym=False):
-        # ZYX: Rz(gamma)*Ry(beta)*Rx(alpha)
-        return rot_z(gamma, sym) @ rot_y(beta, sym) @ rot_x(alpha, sym)
-
-    def dhA(theta, d, a, alpha, sym=False):
-        if sym:
-            ct, st = sp.cos(theta), sp.sin(theta)
-            ca, sa = sp.cos(alpha), sp.sin(alpha)
-            return sp.Matrix([
-                [ct, -st*ca,  st*sa, a*ct],
-                [st,  ct*ca, -ct*sa, a*st],
-                [0,      sa,     ca,    d],
-                [0,       0,      0,    1]
-            ])
-        else:
-            ct, st = math.cos(theta), math.sin(theta)
-            ca, sa = math.cos(alpha), math.sin(alpha)
-            return np.array([
-                [ct, -st*ca,  st*sa, a*ct],
-                [st,  ct*ca, -ct*sa, a*st],
-                [0,      sa,     ca,    d],
-                [0,       0,      0,    1]
-            ], dtype=float)
-
-    def in_limits(robot, q):
-        msgs = []
-        ok = True
-        for i,(lo,hi) in enumerate(robot.lim):
-            if q[i] < lo-1e-9 or q[i] > hi+1e-9:
-                ok = False
-                msgs.append(f"θ{i+1} out of limits [{lo:.3f}, {hi:.3f}]")
-        return ok, msgs
 
 
 
@@ -394,8 +384,7 @@ class UR5(RoboticManipulator):
             {"a": 0, "alpha": pi / 2,  "d": self.d4, "theta": 0.0, "variable": "theta"},
             {"a": 0, "alpha": -pi / 2, "d": self.d5, "theta": 0.0, "variable": "theta"},
             {"a": 0, "alpha": 0,   "d": self.d6, "theta": 0.0, "variable": "theta"},
-        ]
-        
+        ]   
     def fk_all(self, q, sym=False):
         Ts = []
         T = sp.eye(4) if sym else np.eye(4)
@@ -404,7 +393,6 @@ class UR5(RoboticManipulator):
             T = T @ A
             Ts.append(T)
         return Ts, T
-    
 
     # -------------------- CLOSED FORM IK (CONSISTENT WITH FK ABOVE) --------------------
     def ik_ur5_closed_form(self, T06: np.ndarray):
@@ -429,7 +417,7 @@ class UR5(RoboticManipulator):
         c = max(-1.0, min(1.0, c))
         phi = math.acos(c)
         psi = math.atan2(p05[1], p05[0])
-        q1_candidates = [wrap(psi + phi + PI/2), wrap(psi - phi + PI/2)]
+        q1_candidates = [wrap(psi + phi + pi/2), wrap(psi - phi + pi/2)]
 
         for q1 in q1_candidates:
             s1, c1 = math.sin(q1), math.cos(q1)
@@ -476,7 +464,7 @@ class UR5(RoboticManipulator):
 
                     # θ4 from rotation
                     qtemp = [q1, q2, q3, 0.0, 0.0, 0.0]
-                    Ts, _ = robot.fk_all(qtemp, sym=False)
+                    Ts, _ = self.fk_all(qtemp, sym=False)
                     R03 = Ts[2][:3, :3]
                     R04 = (T01 @ T14)[:3, :3]
                     R34 = R03.T @ R04
@@ -485,7 +473,7 @@ class UR5(RoboticManipulator):
                     candidate = [wrap(q1), wrap(q2), wrap(q3), wrap(q4), wrap(q5), wrap(q6)]
 
                     # Validate by FK to guarantee consistency
-                    _, Tchk = robot.fk_all(candidate, sym=False)
+                    _, Tchk = self.fk_all(candidate, sym=False)
                     if np.allclose(Tchk, T06, atol=1e-6, rtol=0):
                         sols.append(candidate)
 
@@ -496,22 +484,23 @@ class UR5(RoboticManipulator):
                 uniq.append(s)
         return uniq
 
+
 # -------------------- SYMBOLIC IK (Equations only) --------------------
-    def do_ik_symbolic(self):
+    # def do_ik_symbolic(self):
    
-        #x,y,z,alpha,beta,gamma = sp.symbols(" ".join(names), real=True)
-        x = 'x'
-        y = 'y'
-        z = 'z'
-        alpha = 'α'
-        beta = 'β'
-        gamma = 'γ'
-        R = rpy_to_R(alpha, beta, gamma, sym=True)
-        T = sp.Matrix([[R[0,0],R[0,1],R[0,2],x],
-                       [R[1,0],R[1,1],R[1,2],y],
-                       [R[2,0],R[2,1],R[2,2],z],
-                       [0,0,0,1]])
-        return T
+    #     #x,y,z,alpha,beta,gamma = sp.symbols(" ".join(names), real=True)
+    #     x = 'x'
+    #     y = 'y'
+    #     z = 'z'
+    #     alpha = 'α'
+    #     beta = 'β'
+    #     gamma = 'γ'
+    #     R = rpy_to_R(alpha, beta, gamma, sym=True)
+    #     T = sp.Matrix([[R[0,0],R[0,1],R[0,2],x],
+    #                    [R[1,0],R[1,1],R[1,2],y],
+    #                    [R[2,0],R[2,1],R[2,2],z],
+    #                    [0,0,0,1]])
+    #     return T
  
     
     def do_fk(self):
@@ -526,59 +515,86 @@ class UR5(RoboticManipulator):
 
         Ts, T = self.fk_all(q, sym=sym)
 
-        frames = self.frame_range_selector.fk_all_radio.isChecked()
-
-        if sym:
-            transforms, final_T = self.current_manipulator.compute_fk_numeric(joint_values, frame_range)
-            display_fk_numeric_results(self, transforms, final_T, joint_values, frame_range)
+        if self.fk_all_radio.isChecked():
+            frame_range = None
         else:
-            transforms, final_T, q_symbols = self.current_manipulator.compute_fk_symbolic(frame_range)
-            display_fk_symbolic_results(self, transforms, final_T, q_symbols, frame_range)
+            start = self.fk_from_spin.value()
+            end = self.fk_to_spin.value()
+            if start >= end:
+                QMessageBox.warning(self, "Invalid Range", 
+                                  "Start frame must be less than end frame.")
+                return
+            frame_range = (start, end)
 
-
-    def do_ik(self):
-        comp_mode = self.sym_num_widget.currentRow()
-        sym = (comp_mode == 0)
-        
         if sym:
-            do_ik_symbolic(self)
-            return
+            display_fk_numeric_results(self, Ts, T, q, frame_range)
+        else:
+            display_fk_symbolic_results(self, Ts, T, q, frame_range)
 
-        print("\nInput: 1) 4×4 matrix  2) x,y,z,α,β,γ")
-        ch = ask_choice("Choose: ", ["1","2"], "1")
-        T = read_T_matrix() if ch == "1" else read_pose()
 
-        print("\nTarget 0T6 =")
-        pprint("0T6", T, sym=False)
+    # def do_ik(self):
+    #     comp_mode = self.sym_num_widget.currentRow()
+    #     sym = (comp_mode == 0)
+        
+    #     if sym:
+    #         do_ik_symbolic(self)
+    #         return
 
-        print("\nSolving...")
+    #     print("\nInput: 1) 4×4 matrix  2) x,y,z,α,β,γ")
+    #     ch = ask_choice("Choose: ", ["1","2"], "1")
+    #     T = read_T_matrix() if ch == "1" else read_pose()
 
-        sols = ik_ur5_closed_form(robot, T)
+    #     print("\nTarget 0T6 =")
+    #     pprint("0T6", T, sym=False)
 
-        print("\n======================================================================")
-        print("RESULTS")
-        print("======================================================================")
-        if not sols:
-            print("No solution found.")
-            print("\n======================================================================")
-            print("Done!")
-            print("======================================================================\n")
-            return
+    #     print("\nSolving...")
 
-        print(f"Raw: {len(sols)} | Valid: {len(sols)}")
-        print("\n--- Solutions (rad) ---")
-        for i,s in enumerate(sols, start=1):
-            print(f"{i:02d}: [{', '.join(f'{v:+.6f}' for v in s)}]")
+    #     sols = ik_ur5_closed_form(robot, T)
 
-        print("\n--- Solutions (deg) ---")
-        for i,s in enumerate(sols, start=1):
-            sd = [r2d(v) for v in s]
-            print(f"{i:02d}: [{', '.join(f'{v:+.3f}' for v in sd)}]")
+    #     print("\n======================================================================")
+    #     print("RESULTS")
+    #     print("======================================================================")
+    #     if not sols:
+    #         print("No solution found.")
+    #         print("\n======================================================================")
+    #         print("Done!")
+    #         print("======================================================================\n")
+    #         return
 
-        print("\n======================================================================")
-        print("Done!")
-        print("======================================================================\n")
+    #     print(f"Raw: {len(sols)} | Valid: {len(sols)}")
+    #     print("\n--- Solutions (rad) ---")
+    #     for i,s in enumerate(sols, start=1):
+    #         print(f"{i:02d}: [{', '.join(f'{v:+.6f}' for v in s)}]")
+
+    #     print("\n--- Solutions (deg) ---")
+    #     for i,s in enumerate(sols, start=1):
+    #         sd = [r2d(v) for v in s]
+    #         print(f"{i:02d}: [{', '.join(f'{v:+.3f}' for v in sd)}]")
+
+    #     print("\n======================================================================")
+    #     print("Done!")
+    #     print("======================================================================\n")
     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         
 #     def compute_ik_numeric(self, T06):
