@@ -54,11 +54,10 @@ def add_section_header(self, title, color="#6d3d52"):
             color: white;
             padding: 6px;
             border-radius: 5px;
-            margin-top: 5px;
         }}
     """)
     header.setAlignment(Qt.AlignmentFlag.AlignCenter)
-    header.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+    header.setFixedHeight(60)
     self.output_layout.addWidget(header)
 
 def add_joint_values_section(self):
@@ -484,21 +483,20 @@ def create_result_group(self, title):
         QGroupBox {
             border: 2px solid #0078d4;
             border-radius: 5px;
-            margin-top: 10px;
-            padding-top: 15px;
+            margin-top: 5px;
+            padding-top: 10px;
             background-color: white;
         }
         QGroupBox::title {
             subcontrol-origin: margin;
             left: 10px;
-            padding: 0 5px;
+            padding: 0 3px;
             color: #0078d4;
         }
     """)
     layout = QVBoxLayout(group)
-    group.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-    # layout.setSpacing(4)
-    # layout.setContentsMargins(10, 15, 10, 5) 
+    layout.setSpacing(3)
+    layout.setContentsMargins(8, 8, 8, 8) 
     group.setLayout(layout)
     
     title_label = QLabel(title)
@@ -506,7 +504,7 @@ def create_result_group(self, title):
     title_label.setFont(QFont("Roboto", 13, QFont.Weight.Bold))
     title_label.setStyleSheet("color: #0078d4;")
     title_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
-    
+    title_label.setFixedHeight(25) 
     layout.addWidget(title_label)
     return group
 
@@ -564,11 +562,13 @@ def display_fk_symbolic_results(self, transforms, final_T, q_symbols, frame_rang
     group = create_result_group(self, "Joint Variables")
 
     var_layout = QHBoxLayout()
+    var_layout.setSpacing(8)  # Reduced from default
+    var_layout.setContentsMargins(0, 0, 0, 0) 
     #var_layout.setSpacing(10)
     for sym in q_symbols:
         var_box = QLabel(str(sym))
         var_box.setFont(QFont(self.standard_font))
-        var_box.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        var_box.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignHCenter )
         var_box.setStyleSheet("""
             QLabel {
                 background-color: #e3f2fd;
@@ -578,13 +578,15 @@ def display_fk_symbolic_results(self, transforms, final_T, q_symbols, frame_rang
                 color: #1976d2;
             }
         """)
-        var_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        var_box.setFixedHeight(35)
         var_layout.addWidget(var_box)
     
     
 
     # var_layout.addStretch()
     group.layout().addLayout(var_layout)
+    group.layout().setSpacing(5)  # Reduce spacing in group layout
+    group.layout().setContentsMargins(10, 10, 10, 10)  # Tighter margins
     
     
     self.output_layout.addWidget(group)
@@ -907,7 +909,7 @@ def add_symbolic_matrix_details(self, group, T_sym):
             
             label = QLabel(element_str)
             label.setFont(QFont("Courier New", 10))
-            label.setAlignment(Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignJustify)
+            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             label.setStyleSheet(f"""
                 QLabel {{
                     background-color: {colors_rotation[i][j]};
@@ -1029,7 +1031,7 @@ def add_symbolic_transformation_matrix_simple(self, T_sym, title):
                 element_str = "-1"
             
             label = QLabel(element_str)
-            label.setFont(QFont("Courier New", 11))
+            label.setFont(QFont("Roboto", 12))
             label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             
             # Color coding

@@ -72,10 +72,10 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                 border: 2px solid #cccccc;
                 border-bottom: 2px solid white;
                 font-weight: bold;
-                color: #0078d4;
+                color: #8e24aa;
             }
             QTabBar::tab:hover {
-                background-color: #e5f3ff;
+                background-color: #ffebee;
             }
         """)
         
@@ -223,10 +223,10 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                 background-color: white;
             }
             QListWidget::item:hover {
-                background-color: #e5f3ff;
+                background-color: #ffebee;
             }
             QListWidget::item:selected {
-                background-color: #cce8ff;
+                background-color: #ffcdd2;
                 color: black;
             }
         """)
@@ -242,9 +242,9 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                 super().paint(painter, option, index)  # Call parent to draw the item
                 if option.state & QStyle.StateFlag.State_Selected:
                     painter.save()
-                    rect = QRect(option.rect.left() + 8, option.rect.center().y() - 4, 8, 8)
+                    rect = QRect(option.rect.left() + 12, option.rect.center().y() - 6, 12, 12)
                     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-                    painter.setBrush(QColor("#0078d4"))
+                    painter.setBrush(QColor("#8e24aa"))
                     painter.setPen(Qt.PenStyle.NoPen)
                     painter.drawEllipse(rect)
                     painter.restore()
@@ -303,10 +303,10 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                 padding: 6px;
             }
             QHeaderView::section {
-                background-color: #0078d4;
+                background-color: #8e24aa;
                 color: white;
                 padding: 10px;
-                border: 1px solid #005a9e;
+                border: 1px solid #6a1b9a;
                 font-weight: bold;
             }
         """)
@@ -420,8 +420,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             var_item = QTableWidgetItem(var_symbol)
             var_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             var_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
-            var_item.setBackground(QColor("#e3f2fd"))
-            var_item.setForeground(QColor("#0078d4"))
+            var_item.setBackground(QColor("#f3e5f5"))
+            var_item.setForeground(QColor("#8e24aa"))
             font = var_item.font()
             font.setBold(True)
             var_item.setFont(font)
@@ -587,21 +587,21 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.execute_button.setFixedSize(150, 50)  
         self.execute_button.setStyleSheet("""
             QPushButton {
-                background-color: #0078d4;
+                background-color: #8e24aa;
                 color: #f9f9f9; 
-                border: 2px solid #0078d4; 
+                border: 2px solid #8e24aa; 
                 border-radius: 7px;
                 padding: 10px 14px;
                 font-weight: 600;
             }
             QPushButton:hover {
-                background-color: #106ebe;
-                border-color: #106ebe;
+                background-color: #7b1fa2;
+                border-color: #7b1fa2;
             }
 
             QPushButton:pressed {
-                background-color: #005a9e;
-                border-color: #005a9e;
+                background-color: #6a1b9a;
+                border-color: #6a1b9a;
             }
             QPushButton:disabled {
                 background-color: #cccccc;
@@ -651,7 +651,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         # Title
         title = QLabel("Calculation Results")
         title.setFont(self.large_font)
-        title.setStyleSheet("color: #0078d4; padding: 10px; font-weight: 600;")
+        title.setStyleSheet("color: #8e24aa; padding: 10px; font-weight: 600;")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         main_layout.addWidget(title)
 
@@ -665,22 +665,22 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             background-color: #fdf7fa;
         }
         QScrollBar:vertical {
-            border:1px solid  #d17fa3;
-            background-color: #f9e9f2;
+            border:1px solid  #ef5350;
+            background-color: #ffebee;
             width: 14px;
             border-radius: 6px;
             margin: 0px;
         }
         QScrollBar::handle:vertical {
-            background: #c96b8f;
+            background: #e53935;
             border-radius: 6px;
             min-height: 30px;
         }
         QScrollBar::handle:vertical:hover {
-            background: #a81d5a;
+            background: #d32f2f;
         }
         QScrollBar::handle:vertical:pressed {
-            background-color: #a81d5a;
+            background-color: #d32f2f;
         }
         QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
             border: none;
@@ -788,9 +788,9 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             }
 
             QRadioButton::indicator:checked {
-                background-color: #0078d4;
+                background-color: #8e24aa;
                 border-radius: 7px;
-                border: 2px solid #0078d4;
+                border: 2px solid #8e24aa;
             }
             QSpinBox {
                  padding: 4px;
@@ -860,16 +860,16 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
             btn.setStyleSheet("""
                 QPushButton {
-                    background-color: #e5f3ff;
+                    background-color: #ffebee;
                     border-radius: 4px;
                      border: 1px solid #cccccc;
                     font-weight: bold;
                 }
                 QPushButton:hover {
-                    background-color: #cce8ff;
+                    background-color: #ffcdd2;
                 }
                 QPushButton:pressed {
-                    background-color: #0078d4;
+                    background-color: #8e24aa;
                     color: white;
                 }
                 QPushButton:disabled {
@@ -898,8 +898,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             # Invalid range - show error styling
             error_style = """        
                 QSpinBox {
-                    background-color: #fdecea;
-                    border: 1px solid #d32f2f;
+                    background-color: #ffebee;
+                    border: 1px solid #e53935;
                 }
             """
             self.fk_from_spin.setStyleSheet(error_style)
