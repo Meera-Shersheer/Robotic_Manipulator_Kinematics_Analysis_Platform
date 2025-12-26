@@ -28,6 +28,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
     def __init__(self):    #Constructor
         super().__init__()  # calling the parent constructor
         self.current_manipulator = None
+        self.current_T = None
         self.setWindowTitle("Robotics IK/FK Calculator")   # giving a title to the window 
         self.resize(1600, 1100) # resizing the window
        
@@ -75,7 +76,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                 color: #8e24aa;
             }
             QTabBar::tab:hover {
-                background-color: #ffebee;
+                background-color: #f3e5f5;
             }
         """)
         
@@ -231,10 +232,10 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                 background-color: white;
             }
             QListWidget::item:hover {
-                background-color: #ffebee;
+                background-color: #F5EFFF;
             }
             QListWidget::item:selected {
-                background-color: #ffcdd2;
+                background-color: #f3e5f5;
                 color: black;
             }
         """)
@@ -305,7 +306,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                 border: 1px solid #cccccc;
                 border-radius: 3px;
                 background-color: white;
-                gridline-color: #e0e0e0;
+                gridline-color: #cccccc;
             }
             QTableWidget::item {
                 padding: 6px;
@@ -510,7 +511,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
         self.matrix_placeholder = QLabel(
             "Transformation matrix will be shown\n"
-            "when Numeric Inverse Kinematics is selected."
+            "when Inverse Kinematics is selected."
         )
         self.matrix_placeholder.setFont(self.standard_font)
         self.matrix_placeholder.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignHCenter)
@@ -526,7 +527,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
         # Matrix display table
         self.matrix_table = QTableWidget(4, 4)
-        self.matrix_table.setItemDelegate(MatrixDelegate(self.matrix_table))
+        self.matrix_table.setItemDelegate(MatrixDelegate(self.matrix_table,  lambda: self.sym_num_widget.currentRow()))
         self.matrix_table.setFont(self.standard_font)
         self.matrix_table.horizontalHeader().setVisible(False)
         self.matrix_table.verticalHeader().setVisible(False)
@@ -549,30 +550,63 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.matrix_table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         
         # Initialize with zeros
-        for i in range(4):
-            for j in range(4):
-                item = QTableWidgetItem("0.0000")
-                item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-                item.setFlags(
-                    Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable)
-                self.matrix_table.setItem(i, j, item)
-      
-        self.sym_num_widget.currentRowChanged.connect(self.hide_matrix)
+        self.reset_matrix()
+
         self.ik_fk_widget.currentRowChanged.connect(self.hide_matrix)
+        self.sym_num_widget.currentRowChanged.connect(self.reset_matrix)
         layout.addWidget(self.matrix_table)
         return widget
 
     #Show/hide the T matrix based on mode mode
     def hide_matrix(self):
-        computation_mode = self.sym_num_widget.currentRow()
         kinematics_type = self.ik_fk_widget.currentRow()
         
-        show_matrix = (computation_mode == 1 and kinematics_type == 1)
+        show_matrix = (kinematics_type == 1)
         self.matrix_table.setVisible(show_matrix)
         self.matrix_placeholder.setVisible(not show_matrix)
 
-            
-        # Create execute button widget
+    def read_T_matrix_from_table(self):
+        T = [[None]*4 for _ in range(4)]
+        comp_mode = self.sym_num_widget.currentRow()
+        for i in range(4):
+            for j in range(4):
+                item = self.matrix_table.item(i, j)
+                if item is None:
+                    text = "0"
+                else:
+                    text = item.text().strip()
+
+                if (comp_mode == 0):
+                    try:
+                        T[i][j] = sympy.sympify(text)
+                    except:
+                        T[i][j] = sympy.sympify("0")
+                else:
+                    try:
+                        T[i][j] = float(text)
+                    except:
+                        T[i][j] = 0.0
+
+        return sympy.Matrix(T) if self.is_symbolic_ik() else np.array(T)
+    
+    def reset_matrix(self):
+        """Reset matrix to identity matrix"""
+        identity = [["1" if i == j else "0" for j in range(4)] for i in range(4)]
+        
+        for i in range(4):
+            for j in range(4):
+                # Create item if it doesn't exist
+                item = self.matrix_table.item(i, j)
+                if item is None:
+                    item = QTableWidgetItem()
+                    self.matrix_table.setItem(i, j, item)
+                
+                # Set the value
+                item.setText(identity[i][j])
+                item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable)       
+    
+    # Create execute button widget
     def create_execute_widget(self):
         widget = QWidget()
         layout = QHBoxLayout(widget)
@@ -803,7 +837,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             QSpinBox {
                  padding: 4px;
                  min-height: 20px;
-                 border: 1px solid #cccccc;
+                 border: 1px solid #00897b;
                  border-radius: 4px;
              }
                 """)
@@ -870,7 +904,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                 QPushButton {
                     background-color: #ffebee;
                     border-radius: 4px;
-                     border: 1px solid #cccccc;
+                    border: 1px solid #00897b;
                     font-weight: bold;
                 }
                 QPushButton:hover {
@@ -944,6 +978,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                 else:  # Numeric
                     self.execute_fk_numeric()
             else:  # Inverse Kinematics
+                self.current_T = self.read_T_matrix_from_table()
+                #self.solve_numeric_ik(self.current_T)
                 if comp_mode == 0:  # Symbolic
                     QMessageBox.information(self, "Not Available Yet", 
                         "Symbolic IK shows equations only. Use Numeric mode for solutions.")

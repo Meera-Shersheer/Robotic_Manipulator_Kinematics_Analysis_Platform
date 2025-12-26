@@ -5,6 +5,7 @@ import numpy as np
 from numpy import sin, cos, tan, arctan2 as atan2, arccos, arcsin, sqrt, pi
 
 import math
+import re
 
 # Symbolic mathematics (for deriving and verifying equations)
 import sympy as sp

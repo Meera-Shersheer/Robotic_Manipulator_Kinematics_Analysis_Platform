@@ -316,47 +316,54 @@ class RoboticManipulator:
     def _wrap_angle(self, angle):
         """Wrap angle to [-pi, pi]"""
         return (angle + np.pi) % (2*np.pi) - np.pi
+    
+    def rot_x(a, sym=False):
+        c = sp.cos(a) if sym else math.cos(a)
+        s = sp.sin(a) if sym else math.sin(a)
+        return sp.Matrix([[1,0,0],[0,c,-s],[0,s,c]]) if sym else np.array([[1,0,0],[0,c,-s],[0,s,c]])
 
-    
-    
-    # Reset all joint values to zero (home position)
-    # def reset_joint_values(self):
-    #     for param in self._dh_params:
-    #         if param['variable'] == 'theta':
-    #             param['theta'] = 0.0
-    #         elif param['variable'] == 'd':
-    #             param['d'] = 0.0
-    
-    # def get_dh_table_for_display(self, angle_in_degrees=False):
-    #     """
-    #     Get DH parameters formatted for display in the table.
-        
-    #     Args:
-    #         angle_in_degrees: If True, return theta/alpha in degrees
-            
-    #     Returns:
-    #         List of dicts with formatted values
-    #     """
-    #     display_params = []
-        
-    #     for i, param in enumerate(self._dh_params):
-    #         display_param = {
-    #             'joint': i + 1,
-    #             'theta': param['theta'],
-    #             'd': param['d'],
-    #             'a': param['a'],
-    #             'alpha': param['alpha'],
-    #             'variable': self.get_joint_variable_name(i),
-    #             'value': self.get_joint_value(i, angle_in_degrees)
-    #         }
-            
-    #         # Convert theta to degrees if requested
-    #         if angle_in_degrees and param['variable'] == 'theta':
-    #             display_param['theta'] = np.rad2deg(param['theta'])
-            
-    #         display_params.append(display_param)
-        
-    #     return display_params
+    def rot_y(a, sym=False):
+        c = sp.cos(a) if sym else math.cos(a)
+        s = sp.sin(a) if sym else math.sin(a)
+        return sp.Matrix([[c,0,s],[0,1,0],[-s,0,c]]) if sym else np.array([[c,0,s],[0,1,0],[-s,0,c]])
+
+    def rot_z(a, sym=False):
+        c = sp.cos(a) if sym else math.cos(a)
+        s = sp.sin(a) if sym else math.sin(a)
+        return sp.Matrix([[c,-s,0],[s,c,0],[0,0,1]]) if sym else np.array([[c,-s,0],[s,c,0],[0,0,1]])
+
+    def rpy_to_R(alpha, beta, gamma, sym=False):
+        # ZYX: Rz(gamma)*Ry(beta)*Rx(alpha)
+        return rot_z(gamma, sym) @ rot_y(beta, sym) @ rot_x(alpha, sym)
+
+    def dhA(theta, d, a, alpha, sym=False):
+        if sym:
+            ct, st = sp.cos(theta), sp.sin(theta)
+            ca, sa = sp.cos(alpha), sp.sin(alpha)
+            return sp.Matrix([
+                [ct, -st*ca,  st*sa, a*ct],
+                [st,  ct*ca, -ct*sa, a*st],
+                [0,      sa,     ca,    d],
+                [0,       0,      0,    1]
+            ])
+        else:
+            ct, st = math.cos(theta), math.sin(theta)
+            ca, sa = math.cos(alpha), math.sin(alpha)
+            return np.array([
+                [ct, -st*ca,  st*sa, a*ct],
+                [st,  ct*ca, -ct*sa, a*st],
+                [0,      sa,     ca,    d],
+                [0,       0,      0,    1]
+            ], dtype=float)
+
+    def in_limits(robot, q):
+        msgs = []
+        ok = True
+        for i,(lo,hi) in enumerate(robot.lim):
+            if q[i] < lo-1e-9 or q[i] > hi+1e-9:
+                ok = False
+                msgs.append(f"θ{i+1} out of limits [{lo:.3f}, {hi:.3f}]")
+        return ok, msgs
 
 
 
@@ -369,146 +376,336 @@ class UR5(RoboticManipulator):
     
     #   UR5 DH parameters (Modified DH convention)
     def _initialize_dh_parameters(self) :
-        d1 = 0.089159
-        a2= -0.425
-        a3 = -0.39225
-        d4 = 0.10915
-        d5 = 0.09465
-        d6 = 0.0823
+        self.d1 = 0.089159
+        self.a2= -0.425
+        self.a3 = -0.39225
+        self.d4 = 0.10915
+        self.d5 = 0.09465
+        self.d6 = 0.0823
+        self.lim = [(-2*pi, 2*pi)]*6
+        self.a = [0.0, self.a2, self.a3, 0.0, 0.0, 0.0]
+        self.alpha = [ pi/2, 0.0, 0.0, pi/2, -pi/2, 0.0]
+        self.d = [self.d1, 0.0, 0.0, self.d4, self.d5, self.d6]
+
         return [
-            {"a": 0, "alpha": pi / 2,  "d": d1, "theta": 0.0, "variable": "theta"},
-            {"a": a2, "alpha": 0, "d": 0, "theta": 0.0, "variable": "theta"},
-            {"a": a3, "alpha": 0, "d": 0, "theta": 0.0, "variable": "theta"},
-            {"a": 0, "alpha": pi / 2,  "d": d4, "theta": 0.0, "variable": "theta"},
-            {"a": 0, "alpha": -pi / 2, "d": d5, "theta": 0.0, "variable": "theta"},
-            {"a": 0, "alpha": 0,   "d": d6, "theta": 0.0, "variable": "theta"},
+            {"a": 0, "alpha": pi / 2,  "d": self.d1, "theta": 0.0, "variable": "theta"},
+            {"a": self.a2, "alpha": 0, "d": 0, "theta": 0.0, "variable": "theta"},
+            {"a": self.a3, "alpha": 0, "d": 0, "theta": 0.0, "variable": "theta"},
+            {"a": 0, "alpha": pi / 2,  "d": self.d4, "theta": 0.0, "variable": "theta"},
+            {"a": 0, "alpha": -pi / 2, "d": self.d5, "theta": 0.0, "variable": "theta"},
+            {"a": 0, "alpha": 0,   "d": self.d6, "theta": 0.0, "variable": "theta"},
         ]
         
-    def compute_ik_numeric(self, T06):
-        """
-        Closed-form IK solution for UR5 (6-DOF manipulator)
-        Based on geometric approach - consistent with FK
-        
-        Args:
-            T06: 4x4 target transformation matrix
-            
-        Returns:
-            List of valid joint configurations (each is a list of 6 joint angles in radians)
-        """
-        dh = self._dh_params
-        
-        # Extract UR5 DH parameters
-        d1 = dh[0]['d']
-        a2 = dh[1]['a']
-        a3 = dh[2]['a']
-        d4 = dh[3]['d']
-        d5 = dh[4]['d']
-        d6 = dh[5]['d']
-        
+    def fk_all(self, q, sym=False):
+        Ts = []
+        T = sp.eye(4) if sym else np.eye(4)
+        for i in range(6):
+            A = dhA(q[i], self.d[i], self.a[i], self.alpha[i], sym=sym)
+            T = T @ A
+            Ts.append(T)
+        return Ts, T
+    
+
+    # -------------------- CLOSED FORM IK (CONSISTENT WITH FK ABOVE) --------------------
+    def ik_ur5_closed_form(self, T06: np.ndarray):
+        d1, a2, a3, d4, d5, d6 = self.d1, self.a2, self.a3, self.d4, self.d5, self.d6
+
         R06 = T06[:3, :3]
         p06 = T06[:3, 3]
         px, py, pz = float(p06[0]), float(p06[1]), float(p06[2])
-        
-        solutions = []
-        
-        # Calculate wrist center (p05)
+
+        sols = []
+
+        # wrist center (p05)
         p05 = p06 - d6 * R06[:, 2]
-        rxy = np.hypot(p05[0], p05[1])
-        
+        rxy = math.hypot(p05[0], p05[1])
         if rxy < 1e-12:
             return []
-        
+
         # θ1 (two solutions)
         c = d4 / rxy
         if abs(c) > 1.0 + 1e-9:
             return []
         c = max(-1.0, min(1.0, c))
-        
-        phi = np.arccos(c)
-        psi = np.arctan2(p05[1], p05[0])
-        q1_candidates = [
-            self._wrap_angle(psi + phi + np.pi/2),
-            self._wrap_angle(psi - phi + np.pi/2)
-        ]
-        
+        phi = math.acos(c)
+        psi = math.atan2(p05[1], p05[0])
+        q1_candidates = [wrap(psi + phi + PI/2), wrap(psi - phi + PI/2)]
+
         for q1 in q1_candidates:
-            s1, c1 = np.sin(q1), np.cos(q1)
-            
+            s1, c1 = math.sin(q1), math.cos(q1)
+
             # θ5 (two solutions)
             c5 = (px*s1 - py*c1 - d4) / d6
             if abs(c5) > 1.0 + 1e-9:
                 continue
             c5 = max(-1.0, min(1.0, c5))
-            
-            q5a = np.arccos(c5)
-            q5_candidates = [self._wrap_angle(q5a), self._wrap_angle(-q5a)]
-            
+            q5a = math.acos(c5)
+            q5_candidates = [wrap(q5a), wrap(-q5a)]
+
             for q5 in q5_candidates:
-                s5 = np.sin(q5)
+                s5 = math.sin(q5)
                 if abs(s5) < 1e-10:
                     continue
-                
+
                 # θ6
-                q6 = np.arctan2(
+                q6 = math.atan2(
                     (-R06[0,1]*s1 + R06[1,1]*c1) / s5,
                     (R06[0,0]*s1 - R06[1,0]*c1) / s5
                 )
-                q6 = self._wrap_angle(q6)
-                
+                q6 = wrap(q6)
+
                 # Compute T14 = inv(T01)*T06*inv(T45*T56)
-                T01 = self._T_matrix(q1, d1, 0.0, np.pi/2)
-                T45 = self._T_matrix(q5, d5, 0.0, -np.pi/2)
-                T56 = self._T_matrix(q6, d6, 0.0, 0.0)
-                
+                T01 = dhA(q1, d1, 0.0, pi/2, sym=False)
+                T45 = dhA(q5, d5, 0.0, -pi/2, sym=False)
+                T56 = dhA(q6, d6, 0.0, 0.0, sym=False)
+
                 T14 = np.linalg.inv(T01) @ T06 @ np.linalg.inv(T45 @ T56)
-                
-                # θ2, θ3 from planar geometry in frame 1
+
+                # θ2, θ3 from planar in frame1: use x,z (NOT x,y)
                 p14 = T14[:3, 3]
                 x, y = float(p14[0]), float(p14[1])
-                
+
                 D = (x*x + y*y - a2*a2 - a3*a3) / (2*a2*a3)
                 if abs(D) > 1.0 + 1e-9:
                     continue
                 D = max(-1.0, min(1.0, D))
-                
-                for q3 in [np.arccos(D), -np.arccos(D)]:
-                    q2 = np.arctan2(y, x) - np.arctan2(a3*np.sin(q3), a2 + a3*np.cos(q3))
-                    q2, q3 = self._wrap_angle(q2), self._wrap_angle(q3)
-                    
+
+                for q3 in [math.acos(D), -math.acos(D)]:
+                    q2 = math.atan2(y, x) - math.atan2(a3*math.sin(q3), a2 + a3*math.cos(q3))
+                    q2, q3 = wrap(q2), wrap(q3)
+
                     # θ4 from rotation
                     qtemp = [q1, q2, q3, 0.0, 0.0, 0.0]
-                    Ts, _ = self.compute_fk_numeric(qtemp)
+                    Ts, _ = robot.fk_all(qtemp, sym=False)
                     R03 = Ts[2][:3, :3]
                     R04 = (T01 @ T14)[:3, :3]
                     R34 = R03.T @ R04
-                    q4 = self._wrap_angle(np.arctan2(R34[1,0], R34[0,0]))
-                    
-                    candidate = [
-                        self._wrap_angle(q1),
-                        self._wrap_angle(q2),
-                        self._wrap_angle(q3),
-                        self._wrap_angle(q4),
-                        self._wrap_angle(q5),
-                        self._wrap_angle(q6)
-                    ]
-                    
+                    q4 = wrap(math.atan2(R34[1,0], R34[0,0]))
+
+                    candidate = [wrap(q1), wrap(q2), wrap(q3), wrap(q4), wrap(q5), wrap(q6)]
+
                     # Validate by FK to guarantee consistency
-                    _, Tchk = self.compute_fk_numeric(candidate)
+                    _, Tchk = robot.fk_all(candidate, sym=False)
                     if np.allclose(Tchk, T06, atol=1e-6, rtol=0):
-                        solutions.append(candidate)
-        
+                        sols.append(candidate)
+
         # Remove duplicates (wrap-aware)
-        unique_solutions = []
-        for s in solutions:
-            is_duplicate = False
-            for u in unique_solutions:
-                if sum((self._wrap_angle(si-ui))**2 for si, ui in zip(s, u)) < 1e-10:
-                    is_duplicate = True
-                    break
-            if not is_duplicate:
-                unique_solutions.append(s)
+        uniq = []
+        for s in sols:
+            if not any(sum((wrap(si-ui))**2 for si,ui in zip(s,u)) < 1e-10 for u in uniq):
+                uniq.append(s)
+        return uniq
+
+# -------------------- SYMBOLIC IK (Equations only) --------------------
+    def do_ik_symbolic(self):
+   
+        #x,y,z,alpha,beta,gamma = sp.symbols(" ".join(names), real=True)
+        x = 'x'
+        y = 'y'
+        z = 'z'
+        alpha = 'α'
+        beta = 'β'
+        gamma = 'γ'
+        R = rpy_to_R(alpha, beta, gamma, sym=True)
+        T = sp.Matrix([[R[0,0],R[0,1],R[0,2],x],
+                       [R[1,0],R[1,1],R[1,2],y],
+                       [R[2,0],R[2,1],R[2,2],z],
+                       [0,0,0,1]])
+        return T
+ 
+    
+    def do_fk(self):
+
+        comp_mode = self.sym_num_widget.currentRow()
+
+        sym = (comp_mode == 0)
+
+        unit = self.theta_system_widget.currentRow()
+        if unit == 1:
+            q = [d2r(v) for v in q]
+
+        Ts, T = self.fk_all(q, sym=sym)
+
+        frames = self.frame_range_selector.fk_all_radio.isChecked()
+
+        if sym:
+            transforms, final_T = self.current_manipulator.compute_fk_numeric(joint_values, frame_range)
+            display_fk_numeric_results(self, transforms, final_T, joint_values, frame_range)
+        else:
+            transforms, final_T, q_symbols = self.current_manipulator.compute_fk_symbolic(frame_range)
+            display_fk_symbolic_results(self, transforms, final_T, q_symbols, frame_range)
+
+
+    def do_ik(self):
+        comp_mode = self.sym_num_widget.currentRow()
+        sym = (comp_mode == 0)
         
-        return unique_solutions
+        if sym:
+            do_ik_symbolic(self)
+            return
+
+        print("\nInput: 1) 4×4 matrix  2) x,y,z,α,β,γ")
+        ch = ask_choice("Choose: ", ["1","2"], "1")
+        T = read_T_matrix() if ch == "1" else read_pose()
+
+        print("\nTarget 0T6 =")
+        pprint("0T6", T, sym=False)
+
+        print("\nSolving...")
+
+        sols = ik_ur5_closed_form(robot, T)
+
+        print("\n======================================================================")
+        print("RESULTS")
+        print("======================================================================")
+        if not sols:
+            print("No solution found.")
+            print("\n======================================================================")
+            print("Done!")
+            print("======================================================================\n")
+            return
+
+        print(f"Raw: {len(sols)} | Valid: {len(sols)}")
+        print("\n--- Solutions (rad) ---")
+        for i,s in enumerate(sols, start=1):
+            print(f"{i:02d}: [{', '.join(f'{v:+.6f}' for v in s)}]")
+
+        print("\n--- Solutions (deg) ---")
+        for i,s in enumerate(sols, start=1):
+            sd = [r2d(v) for v in s]
+            print(f"{i:02d}: [{', '.join(f'{v:+.3f}' for v in sd)}]")
+
+        print("\n======================================================================")
+        print("Done!")
+        print("======================================================================\n")
+    
+
+        
+#     def compute_ik_numeric(self, T06):
+#         """
+#         Closed-form IK solution for UR5 (6-DOF manipulator)
+#         Based on geometric approach - consistent with FK
+        
+#         Args:
+#             T06: 4x4 target transformation matrix
+            
+#         Returns:
+#             List of valid joint configurations (each is a list of 6 joint angles in radians)
+#         """
+#         dh = self._dh_params
+        
+#         # Extract UR5 DH parameters
+#         d1 = dh[0]['d']
+#         a2 = dh[1]['a']
+#         a3 = dh[2]['a']
+#         d4 = dh[3]['d']
+#         d5 = dh[4]['d']
+#         d6 = dh[5]['d']
+        
+#         R06 = T06[:3, :3]
+#         p06 = T06[:3, 3]
+#         px, py, pz = float(p06[0]), float(p06[1]), float(p06[2])
+        
+#         solutions = []
+        
+#         # Calculate wrist center (p05)
+#         p05 = p06 - d6 * R06[:, 2]
+#         rxy = np.hypot(p05[0], p05[1])
+        
+#         if rxy < 1e-12:
+#             return []
+        
+#         # θ1 (two solutions)
+#         c = d4 / rxy
+#         if abs(c) > 1.0 + 1e-9:
+#             return []
+#         c = max(-1.0, min(1.0, c))
+        
+#         phi = np.arccos(c)
+#         psi = np.arctan2(p05[1], p05[0])
+#         q1_candidates = [
+#             self._wrap_angle(psi + phi + np.pi/2),
+#             self._wrap_angle(psi - phi + np.pi/2)
+#         ]
+        
+#         for q1 in q1_candidates:
+#             s1, c1 = np.sin(q1), np.cos(q1)
+            
+#             # θ5 (two solutions)
+#             c5 = (px*s1 - py*c1 - d4) / d6
+#             if abs(c5) > 1.0 + 1e-9:
+#                 continue
+#             c5 = max(-1.0, min(1.0, c5))
+            
+#             q5a = np.arccos(c5)
+#             q5_candidates = [self._wrap_angle(q5a), self._wrap_angle(-q5a)]
+            
+#             for q5 in q5_candidates:
+#                 s5 = np.sin(q5)
+#                 if abs(s5) < 1e-10:
+#                     continue
+                
+#                 # θ6
+#                 q6 = np.arctan2(
+#                     (-R06[0,1]*s1 + R06[1,1]*c1) / s5,
+#                     (R06[0,0]*s1 - R06[1,0]*c1) / s5
+#                 )
+#                 q6 = self._wrap_angle(q6)
+                
+#                 # Compute T14 = inv(T01)*T06*inv(T45*T56)
+#                 T01 = self._T_matrix(q1, d1, 0.0, np.pi/2)
+#                 T45 = self._T_matrix(q5, d5, 0.0, -np.pi/2)
+#                 T56 = self._T_matrix(q6, d6, 0.0, 0.0)
+                
+#                 T14 = np.linalg.inv(T01) @ T06 @ np.linalg.inv(T45 @ T56)
+                
+#                 # θ2, θ3 from planar geometry in frame 1
+#                 p14 = T14[:3, 3]
+#                 x, y = float(p14[0]), float(p14[1])
+                
+#                 D = (x*x + y*y - a2*a2 - a3*a3) / (2*a2*a3)
+#                 if abs(D) > 1.0 + 1e-9:
+#                     continue
+#                 D = max(-1.0, min(1.0, D))
+                
+#                 for q3 in [np.arccos(D), -np.arccos(D)]:
+#                     q2 = np.arctan2(y, x) - np.arctan2(a3*np.sin(q3), a2 + a3*np.cos(q3))
+#                     q2, q3 = self._wrap_angle(q2), self._wrap_angle(q3)
+                    
+#                     # θ4 from rotation
+#                     qtemp = [q1, q2, q3, 0.0, 0.0, 0.0]
+#                     Ts, _ = self.compute_fk_numeric(qtemp)
+#                     R03 = Ts[2][:3, :3]
+#                     R04 = (T01 @ T14)[:3, :3]
+#                     R34 = R03.T @ R04
+#                     q4 = self._wrap_angle(np.arctan2(R34[1,0], R34[0,0]))
+                    
+#                     candidate = [
+#                         self._wrap_angle(q1),
+#                         self._wrap_angle(q2),
+#                         self._wrap_angle(q3),
+#                         self._wrap_angle(q4),
+#                         self._wrap_angle(q5),
+#                         self._wrap_angle(q6)
+#                     ]
+                    
+#                     # Validate by FK to guarantee consistency
+#                     _, Tchk = self.compute_fk_numeric(candidate)
+#                     if np.allclose(Tchk, T06, atol=1e-6, rtol=0):
+#                         solutions.append(candidate)
+        
+#         # Remove duplicates (wrap-aware)
+#         unique_solutions = []
+#         for s in solutions:
+#             is_duplicate = False
+#             for u in unique_solutions:
+#                 if sum((self._wrap_angle(si-ui))**2 for si, ui in zip(s, u)) < 1e-10:
+#                     is_duplicate = True
+#                     break
+#             if not is_duplicate:
+#                 unique_solutions.append(s)
+        
+#         return unique_solutions
 
 
 
