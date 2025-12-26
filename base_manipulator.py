@@ -187,78 +187,78 @@ class RoboticManipulator:
         # Returns:
         #     (transforms, final_transform) where transforms is list of 4x4 transformation matrices
 
-    def compute_fk_numeric(self, joint_values, frame_range=None):
-        if len(joint_values) != self.num_joints:
-            raise ValueError(f"Expected {self.num_joints} joint values, got {len(joint_values)}")
+    # def compute_fk_numeric(self, joint_values, frame_range=None):
+    #     if len(joint_values) != self.num_joints:
+    #         raise ValueError(f"Expected {self.num_joints} joint values, got {len(joint_values)}")
         
-        transforms = []
-        T = np.eye(4)
+    #     transforms = []
+    #     T = np.eye(4)
         
-        for i, (params, q_val) in enumerate(zip(self._dh_params, joint_values)):
-            # Get DH parameters
-            if params['variable'] == 'theta':
-                theta = q_val
-                d = params['d']
-            else:  # prismatic joint
-                theta = params['theta']
-                d = q_val
+    #     for i, (params, q_val) in enumerate(zip(self._dh_params, joint_values)):
+    #         # Get DH parameters
+    #         if params['variable'] == 'theta':
+    #             theta = q_val
+    #             d = params['d']
+    #         else:  # prismatic joint
+    #             theta = params['theta']
+    #             d = q_val
             
-            a = params['a']
-            alpha = params['alpha']
+    #         a = params['a']
+    #         alpha = params['alpha']
             
-            # Compute transformation matrix using DH convention
-            A = self._T_matrix(theta, d, a, alpha)
-            T = T @ A
-            transforms.append(T.copy())
+    #         # Compute transformation matrix using DH convention
+    #         A = self._T_matrix(theta, d, a, alpha)
+    #         T = T @ A
+    #         transforms.append(T.copy())
         
-        # Apply frame range filter if specified
-        if frame_range is not None:
-            start, end = frame_range
-            transforms = transforms[start:end+1]
+    #     # Apply frame range filter if specified
+    #     if frame_range is not None:
+    #         start, end = frame_range
+    #         transforms = transforms[start:end+1]
         
-        return transforms, T
+    #     return transforms, T
     
-        # Compute forward kinematics symbolically
-        # Args:
-        #     frame_range: Tuple (start, end) or None for all frames  
-        # Returns:
-        #     (transforms, final_transform, joint_symbols) as symbolic matrices
-    def compute_fk_symbolic(self, frame_range=None):
-        # Create symbolic joint variables
-        q_symbols = []
-        for i, params in enumerate(self._dh_params):
-            if params['variable'] == 'theta':
-                q_symbols.append(sp.Symbol(f'θ{i+1}', real=True))
-            else:
-                q_symbols.append(sp.Symbol(f'd{i+1}', real=True))
+    #     # Compute forward kinematics symbolically
+    #     # Args:
+    #     #     frame_range: Tuple (start, end) or None for all frames  
+    #     # Returns:
+    #     #     (transforms, final_transform, joint_symbols) as symbolic matrices
+    # def compute_fk_symbolic(self, frame_range=None):
+    #     # Create symbolic joint variables
+    #     q_symbols = []
+    #     for i, params in enumerate(self._dh_params):
+    #         if params['variable'] == 'theta':
+    #             q_symbols.append(sp.Symbol(f'θ{i+1}', real=True))
+    #         else:
+    #             q_symbols.append(sp.Symbol(f'd{i+1}', real=True))
         
-        transforms = []
-        T = sp.eye(4)
+    #     transforms = []
+    #     T = sp.eye(4)
         
-        for i, params in enumerate(self._dh_params):
-            # Get DH parameters
-            if params['variable'] == 'theta':
-                theta = q_symbols[i]
-                d = params['d']
-            else:
-                theta = params['theta']
-                d = q_symbols[i]
+    #     for i, params in enumerate(self._dh_params):
+    #         # Get DH parameters
+    #         if params['variable'] == 'theta':
+    #             theta = q_symbols[i]
+    #             d = params['d']
+    #         else:
+    #             theta = params['theta']
+    #             d = q_symbols[i]
             
-            a = params['a']
-            alpha = params['alpha']
+    #         a = params['a']
+    #         alpha = params['alpha']
             
-            # Compute symbolic transformation matrix
-            A = self._T_matrix_symbolic(theta, d, a, alpha)
-            T = T * A
-            T = sp.simplify(T)
-            transforms.append(T.copy())
+    #         # Compute symbolic transformation matrix
+    #         A = self._T_matrix_symbolic(theta, d, a, alpha)
+    #         T = T * A
+    #         T = sp.simplify(T)
+    #         transforms.append(T.copy())
         
-        # Apply frame range filter if specified
-        if frame_range is not None:
-            start, end = frame_range
-            transforms = transforms[start:end+1]
+    #     # Apply frame range filter if specified
+    #     if frame_range is not None:
+    #         start, end = frame_range
+    #         transforms = transforms[start:end+1]
         
-        return transforms, T, q_symbols
+    #     return transforms, T, q_symbols
 
     def _T_matrix(self, theta, d, a, alpha):
         """
@@ -388,11 +388,20 @@ class UR5(RoboticManipulator):
     def fk_all(self, q, sym=False):
         Ts = []
         T = sp.eye(4) if sym else np.eye(4)
+        
+        q_symbols = None
+        if sym:
+            q_symbols = [sp.Symbol(f'θ{i+1}', real=True) for i in range(6)]
+            q = q_symbols  # Use symbols instead of numeric values
+    
         for i in range(6):
             A = dhA(q[i], self.d[i], self.a[i], self.alpha[i], sym=sym)
             T = T @ A
             Ts.append(T)
-        return Ts, T
+        if sym:
+            return Ts, T, q_symbols
+        else:
+            return Ts, T
 
     # -------------------- CLOSED FORM IK (CONSISTENT WITH FK ABOVE) --------------------
     def ik_ur5_closed_form(self, T06: np.ndarray):
@@ -503,33 +512,6 @@ class UR5(RoboticManipulator):
     #     return T
  
     
-    def do_fk(self):
-
-        comp_mode = self.sym_num_widget.currentRow()
-
-        sym = (comp_mode == 0)
-
-        unit = self.theta_system_widget.currentRow()
-        if unit == 1:
-            q = [d2r(v) for v in q]
-
-        Ts, T = self.fk_all(q, sym=sym)
-
-        if self.fk_all_radio.isChecked():
-            frame_range = None
-        else:
-            start = self.fk_from_spin.value()
-            end = self.fk_to_spin.value()
-            if start >= end:
-                QMessageBox.warning(self, "Invalid Range", 
-                                  "Start frame must be less than end frame.")
-                return
-            frame_range = (start, end)
-
-        if sym:
-            display_fk_numeric_results(self, Ts, T, q, frame_range)
-        else:
-            display_fk_symbolic_results(self, Ts, T, q, frame_range)
 
 
     # def do_ik(self):

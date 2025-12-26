@@ -973,7 +973,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
         try:
             if calc_mode == 0:  # Forward Kinematics
-               self.current_manipulator.do_fk(self)
+               self.do_fk()
             else:  # Inverse Kinematics
                 pass
                 # self.current_T = self.read_T_matrix_from_table()
@@ -981,6 +981,51 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         except Exception as e:
             QMessageBox.critical(self, "Calculation Error", 
                                f"An error occurred:\n{str(e)}")
+    
+    
+    def do_fk(self):
+        comp_mode = self.sym_num_widget.currentRow()
+
+        sym = (comp_mode == 0)
+
+        joint_values = []
+        
+        unit = self.theta_system_widget.currentRow()
+        for row in range(self.dh_table.rowCount()):
+            item = self.dh_table.item(row, 6)  # Value column
+            if item is None or item.text().strip() == "":
+                raise ValueError(f"Joint {row + 1} value is empty")
+
+            value = float(item.text())
+
+            # Convert degrees to radians if needed
+            params = self.current_manipulator.get_dh_parameters()[row]
+            if params['variable'] == 'theta' and unit == 1:  # degrees
+                value = np.deg2rad(value)
+
+            joint_values.append(value)
+    
+
+
+        if self.fk_all_radio.isChecked():
+            frame_range = None
+        else:
+            start = self.fk_from_spin.value()
+            end = self.fk_to_spin.value()
+            if start >= end:
+                QMessageBox.warning(self, "Invalid Range", 
+                                  "Start frame must be less than end frame.")
+                return
+            frame_range = (start, end)
+
+        if sym:
+            Ts, T , q_symbols= self.current_manipulator.fk_all(joint_values, sym=True)
+            display_fk_symbolic_results(self, Ts, T, joint_values, frame_range)
+        else:
+            Ts, T = self.current_manipulator.fk_all(joint_values, sym=False)
+            display_fk_numeric_results(self, Ts, T, joint_values, frame_range)
+        self.tabs.setCurrentIndex(1)
+
 
             
             

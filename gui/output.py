@@ -1117,12 +1117,12 @@ def add_end_effector_pose_section(self, T):
         axis_layout.setContentsMargins(5, 5, 5, 5)
         
         axis_lbl = QLabel(axis)
-        axis_lbl.setFont(QFont("Roboto", 11, QFont.Weight.Bold))
+        axis_lbl.setFont(self.standard_font)
         axis_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         axis_lbl.setStyleSheet(f"color: {color};")
         
         val_lbl = QLabel(f"{value:.6f}")
-        val_lbl.setFont(QFont("Roboto", 13))
+        val_lbl.setFont(self.standard_font)
         val_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         val_lbl.setStyleSheet(f"""
             QLabel {{
@@ -1154,7 +1154,7 @@ def add_end_effector_pose_section(self, T):
         unit_str = " rad"
     
     ori_label = QLabel("Orientation (Roll-Pitch-Yaw):")
-    ori_label.setFont(QFont("Roboto", 12, QFont.Weight.Bold))
+    ori_label.setFont(self.standard_font)
     group.layout().addWidget(ori_label)
     
     ori_layout = QHBoxLayout()
@@ -1162,7 +1162,7 @@ def add_end_effector_pose_section(self, T):
                                ("Pitch (θ)", pitch),
                                ("Yaw (ψ)", yaw)]:
         lbl = QLabel(f"{angle_name}\n{value:.4f}{unit_str}")
-        lbl.setFont(QFont("Roboto", 11))
+        lbl.setFont(self.standard_font)
         lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         lbl.setStyleSheet("""
             QLabel {
