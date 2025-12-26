@@ -29,7 +29,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         super().__init__()  # calling the parent constructor
         self.current_manipulator = None
         self.setWindowTitle("Robotics IK/FK Calculator")   # giving a title to the window 
-        self.resize(1840, 1100) # resizing the window
+        self.resize(1600, 1100) # resizing the window
        
         central = QWidget()  # Create a central widget (required in QMainWindow)
         #central = Color("yellow")
@@ -82,13 +82,10 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
         input_tab = QWidget()
         main_layout = QHBoxLayout(input_tab)
-        
-        # ================= LEFT COLUMN =================
-        left_widget = QVBoxLayout()
-        main_layout.addLayout(left_widget, 2)
+
         
         inputs_section = QVBoxLayout()
-        left_widget.addLayout(inputs_section, 7)
+        main_layout.addLayout(inputs_section, 7)
 
         
         # Row 1: Controls
@@ -122,38 +119,49 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         inputs_section.addLayout(tables_matrix_Row, 8) 
         
         execute_widget = self.create_execute_widget()
-        left_widget.addWidget(execute_widget, 1)
-        
-        # ================= RIGHT COLUMN =================
-        right_widget = QVBoxLayout()
-        main_layout.addLayout(right_widget, 1)
-       
-        # right_widget.setSpacing(0)
-        # right_widget.setContentsMargins(0, 0, 0, 0)
-        self.view3d_widget = Color("#1cccec", "3D VIEW") 
-        choose_2D_sec = Color("#ec1c31", "2D_section") 
-      #  view3d_widget = QWidget()
-      #  view2d_widget = QWidget()
-        view2d_widget = Color("#f7838f", "2D VIEW")
-        
-#### ganna work on them
-        # view3d_widget = self.create_3d_view_widget()
-        # choose_2d_widget = self.create_2d_selector_widget()
-        # view2d_widget = self.create_2d_view_widget()
-        
-
-        right_widget.addWidget(self.view3d_widget, 8)
-        
-        
-        right_widget.addWidget(choose_2D_sec, 1)
-        right_widget.addWidget(view2d_widget, 8)
+        inputs_section.addWidget(execute_widget, 1)
         self.tabs.addTab(input_tab, "Inputs")
+        
+        
         output_tab = QWidget()
         output_layout = QHBoxLayout(output_tab)
         output_widget = self.create_output_widget()
         #Color("orange", "OUTPUT")
         output_layout.addWidget(output_widget, 6)
         self.tabs.addTab(output_tab, "Outputs")
+        
+        
+
+        cad_tab = QWidget()
+        cad_layout = QHBoxLayout(cad_tab)
+        
+        left_widget = QWidget()
+        left_layout = QVBoxLayout(left_widget)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+        left_layout.setSpacing(4)
+        # right_widget = QVBoxLayout()
+        # main_layout.addLayout(right_widget, 1)
+       
+        # right_widget.setSpacing(0)
+        # right_widget.setContentsMargins(0, 0, 0, 0)
+        choose_2D_sec = Color("#ec1c31", "2D_section") 
+      #  view3d_widget = QWidget()
+      #  view2d_widget = QWidget()
+        view2d_widget = Color("#f7838f", "2D VIEW")
+        
+        left_layout.addWidget(choose_2D_sec, 1)  # top: control
+        left_layout.addWidget(view2d_widget, 1)  # bottom: 2D view
+#### ganna work on them
+        # view3d_widget = self.create_3d_view_widget()
+        # choose_2d_widget = self.create_2d_selector_widget()
+        # view2d_widget = self.create_2d_view_widget()
+        
+        self.view3d_widget = Color("#1cccec", "3D VIEW") 
+
+        cad_layout.addWidget(left_widget, 3)      # 25%
+        cad_layout.addWidget(self.view3d_widget, 5) 
+
+        self.tabs.addTab(cad_tab, "CAD Model")
         outer_layout.addWidget(self.tabs)
         # test_output_widget(self)
         self.toggle_value_column()
