@@ -541,7 +541,7 @@ def display_fk_numeric_results(self, individual_Ts, cumulative_Ts, final_T, join
         display_individual = individual_Ts
     else:
         start_frame = frame_range[0]
-        display_individual = individual_Ts[frame_range[0]:frame_range[1]+1]
+        display_individual = individual_Ts[frame_range[0]:frame_range[1]]
     
     for i, T in enumerate(display_individual):
         frame_from = start_frame + i
@@ -553,7 +553,7 @@ def display_fk_numeric_results(self, individual_Ts, cumulative_Ts, final_T, join
     if frame_range is None:
         display_cumulative = cumulative_Ts
     else:
-        display_cumulative = cumulative_Ts[frame_range[0]:frame_range[1]+1]
+        display_cumulative = cumulative_Ts[frame_range[0]:frame_range[1]]
     
     for i, T in enumerate(display_cumulative):
         frame_num = start_frame + i + 1
@@ -612,7 +612,7 @@ def display_fk_symbolic_results(self, individual_Ts, cumulative_Ts, final_T, q_s
         display_individual = individual_Ts
     else:
         start_frame = frame_range[0]
-        display_individual = individual_Ts[frame_range[0]:frame_range[1]+1]
+        display_individual = individual_Ts[frame_range[0]:frame_range[1]]
     
     for i, T in enumerate(display_individual):
         frame_from = start_frame + i
@@ -626,14 +626,14 @@ def display_fk_symbolic_results(self, individual_Ts, cumulative_Ts, final_T, q_s
     if frame_range is None:
         display_cumulative = cumulative_Ts
     else:
-        display_cumulative = cumulative_Ts[frame_range[0]:frame_range[1]+1]
+        display_cumulative = cumulative_Ts[frame_range[0]:frame_range[1]]
     
     for i, T in enumerate(display_cumulative):
         frame_num = start_frame + i + 1
         add_symbolic_transformation_matrix_simple(self, T, f"Symbolic Matrix T<sub>0</sub><sup>{frame_num}</sup>")
         add_spacing(self, self.output_layout, 10)
     add_section_header(self, "Overall Forward Kinematics Transformation", "#ff9800")
-    add_transformation_matrix_section(self, final_T, f"Transformation Matrix T<sub>0</sub><sup>6</sup>")
+    add_symbolic_transformation_matrix_simple(self, final_T, f"Transformation Matrix T<sub>0</sub><sup>6</sup>")
     add_spacing(self, self.output_layout, 10)    
 
 
