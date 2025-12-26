@@ -1004,8 +1004,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                 value = np.deg2rad(value)
 
             joint_values.append(value)
-    
-
 
         if self.fk_all_radio.isChecked():
             frame_range = None
@@ -1019,11 +1017,11 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             frame_range = (start, end)
 
         if sym:
-            Ts, T , q_symbols= self.current_manipulator.fk_all(joint_values, sym=True)
-            display_fk_symbolic_results(self, Ts, T, joint_values, frame_range)
+            individual_Ts, cumulative_Ts, final_T, q_symbols = self.current_manipulator.fk_all(joint_values, sym=True)
+            display_fk_symbolic_results(self, individual_Ts, cumulative_Ts, final_T, q_symbols, frame_range)
         else:
-            Ts, T = self.current_manipulator.fk_all(joint_values, sym=False)
-            display_fk_numeric_results(self, Ts, T, joint_values, frame_range)
+            individual_Ts, cumulative_Ts, final_T = self.current_manipulator.fk_all(joint_values, sym=False)
+            display_fk_numeric_results(self, individual_Ts, cumulative_Ts, final_T, joint_values, frame_range)
         self.tabs.setCurrentIndex(1)
 
 

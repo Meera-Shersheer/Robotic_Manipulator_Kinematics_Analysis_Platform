@@ -386,7 +386,8 @@ class UR5(RoboticManipulator):
             {"a": 0, "alpha": 0,   "d": self.d6, "theta": 0.0, "variable": "theta"},
         ]   
     def fk_all(self, q, sym=False):
-        Ts = []
+        individual_Ts = []  # Individual: 1→2, 2→3, etc.
+        cumulative_Ts = []  # Cumulative: 0→1, 0→2, 0→3, etc.
         T = sp.eye(4) if sym else np.eye(4)
         
         q_symbols = None
@@ -396,12 +397,14 @@ class UR5(RoboticManipulator):
     
         for i in range(6):
             A = dhA(q[i], self.d[i], self.a[i], self.alpha[i], sym=sym)
+            individual_Ts.append(A)  # Store individual transformation
             T = T @ A
-            Ts.append(T)
+            cumulative_Ts.append(T) 
+
         if sym:
-            return Ts, T, q_symbols
+            return  individual_Ts, cumulative_Ts, T, q_symbols
         else:
-            return Ts, T
+            return individual_Ts, cumulative_Ts, T
 
     # -------------------- CLOSED FORM IK (CONSISTENT WITH FK ABOVE) --------------------
     def ik_ur5_closed_form(self, T06: np.ndarray):
