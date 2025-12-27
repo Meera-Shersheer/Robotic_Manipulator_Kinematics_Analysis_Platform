@@ -29,7 +29,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         super().__init__()  # calling the parent constructor
         self.current_manipulator = None
         self.current_T = None
-        self.setWindowTitle("Robotics IK/FK Calculator")   # giving a title to the window 
+        self.setWindowTitle("  ")   # giving a title to the window 
         self.resize(1600, 1100) # resizing the window
        
         central = QWidget()  # Create a central widget (required in QMainWindow)
@@ -42,8 +42,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         outer_layout = QVBoxLayout(central)
 
         # Title
-        title = QLabel("Robotics IK/FK Calculation Platform")
-        title.setStyleSheet("font-size:28px; font-weight:bold;")
+        title = QLabel("Robotic Manipulator Kinematics Analysis Platform")
+        title.setStyleSheet("font-size:28px; font-weight:bold; background-color: #8e24aa; color: white; padding : 10px; border-radius : 8px")
         title.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         
         outer_layout.addWidget(title)
@@ -102,13 +102,13 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
         fram_range = QVBoxLayout()
         inputs_section.addLayout(fram_range, 1)
-        self.frame_range_selector = self.create_fk_frame_selector()
+        self.input_options_widget  = self.create_input_options_widget()
 
         controls_widget.addWidget(minpulator_chose_box)
         controls_widget.addWidget(ik_fk)
         controls_widget.addWidget(sym_num)
         controls_widget.addWidget(theta_system)
-        fram_range.addWidget(self.frame_range_selector)
+        fram_range.addWidget(self.input_options_widget)
         
         # Row 2: DH Table
         tables_matrix_Row = QHBoxLayout()
@@ -253,7 +253,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                     painter.save()
                     rect = QRect(option.rect.left() + 12, option.rect.center().y() - 6, 12, 12)
                     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-                    painter.setBrush(QColor("#8e24aa"))
+                    painter.setBrush(QColor("#8f22ad"))
                     painter.setPen(Qt.PenStyle.NoPen)
                     painter.drawEllipse(rect)
                     painter.restore()
@@ -559,12 +559,30 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
     #Show/hide the T matrix based on mode mode
     def hide_matrix(self):
+        """Show/hide the T matrix based on mode"""
         kinematics_type = self.ik_fk_widget.currentRow()
-        
-        show_matrix = (kinematics_type == 1)
-        self.matrix_table.setVisible(show_matrix)
-        self.matrix_placeholder.setVisible(not show_matrix)
 
+        if kinematics_type == 1:  # IK mode
+            # Show matrix only if matrix input mode is selected
+            use_matrix = self.ik_matrix_radio.isChecked()
+            self.matrix_table.setVisible(use_matrix)
+            self.matrix_placeholder.setVisible(not use_matrix)
+        else:  # FK mode
+            self.matrix_table.setVisible(False)
+            self.matrix_placeholder.setVisible(True)
+        
+        
+    def toggle_ik_input_mode(self):
+        """Toggle between pose input and matrix input for IK"""
+        use_pose = self.ik_pose_radio.isChecked()
+
+        # Enable/disable pose input fields
+        for input_field in self.pose_inputs.values():
+            input_field.setEnabled(use_pose)
+        # Update matrix visibility in the matrix widget area
+        self.hide_matrix()
+        
+        
     def read_T_matrix_from_table(self):
         T = [[None]*4 for _ in range(4)]
         comp_mode = self.sym_num_widget.currentRow()
@@ -751,7 +769,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
         return widget
     
-    def create_fk_frame_selector(self, dof=6):
+    def create_input_options_widget(self, dof=6):
         # Container widget
         
         group = QGroupBox()
@@ -765,12 +783,14 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         }
         """)
         
+        self.fk_frame_widget = QWidget()
+        fk_layout = QVBoxLayout(self.fk_frame_widget)
         # ---- Title ----
         title = QLabel("Selected Frames Whose Transformation Matrices Will Be Displayed:")
         title.setFont(self.label_font)
         title.setStyleSheet("border: none; background: transparent;")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(title)
+        fk_layout.addWidget(title)
 
         # Mode selector: All / Range
         radio_layout = QHBoxLayout()
@@ -842,8 +862,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
              }
                 """)
                               
-        layout.addLayout(radio_layout)
-        layout.addLayout(spin_layout)
+        fk_layout.addLayout(radio_layout)
+        fk_layout.addLayout(spin_layout)
         # --- Tooltips ---
         self.fk_all_radio.setToolTip("Display all FK frames")
         self.fk_range_radio.setToolTip("Display only a specific frame range")
@@ -865,7 +885,132 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.fk_from_spin.valueChanged.connect(self.validate_frame_range)
         self.fk_to_spin.valueChanged.connect(self.validate_frame_range)
         self.ik_fk_widget.currentRowChanged.connect(self.hide_frame_selector)
+        
+        self.ik_pose_widget = QWidget()
+        ik_layout = QVBoxLayout(self.ik_pose_widget)
+        #ik_layout.setSpacing(5)  # Tight spacing
+        ik_layout.setContentsMargins(0, 0, 0, 0) 
 
+        # Title with input mode selector
+        title_layout = QHBoxLayout()
+        ik_title = QLabel("Select the method of entering the desired End-Effector Pose")
+        ik_title.setFont(self.label_font)
+        ik_title.setStyleSheet("border: none; background: transparent;")
+        ik_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        ik_layout.addWidget(ik_title)
+
+        title_layout.addSpacing(5)
+
+        # Radio buttons for input mode
+        self.ik_matrix_radio = QRadioButton("Homogeneous Transformation Matrix (4×4)")
+        self.ik_pose_radio = QRadioButton("Position & Orientation (x, y, z, α, β, γ)")
+        self.ik_pose_radio.setChecked(True)  # Default to pose (since matrix is below)
+
+        self.ik_matrix_radio.setFont(self.standard_font)
+        self.ik_pose_radio.setFont(self.standard_font)
+        self.ik_matrix_radio.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.ik_pose_radio.setCursor(Qt.CursorShape.PointingHandCursor)
+
+        title_layout.addWidget(self.ik_pose_radio)
+        #title_layout.addSpacing(10)
+        title_layout.addWidget(self.ik_matrix_radio)
+        # title_layout.addStretch()
+        title_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        ik_layout.addLayout(title_layout)
+
+        self.pose_inputs = {}
+        
+        pos_layout = QHBoxLayout()
+        pos_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        pos_layout.setSpacing(50)
+        for axis in ['X', 'Y', 'Z']:
+            axis_layout = QVBoxLayout()
+            axis_layout.setSpacing(5)
+            axis_layout.setContentsMargins(0, 0, 0, 0)
+
+            label = QLabel(axis.upper())
+            label.setFont(self.standard_font)
+            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            label.setStyleSheet("font-weight: bold; color: #00897b;")
+
+            input_field = QLineEdit("0.0")
+            input_field.setFont(self.standard_font)
+            input_field.setFixedWidth(120)  # Compact width
+            input_field.setFixedHeight(40) 
+            input_field.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            input_field.setValidator(QDoubleValidator())
+            input_field.setStyleSheet("""
+                QLineEdit {
+                    padding: 6px;
+                    border: 2px solid #00897b;
+                    border-radius: 4px;
+                    background-color: white;
+                }
+                QLineEdit:focus {
+                    border: 2px solid #00695c;
+                }
+            """)
+
+            axis_layout.addWidget(label)
+            axis_layout.addWidget(input_field)
+            pos_layout.addLayout(axis_layout)
+            
+            self.pose_inputs[axis] = input_field
+
+        ik_layout.addLayout(pos_layout)
+
+
+
+        ori_layout = QHBoxLayout()
+        ori_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        ori_layout.setSpacing(50)
+        for angle, symbol in [('alpha', 'α (Roll)'), ('beta', 'β (Pitch)'), ('gamma', 'γ (Yaw)')]:
+            angle_layout = QVBoxLayout()
+            angle_layout.setSpacing(5)
+            angle_layout.setContentsMargins(0, 0, 0, 0)
+
+            label = QLabel(symbol)
+            label.setFont(self.standard_font)
+            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            label.setStyleSheet("font-weight: bold; color: #8e24aa;")
+
+            input_field = QLineEdit("0.0")
+            input_field.setFont(self.standard_font)
+            input_field.setFixedWidth(120) 
+            input_field.setFixedHeight(40)
+            input_field.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            input_field.setValidator(QDoubleValidator())
+            input_field.setStyleSheet("""
+                QLineEdit {
+                    padding: 6px;
+                    border: 2px solid #8e24aa;
+                    border-radius: 4px;
+                    background-color: white;
+                }
+                QLineEdit:focus {
+                    border: 2px solid #7b1fa2;
+                }
+            """)
+
+            angle_layout.addWidget(label)
+            angle_layout.addWidget(input_field)
+            ori_layout.addLayout(angle_layout)
+
+            self.pose_inputs[angle] = input_field
+            
+
+        ik_layout.addLayout(ori_layout)
+
+
+        # Connect radio buttons
+        self.ik_pose_radio.toggled.connect(self.toggle_ik_input_mode)
+
+        # ========== Add both widgets to main group ==========
+        layout.addWidget(self.fk_frame_widget)
+        layout.addWidget(self.ik_pose_widget)
+
+        # Initially hide IK widget
+        self.ik_pose_widget.setVisible(False)
         return group
 
     def update_fk_spinbox_state(self, text):
@@ -958,8 +1103,9 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
     def hide_frame_selector(self):
         kinematics_type = self.ik_fk_widget.currentRow()
         
-        show_selector = (kinematics_type == 0)
-        self.frame_range_selector.setVisible(show_selector)
+        is_fk = (kinematics_type == 0)
+        self.fk_frame_widget.setVisible(is_fk)
+        self.ik_pose_widget.setVisible(not is_fk)
     
     """Execute FK or IK calculation based on current settings"""
     def execute_calculation(self):
@@ -975,7 +1121,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             if calc_mode == 0:  # Forward Kinematics
                self.do_fk()
             else:  # Inverse Kinematics
-                pass
+                self.do_ik()
                 # self.current_T = self.read_T_matrix_from_table()
                 # self.current_manipulator.do_ik(self)
         except Exception as e:
@@ -1024,7 +1170,51 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             display_fk_numeric_results(self, individual_Ts, cumulative_Ts, final_T, joint_values, frame_range)
         self.tabs.setCurrentIndex(1)
 
+    def read_pose_from_inputs(self):
+        """Read x, y, z, α, β, γ from pose input fields and convert to T matrix"""
+        try:
+            x = float(self.pose_inputs['x'].text())
+            y = float(self.pose_inputs['y'].text())
+            z = float(self.pose_inputs['z'].text())
+            alpha = float(self.pose_inputs['alpha'].text())
+            beta = float(self.pose_inputs['beta'].text())
+            gamma = float(self.pose_inputs['gamma'].text())
 
+            # Convert angles to radians if needed
+            angle_unit = self.theta_system_widget.currentRow()
+            if angle_unit == 1:  # degrees
+                alpha = np.deg2rad(alpha)
+                beta = np.deg2rad(beta)
+                gamma = np.deg2rad(gamma)
+
+            T = self.current_manipulator.pose_to_matrix(x, y, z, alpha, beta, gamma)
+            return T
+
+        except ValueError as e:
+            raise ValueError(f"Invalid pose input: {e}")
+
+    def do_ik(self):
+        """Execute inverse kinematics"""
+        comp_mode = self.sym_num_widget.currentRow()
+
+        if comp_mode == 0: 
+            self.create_execute_widgetdo_ik_symbolic()#
+            return
+
+        # Get target matrix based on input mode
+        if self.ik_pose_radio.isChecked():
+            self.current_T = self.read_pose_from_inputs()
+        else:
+            self.current_T = self.read_T_matrix_from_table()
+
+        solutions = self.current_manipulator.ik_ur5_closed_form(self.current_T)
+
+        if not solutions:
+            display_ik_no_solution(self, self.current_T)
+        else:
+            display_ik_numeric_results(self, solutions, self.current_T)
+
+        self.tabs.setCurrentIndex(1)
             
             
             

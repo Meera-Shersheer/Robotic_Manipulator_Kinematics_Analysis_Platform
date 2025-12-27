@@ -498,21 +498,21 @@ class UR5(RoboticManipulator):
 
 
 # -------------------- SYMBOLIC IK (Equations only) --------------------
-    # def do_ik_symbolic(self):
+    def do_ik_symbolic(self):
    
-    #     #x,y,z,alpha,beta,gamma = sp.symbols(" ".join(names), real=True)
-    #     x = 'x'
-    #     y = 'y'
-    #     z = 'z'
-    #     alpha = 'α'
-    #     beta = 'β'
-    #     gamma = 'γ'
-    #     R = rpy_to_R(alpha, beta, gamma, sym=True)
-    #     T = sp.Matrix([[R[0,0],R[0,1],R[0,2],x],
-    #                    [R[1,0],R[1,1],R[1,2],y],
-    #                    [R[2,0],R[2,1],R[2,2],z],
-    #                    [0,0,0,1]])
-    #     return T
+        #x,y,z,alpha,beta,gamma = sp.symbols(" ".join(names), real=True)
+        x = 'x'
+        y = 'y'
+        z = 'z'
+        alpha = 'α'
+        beta = 'β'
+        gamma = 'γ'
+        R = rpy_to_R(alpha, beta, gamma, sym=True)
+        T = sp.Matrix([[R[0,0],R[0,1],R[0,2],x],
+                       [R[1,0],R[1,1],R[1,2],y],
+                       [R[2,0],R[2,1],R[2,2],z],
+                       [0,0,0,1]])
+        return T
  
     
 
