@@ -152,8 +152,10 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
          
       #  view3d_widget = QWidget()
       #  view2d_widget = QWidget()
-        self.view3d_widget = OpenGLViewer()
-        control_cad =  self.create_cad_control_panel()
+        self.view3d_widget = Color("#1cccec", "3D VIEW") 
+        # OpenGLViewer()
+        control_cad =  Color("#ec1c31", "2D_section")
+        # self.create_cad_control_panel()
         view2d_widget = Color("#f7838f", "2D VIEW")
         
         left_layout.addWidget(control_cad, 1)  # top: control
@@ -1212,8 +1214,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         comp_mode = self.sym_num_widget.currentRow()
 
         if comp_mode == 0: 
-            T_symbolic = self.current_manipulator.do_ik_symbolic()
-            display_ik_symbolic_results(self, T_symbolic)
+            eq_list , T_symbolic = self.current_manipulator.do_ik_symbolic()
+            display_ik_symbolic_results(self, T_symbolic, eq_list)
             self.tabs.setCurrentIndex(1)
             return
 

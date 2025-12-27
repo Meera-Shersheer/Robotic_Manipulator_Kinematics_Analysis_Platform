@@ -60,6 +60,56 @@ def add_section_header(self, title, color="#d2598e"):
     header.setFixedHeight(60)
     self.output_layout.addWidget(header)
 
+def add_equations_section(self, eq_list):
+    """Display equations using matplotlib's LaTeX renderer"""
+
+    add_section_header(self, "Symbolic Equations", "#673ab7")
+    
+    group = create_result_group(self, "Inverse Kinematics Equations")
+    
+    # Create figure for equations
+    num_equations = len(eq_list)
+    fig_height = max(12, num_equations * 0.6)  # More generous spacing
+  
+    # Create figure
+    fig = Figure(figsize=(9, fig_height), facecolor='#fafafa', dpi=100)
+    canvas = FigureCanvas(fig)
+    ax = fig.add_subplot(111)
+    ax.axis('off')
+    
+    canvas.setMinimumHeight(360)
+    canvas.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+    # LaTeX equations
+    equations = eq_list
+    
+    y_pos = 0.98
+    line_spacing = 0.04 
+    for eq in equations:
+        if eq:
+            fontsize = 14 if 'mathbf' in eq else 12
+            try:
+                ax.text(0.5, y_pos, eq, fontsize=fontsize, verticalalignment='top', horizontalalignment='center',
+                           transform=ax.transAxes)
+                y_pos -= 0.15
+            except Exception as e:
+                print(f"Failed to render: {eq}\nError: {e}")
+                y_pos -= line_spacing
+        else:
+             y_pos -= line_spacing * 0.5
+    
+    canvas.setStyleSheet("""
+        QWidget {
+            background-color: white;
+            border-left: 5px solid #673ab7;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            padding: 15px;
+        }
+    """)
+    # fig.tight_layout()
+    group.layout().addWidget(canvas)
+    self.output_layout.addWidget(group)
+    
 def create_result_group(self, title):
     """Create a styled group box for results"""
 
@@ -238,7 +288,10 @@ def display_ik_numeric_results(self, solutions, target_matrix):
         add_ik_solution_display(self, solution, sol_idx, target_matrix, angle_unit)
         add_spacing(self, self.output_layout, 10)
 
-def display_ik_symbolic_results(self, T_symbolic):
+
+
+
+def display_ik_symbolic_results(self, T_symbolic, eq_list):
     """Display symbolic IK representation"""
     clear_output(self)
     
@@ -274,8 +327,8 @@ def display_ik_symbolic_results(self, T_symbolic):
     icon_lbl.setStyleSheet("color: #2196f3;")
     
     text_lbl = QLabel(
-        "To compute numeric IK solutions, switch to 'Numeric' mode and provide specific values "
-        "for the target pose (either as x, y, z, α, β, γ or as a 4×4 matrix)."
+        "Symbolic IK shows the mathematical relationships and solution procedure. "
+        "To compute numeric solutions, switch to 'Numeric' mode and provide a target pose."
     )
     text_lbl.setFont(QFont("Roboto", 11))
     text_lbl.setWordWrap(True)
@@ -293,6 +346,20 @@ def display_ik_symbolic_results(self, T_symbolic):
     note_layout.addStretch()
     
     self.output_layout.addWidget(note_widget)
+    add_spacing(self, self.output_layout, 15)
+    
+    # Create scrollable text display for equations
+    
+    
+    add_equations_section(self, eq_list)
+    add_spacing(self, self.output_layout, 15)
+    self.output_layout.addWidget(group)
+    
+    add_spacing(self, self.output_layout, 15)
+    
+    # Add export option
+
+    
     
 def display_ik_no_solution(self, target_matrix):
     """Display message when no IK solution found"""

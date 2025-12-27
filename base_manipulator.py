@@ -278,20 +278,20 @@ class RoboticManipulator:
         T[:3, 3] = [x, y, z]
         return T
     
-    def do_ik_symbolic(self):
-        x = sp.Symbol('x', real=True)
-        y = sp.Symbol('y', real=True)
-        z = sp.Symbol('z', real=True)
-        alpha = sp.Symbol('α', real=True)
-        beta = sp.Symbol('β', real=True)
-        gamma = sp.Symbol('γ', real=True)
+    # def do_ik_symbolic(self):
+    #     x = sp.Symbol('x', real=True)
+    #     y = sp.Symbol('y', real=True)
+    #     z = sp.Symbol('z', real=True)
+    #     alpha = sp.Symbol('α', real=True)
+    #     beta = sp.Symbol('β', real=True)
+    #     gamma = sp.Symbol('γ', real=True)
         
-        R = rpy_to_R(alpha, beta, gamma, sym=True)
-        T = sp.Matrix([[R[0,0],R[0,1],R[0,2],x],
-                       [R[1,0],R[1,1],R[1,2],y],
-                       [R[2,0],R[2,1],R[2,2],z],
-                       [0,0,0,1]])
-        return T
+    #     R = rpy_to_R(alpha, beta, gamma, sym=True)
+    #     T = sp.Matrix([[R[0,0],R[0,1],R[0,2],x],
+    #                    [R[1,0],R[1,1],R[1,2],y],
+    #                    [R[2,0],R[2,1],R[2,2],z],
+    #                    [0,0,0,1]])
+    #     return T
     
     def fk_all(self, q, sym=False):
         individual_Ts = []  # Individual: 1→2, 2→3, etc.
@@ -440,20 +440,50 @@ class UR5(RoboticManipulator):
             if not any(sum((wrap_angle(si-ui))**2 for si,ui in zip(s,u)) < 1e-10 for u in uniq):
                 uniq.append(s)
         return uniq
+    
+    def do_ik_symbolic(self, order="ZYX"):
+        x = sp.Symbol('x', real=True)
+        y = sp.Symbol('y', real=True)
+        z = sp.Symbol('z', real=True)
+        alpha = sp.Symbol('α', real=True)
+        beta = sp.Symbol('β', real=True)
+        gamma = sp.Symbol('γ', real=True)
+        
+        R = rpy_to_R(alpha, beta, gamma, sym=True)
+        T = sp.Matrix([[R[0,0],R[0,1],R[0,2],x],
+                       [R[1,0],R[1,1],R[1,2],y],
+                       [R[2,0],R[2,1],R[2,2],z],
+                       [0,0,0,1]])
 
-
-# -------------------- SYMBOLIC IK (Equations only) --------------------
-
- 
-
-
-
-
-
-
-
-
-
+        UR5_IK_EQUATIONS = [
+            r'$\mathbf{UR5\ Inverse\ Kinematics\ (Symbolic)}$',
+            r'$\mathbf{Given:}\ \mathbf{p}_{06}=[x,\ y,\ z]^T,\ \mathbf{R}_{06}=R_z(\gamma)R_y(\beta)R_x(\alpha)$',
+            r'',
+            r'$\mathbf{1)\ Wrist\ center:}$',
+            r'$\mathbf{p}_{05}=\mathbf{p}_{06}-d_6\,\mathbf{z}_{06}$',
+            r'',
+            r'$\mathbf{2)\ Joint\ 1\ (2\ branches):}$',
+            r'$r=\sqrt{p_{05,x}^2+p_{05,y}^2},\quad \psi=\mathrm{atan2}(p_{05,y},p_{05,x})$',
+            r'$\phi=\arccos(d_4/r)$',
+            r'$\theta_1=\psi+\phi+\pi/2,\quad \theta_1^{(alt)}=\psi-\phi+\pi/2$',
+            r'',
+            r'$\mathbf{3)\ Joint\ 5\ (2\ branches,\ depends\ on\ }\theta_1\mathbf{):}$',
+            r'$c_5=\frac{p_x\sin\theta_1-p_y\cos\theta_1-d_4}{d_6}$',
+            r'$\theta_5=\pm\arccos(c_5)$',
+            r'',
+            r'$\mathbf{4)\ Joint\ 6\ (depends\ on\ }\theta_1,\theta_5\mathbf{):}$',
+            r'$\theta_6=\mathrm{atan2}\!\left(\frac{-R_{06,12}\sin\theta_1+R_{06,22}\cos\theta_1}{\sin\theta_5},\ \frac{R_{06,11}\sin\theta_1-R_{06,21}\cos\theta_1}{\sin\theta_5}\right)$',
+            r'',
+            r'$\mathbf{5)\ Joints\ 2,3\ from\ planar\ triangle:}$',
+            r'$\mathbf{T}_{14}=T_{01}(\theta_1)^{-1}\,T_{06}\,\left(T_{45}(\theta_5)T_{56}(\theta_6)\right)^{-1}$',
+            r'$\mathrm{Let}\ x=p_{14,x},\ y=p_{14,y}$',
+            r'$D=\frac{x^2+y^2-a_2^2-a_3^2}{2a_2a_3},\quad \theta_3=\pm\arccos(D)$',
+            r'$\theta_2=\mathrm{atan2}(y,x)-\mathrm{atan2}(a_3\sin\theta_3,\ a_2+a_3\cos\theta_3)$',
+            r'',
+            r'$\mathbf{6)\ Joint\ 4:}$',
+            r'$\mathbf{R}_{34}=\mathbf{R}_{03}^T\mathbf{R}_{04},\quad \theta_4=\mathrm{atan2}(R_{34,21},R_{34,11})$',
+        ]
+        return UR5_IK_EQUATIONS , T
 
 
 
@@ -604,99 +634,88 @@ class ABB_IRB_1600(RoboticManipulator):
                 unique_solutions.append(s)
         
         return unique_solutions
+    
     def do_ik_symbolic(self):
-        """
-        Returns a dict of SymPy expressions you can show in GUI.
-
-        IMPORTANT:
-        - This prints/returns equations; it does NOT solve numerically.
-        - Uses the same geometry assumptions as your numeric IK:
-          wrist center, triangle in (x1,y1), gamma offset, etc.
-        """
         order="ZYX"
-        # task-space symbols
         x = sp.Symbol('x', real=True)
         y = sp.Symbol('y', real=True)
         z = sp.Symbol('z', real=True)
         alpha = sp.Symbol('α', real=True)
         beta = sp.Symbol('β', real=True)
         gamma = sp.Symbol('γ', real=True)
-
+        
+        R = rpy_to_R(alpha, beta, gamma, sym=True)
+        T = sp.Matrix([[R[0,0],R[0,1],R[0,2],x],
+                       [R[1,0],R[1,1],R[1,2],y],
+                       [R[2,0],R[2,1],R[2,2],z],
+                       [0,0,0,1]])
+        """
+        Returns formatted text equations for IRB1600 symbolic IK.
+        This replaces the previous implementation that returned a dict.
+        """
+        x, y, z = sp.symbols("x y z", real=True)
+        alpha, beta, gamma = sp.symbols("α β γ", real=True)
+        
+        # Build symbolic rotation matrix
         R06 = eulerR_s(alpha, beta, gamma, order)
         p06 = sp.Matrix([x, y, z])
-
+        
+        # Robot parameters
         d6 = sp.nsimplify(self.d[5])
-        pwc = sp.simplify(p06 - d6 * R06[:, 2])
-
-        # theta1 equations
-        theta1 = sp.atan2(pwc[1], pwc[0])
-        theta1_alt = theta1 + sp.pi
-
-        # geometry constants
         a2 = sp.nsimplify(self.a[1])
         a3 = sp.nsimplify(self.a[2])
         d4 = sp.nsimplify(self.d[3])
-
+        
         L2 = sp.Abs(a2)
         L3 = sp.sqrt(a3**2 + d4**2)
         gamma_off = sp.atan2(d4, a3)
-
-        # frame-1 planar coords (to avoid huge inv(T01) symbolic expansion in GUI)
+        
+        # Wrist center
+        pwc = sp.simplify(p06 - d6 * R06[:, 2])
+        
+        # Planar symbols
         r, s = sp.symbols("r s", real=True)
-
+        th3p = sp.Symbol("θ₃'", real=True)
+        
+        # Law of cosines
         D = sp.simplify((r**2 + s**2 - L2**2 - L3**2) / (2*L2*L3))
-
-        theta3_prime = sp.Symbol("theta3_prime", real=True)
-        theta3 = sp.simplify(theta3_prime - gamma_off)
-
-        theta2 = sp.simplify(
-            sp.atan2(s, r) - sp.atan2(L3*sp.sin(theta3_prime), L2 + L3*sp.cos(theta3_prime))
-        )
-
-        # Wrist orientation: formula relationships (symbolic extraction depends on DH wrist)
-        # Keep these as equations / definitions for GUI display:
-        R03, R36 = sp.MatrixSymbol("R03", 3, 3), sp.MatrixSymbol("R36", 3, 3)
-
-        eq_R36 = sp.Eq(R36, R03.T * R06)
-
-        theta5 = sp.Symbol("theta5", real=True)
-        theta5_def = sp.Eq(theta5, sp.atan2(sp.sqrt(R36[2,0]**2 + R36[2,1]**2), R36[2,2]))
-
-        # your convention note
-        theta4_note = "For this DH: theta4 is taken as (theta4 + pi) in numeric extraction."
-
-        return {
-            # input symbols
-            "symbols": {"x": x, "y": y, "z": z, "alpha": alpha, "beta": beta, "gamma": gamma_e},
-            # target rotation/position
-            "R06": R06,
-            "p06": p06,
-            # wrist center
-            "d6": d6,
-            "pwc": pwc,
-            # theta1
-            "theta1": theta1,
-            "theta1_alt": theta1_alt,
-            # geometry
-            "L2": L2,
-            "L3": L3,
-            "gamma_offset": gamma_off,
-            # planar definitions
-            "r": r,
-            "s": s,
-            # law of cosines
-            "D": D,
-            "theta3_prime": theta3_prime,
-            "theta3": theta3,
-            "theta2": theta2,
-            # wrist relationship
-            "eq_R36": eq_R36,
-            "theta5_def": theta5_def,
-            "theta4_note": theta4_note,
-            # branch count
-            "branches": "2(theta1) * 2(theta3) * 2(wrist flip) = 8 max"
-        }
-    
+        
+        # Theta expressions
+        th1 = sp.atan2(pwc[1], pwc[0])
+        th2 = sp.simplify(sp.atan2(s, r) - sp.atan2(L3*sp.sin(th3p), L2 + L3*sp.cos(th3p)))
+        th3 = sp.simplify(th3p - gamma_off)
+        
+        # Build formatted output
+        IRB1600_IK_EQUATIONS = [
+            r'$\mathbf{IRB1600\ Inverse\ Kinematics\ (Symbolic)}$',
+            r'$\mathbf{Given:}\ \mathbf{p}_{06}=[x,\ y,\ z]^T,\ \mathbf{R}_{06}=R(\alpha,\beta,\gamma)$',
+            r'',
+            r'$\mathbf{1)\ Wrist\ center:}$',
+            r'$\mathbf{p}_{wc}=\mathbf{p}_{06}-d_6\,\mathbf{z}_{06},\quad \mathbf{z}_{06}=\mathbf{R}_{06}[:,3]$',
+            r'',
+            r'$\mathbf{2)\ Joint\ 1\ (2\ branches):}$',
+            r'$\theta_1=\mathrm{atan2}(p_{wc,y},p_{wc,x}),\quad \theta_{1}^{(alt)}=\theta_1+\pi$',
+            r'',
+            r'$\mathbf{3)\ Arm\ triangle\ in\ frame\ 1:}$',
+            r'$r=p_{1,x},\ s=p_{1,y},\quad \mathbf{p}_1=T_{01}(\theta_1)^{-1}\,[\mathbf{p}_{wc};1]$',
+            r'',
+            r'$\mathbf{4)\ Geometry:}$',
+            r'$L_2=|a_2|,\quad L_3=\sqrt{a_3^2+d_4^2},\quad \gamma=\mathrm{atan2}(d_4,a_3)$',
+            r'',
+            r'$\mathbf{5)\ Joint\ 3\ (2\ branches):}$',
+            r'$D=\frac{r^2+s^2-L_2^2-L_3^2}{2L_2L_3}$',
+            r'$\theta_3^\prime=\pm\arccos(D),\quad \theta_3=\theta_3^\prime-\gamma$',
+            r'',
+            r'$\mathbf{6)\ Joint\ 2:}$',
+            r'$\theta_2=\mathrm{atan2}(s,r)-\mathrm{atan2}\!\left(L_3\sin\theta_3^\prime,\ L_2+L_3\cos\theta_3^\prime\right)$',
+            r'',
+            r'$\mathbf{7)\ Wrist:}$',
+            r'$\mathbf{R}_{36}=\mathbf{R}_{03}^T\mathbf{R}_{06}$',
+            r'$\theta_5=\mathrm{atan2}\!\left(\sqrt{R_{36,31}^2+R_{36,32}^2},\ R_{36,33}\right),\ \theta_5^{(alt)}=-\theta_5$',
+            r'$\theta_4=\mathrm{atan2}(R_{36,23},R_{36,13}),\quad \theta_6=\mathrm{atan2}(-R_{36,32},R_{36,31})$',
+            r'$\theta_4\leftarrow \mathrm{wrap}(\theta_4+\pi)\ \ \ (\mathrm{DH\ convention\ in\ code})$',
+        ]
+        return IRB1600_IK_EQUATIONS, T
 
 
 
@@ -857,6 +876,53 @@ class KUKA_KR16(RoboticManipulator):
         return unique_solutions
 
 
+    def do_ik_symbolic(self):
+
+        x = sp.Symbol('x', real=True)
+        y = sp.Symbol('y', real=True)
+        z = sp.Symbol('z', real=True)
+        alpha = sp.Symbol('α', real=True)
+        beta = sp.Symbol('β', real=True)
+        gamma = sp.Symbol('γ', real=True)
+        
+        R = rpy_to_R(alpha, beta, gamma, sym=True)
+        T = sp.Matrix([[R[0,0],R[0,1],R[0,2],x],
+                       [R[1,0],R[1,1],R[1,2],y],
+                       [R[2,0],R[2,1],R[2,2],z],
+                       [0,0,0,1]])
+        KR16_IK_EQUATIONS = [
+            r'$\mathbf{KR16\ Inverse\ Kinematics\ (Symbolic)}$',
+            r'$\mathbf{Given:}\ \mathbf{p}_{06}=[x,\ y,\ z]^T,\ \mathbf{R}_{06}=R(\alpha,\beta,\gamma)$',
+            r'',
+            r'$\mathbf{1)\ Wrist\ center:}$',
+            r'$\mathbf{p}_{wc}=\mathbf{p}_{06}-d_6\,\mathbf{z}_{06}$',
+            r'',
+            r'$\mathbf{2)\ Joint\ 1\ with\ shoulder\ offset\ a_1\ (2\ branches):}$',
+            r'$r_{xy}=\sqrt{p_{wc,x}^2+p_{wc,y}^2},\quad \psi=\mathrm{atan2}(p_{wc,y},p_{wc,x})$',
+            r'$s=\sqrt{r_{xy}^2-a_1^2}$',
+            r'$\theta_{1a}=\psi-\mathrm{atan2}(a_1,+s),\quad \theta_{1b}=\psi-\mathrm{atan2}(a_1,-s)$',
+            r'',
+            r'$\mathbf{3)\ Arm\ triangle\ in\ frame\ 1\ (x_1,z_1):}$',
+            r'$\mathbf{p}_1=T_{01}(\theta_1)^{-1}\,[\mathbf{p}_{wc};1],\quad r=\sqrt{x_1^2+z_1^2}$',
+            r'',
+            r'$\mathbf{4)\ Geometry:}$',
+            r'$L_2=|a_2|,\quad L_3=\sqrt{a_3^2+d_4^2},\quad \gamma=\mathrm{atan2}(d_4,a_3)$',
+            r'',
+            r'$\mathbf{5)\ Joint\ 3\ (2\ branches):}$',
+            r'$\cos(\theta_3^\prime)=\frac{r^2-L_2^2-L_3^2}{2L_2L_3}$',
+            r'$\theta_3^\prime=\pm\arccos(\cos(\theta_3^\prime)),\quad \theta_3=\theta_3^\prime-\gamma$',
+            r'',
+            r'$\mathbf{6)\ Joint\ 2:}$',
+            r'$\phi=\mathrm{atan2}(z_1,x_1),\ \ \psi=\mathrm{atan2}(L_3\sin\theta_3^\prime,\ L_2+L_3\cos\theta_3^\prime)$',
+            r'$\theta_2=\phi-\psi$',
+            r'',
+            r'$\mathbf{7)\ Wrist:}$',
+            r'$\mathbf{R}_{36}=\mathbf{R}_{03}^T\mathbf{R}_{06}$',
+            r'$\theta_5=\pm\arccos(R_{36,33})$',
+            r'$\theta_4=\mathrm{atan2}\!\left(\frac{R_{36,23}}{\sin\theta_5},\frac{R_{36,13}}{\sin\theta_5}\right),\ \ \theta_6=\mathrm{atan2}\!\left(\frac{R_{36,32}}{\sin\theta_5},\frac{-R_{36,31}}{\sin\theta_5}\right)$',
+        ]
+
+        return KR16_IK_EQUATIONS, T
 
 
 # ==================== FACTORY FUNCTION ====================
