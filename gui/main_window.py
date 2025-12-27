@@ -590,6 +590,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         comp_mode = self.sym_num_widget.currentRow()
         kinematics_type = self.ik_fk_widget.currentRow()
         
+        use_symbolic = (comp_mode == 0) and (kinematics_type == 1)
+        
         for i in range(4):
             for j in range(4):
                 item = self.matrix_table.item(i, j)
@@ -598,7 +600,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                 else:
                     text = item.text().strip()
 
-                if (comp_mode == 0):
+                if use_symbolic:
                     try:
                         T[i][j] = sympy.sympify(text)
                     except:
@@ -609,7 +611,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                     except:
                         T[i][j] = 0.0
 
-        return sympy.Matrix(T) if ( (kinematics_type == 1) and (comp_mode  == 0) ) else np.array(T)
+        return sympy.Matrix(T) if use_symbolic else np.array(T)
     
     def reset_matrix(self):
         """Reset matrix to identity matrix"""

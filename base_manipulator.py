@@ -384,7 +384,8 @@ class UR5(RoboticManipulator):
             {"a": 0, "alpha": pi / 2,  "d": self.d4, "theta": 0.0, "variable": "theta"},
             {"a": 0, "alpha": -pi / 2, "d": self.d5, "theta": 0.0, "variable": "theta"},
             {"a": 0, "alpha": 0,   "d": self.d6, "theta": 0.0, "variable": "theta"},
-        ]   
+        ]  
+         
     def fk_all(self, q, sym=False):
         individual_Ts = []  # Individual: 1→2, 2→3, etc.
         cumulative_Ts = []  # Cumulative: 0→1, 0→2, 0→3, etc.
@@ -485,7 +486,7 @@ class UR5(RoboticManipulator):
                     candidate = [wrap_angle(q1), wrap_angle(q2), wrap_angle(q3), wrap_angle(q4), wrap_angle(q5), wrap_angle(q6)]
 
                     # Validate by FK to guarantee consistency
-                    _, Tchk = self.fk_all(candidate, sym=False)
+                    _, _, Tchk = self.fk_all(candidate, sym=False)
                     if np.allclose(Tchk, T06, atol=1e-6, rtol=0):
                         sols.append(candidate)
 
