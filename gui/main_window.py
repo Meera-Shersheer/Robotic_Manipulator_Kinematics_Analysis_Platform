@@ -1220,12 +1220,25 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                 return
         else:
             self.current_T = self.read_T_matrix_from_table()
-
+        # Call appropriate IK method based on robot type
         try:
-               solutions = self.current_manipulator.ik_ur5_closed_form(self.current_T)
+            robot_name = self.current_manipulator.name
+
+            if robot_name == "UR5":
+                solutions = self.current_manipulator.ik_ur5_closed_form(self.current_T)
+            elif robot_name == "ABB_IRB_1600":
+                solutions = self.current_manipulator.ik_irb1600_closed_form(self.current_T)
+            elif robot_name == "KUKA_KR16":
+                solutions = self.current_manipulator.ik_kuka_kr16_closed_form(self.current_T)
+                return
+            else:
+                QMessageBox.warning(self, "IK Not Implemented", 
+                                  f"IK not yet implemented for {robot_name}")
+                return
+
         except Exception as e:
-               QMessageBox.critical(self, "IK Error", f"Error computing IK: {str(e)}")
-               return
+            QMessageBox.critical(self, "IK Error", f"Error computing IK: {str(e)}")
+            return
            
         if not solutions:
             display_ik_no_solution(self, self.current_T)
