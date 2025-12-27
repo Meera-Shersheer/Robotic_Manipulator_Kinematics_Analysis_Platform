@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 import math
 import numpy as np
 import sympy as sp
 
 PI = math.pi
+PI_SYM = sp.pi
 
 # Utilities
 def d2r(x): return x*PI/180.0
@@ -177,6 +179,141 @@ def ik_spherical(robot: IRB1600, T06: np.ndarray, tol: float = 1e-9):
             uniq.append(s)
     return uniq
 
+
+# ---------------------------------------------------------------------------
+# HARD-CODED SYMBOLIC IK EQUATIONS (no user input)
+# ---------------------------------------------------------------------------
+def ik_equations_symbolic_hardcoded(robot: IRB1600, euler_order: str = "ZYX"):
+    """Print SymPy equations used by ik_spherical(), hard-coded symbols (x,y,z,α,β,γ).
+
+    This does NOT solve numerically; it only displays the analytic equations/branches that
+    match this file's DH/FK conventions (same as ik_spherical()).
+    """
+    x, y, z, alpha, beta, gamma = sp.symbols("x y z alpha beta gamma", real=True)
+
+    # Target transform 0T6
+    R06 = eulerR_s(alpha, beta, gamma, euler_order)
+    p06 = sp.Matrix([x, y, z])
+
+    # Wrist center (frame-5 origin): p_wc = p06 - d6 * z06
+    d6 = sp.nsimplify(robot.d[5])
+    pwc = sp.simplify(p06 - d6 * R06[:, 2])
+
+    # Arm geometry for joints (2,3) with this DH
+    a2 = sp.Abs(sp.nsimplify(robot.a[1]))
+    a3 = sp.nsimplify(robot.a[2])
+    d4 = sp.nsimplify(robot.d[3])
+
+    L2 = a2
+    L3 = sp.sqrt(a3**2 + d4**2)
+    gam = sp.atan2(d4, a3)  # "gamma" elbow offset (use 'gam' to avoid name clash)
+
+    # θ1 (two branches)
+    th1 = sp.atan2(pwc[1], pwc[0])
+    th1b = sp.simplify(th1 + sp.pi)
+
+    # Transform wrist center into frame-1: p1 = inv(T01)*[pwc;1]
+    th1_sym = sp.Symbol("theta1", real=True)
+    T01 = dhA(th1_sym, sp.nsimplify(robot.d[0]), sp.nsimplify(robot.a[0]), sp.nsimplify(robot.alpha[0]), sym=True)
+    p1 = sp.simplify(T01.inv() * sp.Matrix([pwc[0], pwc[1], pwc[2], 1]))
+
+    # IMPORTANT for THIS DH: triangle is in (x1,y1) plane
+    r = sp.simplify(p1[0])
+    s = sp.simplify(p1[1])
+
+    # Law of cosines for θ3'
+    D = sp.simplify((r**2 + s**2 - L2**2 - L3**2) / (2*L2*L3))
+    th3p = sp.Symbol("theta3_prime", real=True)  # θ3' = ±acos(D)
+    th3 = sp.simplify(th3p - gam)
+
+    # θ2
+    th2 = sp.simplify(sp.atan2(s, r) - sp.atan2(L3*sp.sin(th3p), L2 + L3*sp.cos(th3p)))
+
+    # Orientation: compute R03 then R36 = R03^T R06
+    th2_sym = sp.Symbol("theta2", real=True)
+    th3_sym = sp.Symbol("theta3", real=True)
+    q1,q2,q3 = th1_sym, th2_sym, th3_sym
+    T03 = sp.simplify(dhA(q1, sp.nsimplify(robot.d[0]), sp.nsimplify(robot.a[0]), sp.nsimplify(robot.alpha[0]), True) *
+                      dhA(q2, sp.nsimplify(robot.d[1]), sp.nsimplify(robot.a[1]), sp.nsimplify(robot.alpha[1]), True) *
+                      dhA(q3, sp.nsimplify(robot.d[2]), sp.nsimplify(robot.a[2]), sp.nsimplify(robot.alpha[2]), True))
+    R03 = sp.simplify(T03[:3,:3])
+    R36 = sp.simplify(R03.T * R06)
+
+    # Wrist extraction (same pattern as ik_spherical())
+    th5 = sp.atan2(sp.sqrt(R36[2,0]**2 + R36[2,1]**2), R36[2,2])
+
+    # For the "non-flip" branch (θ5 positive):
+    th4_nf = sp.atan2(R36[1,2], R36[0,2])
+    th6_nf = sp.atan2(-R36[2,1], R36[2,0])
+
+    # For the "flip" branch (θ5 negative):
+    th4_f  = sp.atan2(-R36[1,2], -R36[0,2])
+    th6_f  = sp.atan2(R36[2,1], -R36[2,0])
+
+    # This DH convention needs +π on θ4 then wrap
+    th4_nf = sp.simplify(th4_nf + sp.pi)
+    th4_f  = sp.simplify(th4_f  + sp.pi)
+
+    print("\n" + "="*70)
+    print("HARD-CODED SYMBOLIC IK EQUATIONS (IRB1600) — matches ik_spherical()")
+    print("="*70)
+
+    print("\nTarget rotation R06(α,β,γ) with Euler order:", euler_order)
+    sp.pprint(R06)
+
+    print("\nWrist center: p_wc = p06 - d6*z06   (d6 =", float(robot.d[5]), ")")
+    sp.pprint(pwc)
+
+    print("\nθ1 branches:")
+    print("  θ1  = atan2(p_wc_y, p_wc_x)")
+    print("  θ1' = θ1 + π")
+    print("  θ1 =", th1)
+    print("  θ1'=", th1b)
+
+    print("\nTransform to frame-1 (use θ1): p1 = inv(T01(θ1))*[p_wc;1]")
+    print("  r = p1_x ,  s = p1_y   (triangle is in x1–y1 plane for this DH)")
+    print("  r =", r)
+    print("  s =", s)
+
+    print("\nLink geometry:")
+    print("  L2 = |a2| =", L2)
+    print("  L3 = sqrt(a3^2 + d4^2) =", L3)
+    print("  γ  = atan2(d4, a3) =", gam)
+
+    print("\nElbow (θ3') and θ3:")
+    print("  D = (r^2+s^2 - L2^2 - L3^2) / (2 L2 L3)")
+    sp.pprint(D)
+    print("  θ3' = ±acos(D)")
+    print("  θ3  = θ3' - γ")
+    print("  θ3  =", th3)
+
+    print("\nShoulder θ2:")
+    sp.pprint(th2)
+
+    print("\nOrientation:")
+    print("  R36 = R03^T * R06")
+    print("  θ5 = atan2( sqrt(R36[2,0]^2 + R36[2,1]^2), R36[2,2] )")
+    print("  θ4,θ6 depend on wrist flip:")
+    print("    non-flip: θ4 = atan2(R36[1,2], R36[0,2]) + π ; θ6 = atan2(-R36[2,1], R36[2,0])")
+    print("    flip:     θ4 = atan2(-R36[1,2], -R36[0,2]) + π ; θ6 = atan2(R36[2,1], -R36[2,0])")
+    print("\n(Use wrap() numerically; symbolic mode shows raw atan2/acos forms.)\n")
+
+    return {
+        "symbols": (x,y,z,alpha,beta,gamma),
+        "pwc": pwc,
+        "theta1": (th1, th1b),
+        "D": D,
+        "theta2": th2,
+        "theta3": th3,
+        "R36": R36,
+        "theta4_nonflip": th4_nf,
+        "theta6_nonflip": th6_nf,
+        "theta5": th5,
+        "theta4_flip": th4_f,
+        "theta6_flip": th6_f,
+    }
+
+
 # User interaction
 def read_T():
     print("\n  Enter 16 numbers (row-major):")
@@ -236,101 +373,11 @@ def do_ik(robot):
     print("\n"+"="*70+"\nINVERSE KINEMATICS\n"+"="*70)
     mode=(input("\nMode (N/S) [N]: ").strip().upper() or "N")
     want_sym=mode.startswith("S")
-    
     if want_sym:
-        print("\n  Enter symbolic task-space variables:")
-        var_names=ask_list("  x y z Î± Î² Î³ symbols: ",6,str)
-        x_sym, y_sym, z_sym, a_sym, b_sym, g_sym = [sp.Symbol(v, real=True) for v in var_names]
-        
-        order=(input("  Euler order (ZYX/XYZ) [ZYX]: ").strip().upper() or "ZYX")
-        
-        R06=eulerR_s(a_sym,b_sym,g_sym,order)
-        p06=sp.Matrix([x_sym,y_sym,z_sym])
-        
-        d6_sym=sp.nsimplify(robot.d[5])
-        pwc=p06 - d6_sym*R06[:,2]
-        
-        a2_sym,a3_sym=sp.nsimplify(robot.a[1]),sp.nsimplify(robot.a[2])
-        d4_sym=sp.nsimplify(robot.d[3])
-        L2_sym=sp.Abs(a2_sym)
-        L3_sym=sp.sqrt(a3_sym**2 + d4_sym**2)
-        gamma_sym=sp.atan2(d4_sym,a3_sym)
-        
-        r_sym,s_sym=sp.symbols('r s',real=True)
-        th3p_sym=sp.Symbol('theta_3prime',real=True)
-        
-        print("\n"+"="*70)
-        print("SYMBOLIC INVERSE KINEMATICS EQUATIONS")
-        print("="*70)
-        
-        print("\n" + "â”€"*70)
-        print("BLOCK 1: Rotation Matrix")
-        print("â”€"*70)
-        pprint("Râ‚€â‚†(Î±,Î²,Î³)",R06,sym=True)
-        
-        print("\n" + "â”€"*70)
-        print("BLOCK 2: Wrist Center")
-        print("â”€"*70)
-        print(f"dâ‚† = {robot.d[5]}")
-        pprint("p_wc = pâ‚€â‚† - dâ‚†Â·zâ‚€â‚†",pwc,sym=True)
-        
-        print("\n" + "â”€"*70)
-        print("BLOCK 3: Joint 1 (Base Rotation)")
-        print("â”€"*70)
-        print("Î¸â‚ = atan2(p_wc,y, p_wc,x)")
-        print("Alternative: Î¸â‚' = Î¸â‚ + Ï€")
-        print("â†’ 2 solutions")
-        
-        print("\n" + "â”€"*70)
-        print("BLOCK 4: Transform to Frame 1")
-        print("â”€"*70)
-        print("pâ‚ = â°Tâ‚â»Â¹(Î¸â‚) Â· [p_wc,x, p_wc,y, p_wc,z, 1]áµ€")
-        print("r = pâ‚,x")
-        print("s = pâ‚,y")
-        print("(So rÂ²+sÂ² = pâ‚,xÂ² + pâ‚,yÂ²)")
-        
-        print("\n" + "â”€"*70)
-        print("BLOCK 5: Link Geometry")
-        print("â”€"*70)
-        print("Lâ‚‚ = |aâ‚‚|")
-        sp.pprint(L2_sym)
-        print("\nLâ‚ƒ = âˆš(aâ‚ƒÂ² + dâ‚„Â²)")
-        sp.pprint(L3_sym)
-        print("\nÎ³ = atan2(dâ‚„, aâ‚ƒ)")
-        sp.pprint(gamma_sym)
-        
-        print("\n" + "â”€"*70)
-        print("BLOCK 6: Joint 3 (Elbow) - Law of Cosines")
-        print("â”€"*70)
-        D_sym=(r_sym**2 + s_sym**2 - L2_sym**2 - L3_sym**2)/(2*L2_sym*L3_sym)
-        print("D = (rÂ² + sÂ² - Lâ‚‚Â² - Lâ‚ƒÂ²)/(2Lâ‚‚Lâ‚ƒ)")
-        sp.pprint(D_sym)
-        print("\nÎ¸â‚ƒ' = Â±acos(D)")
-        print("Î¸â‚ƒ = Î¸â‚ƒ' - Î³")
-        print("â†’ 2 solutions (elbow up/down)")
-        
-        print("\n" + "â”€"*70)
-        print("BLOCK 7: Joint 2 (Shoulder)")
-        print("â”€"*70)
-        print("Î¸â‚‚ = atan2(s, r) - atan2(Lâ‚ƒÂ·sin(Î¸â‚ƒ'), Lâ‚‚ + Lâ‚ƒÂ·cos(Î¸â‚ƒ'))")
-        th2_formula=sp.atan2(s_sym,r_sym) - sp.atan2(L3_sym*sp.sin(th3p_sym), L2_sym + L3_sym*sp.cos(th3p_sym))
-        sp.pprint(th2_formula)
-        
-        print("\n" + "â”€"*70)
-        print("BLOCK 8: Wrist Orientation (Joints 4, 5, 6)")
-        print("â”€"*70)
-        print("Compute: Râ‚€â‚ƒ then Râ‚ƒâ‚† = Râ‚€â‚ƒáµ€ Â· Râ‚€â‚†")
-        print("Î¸â‚… = atan2(âˆš(Râ‚ƒâ‚†[2,0]Â² + Râ‚ƒâ‚†[2,1]Â²), Râ‚ƒâ‚†[2,2])")
-        print("Then extract Î¸â‚„, Î¸â‚† and add +Ï€ offset on Î¸â‚„ for this DH convention.")
-        print("\nAlternative: Î¸â‚…' = -Î¸â‚…  â†’ 2 wrist-flip solutions")
-        
-        print("\n" + "â”€"*70)
-        print("BLOCK 9: Solution Structure")
-        print("â”€"*70)
-        print("Total branches: 2 (Î¸1) Ã— 2 (Î¸3) Ã— 2 (Î¸5 flip) = 8 solutions max")
-        
-        print("="*70)
-        return
+        # Hard-coded symbolic equations (no prompts)
+        ik_equations_symbolic_hardcoded(robot, euler_order="ZYX")
+    return
+
     
     print("\nInput: 1) 4Ã—4 matrix  2) x,y,z,Î±,Î²,Î³")
     c=ask_int("Choose: ",1,2)

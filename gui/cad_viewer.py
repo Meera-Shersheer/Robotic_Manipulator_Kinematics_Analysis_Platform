@@ -45,10 +45,12 @@ class OpenGLViewer(QOpenGLWidget):
         
         # --- SolidWorks-like rotation parameters ---
         self.mouse_sensitivity = 0.5      # lower → slower, more controlled rotation
-        self.smoothing_factor = 0.1      # lower → smoother, floaty rotation
-        self.momentum_decay = 0.6        # closer to 1 → longer glide after release
+        self.smoothing_factor = 0.15      # lower → smoother, floaty rotation
+        self.momentum_decay = 0.85        # closer to 1 → longer glide after release
+        self.velocity_threshold = 0.01
 
-
+        self.is_dragging = False
+        
         # Timer for smooth updates (~60 FPS)
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_rotation)
@@ -267,7 +269,15 @@ class OpenGLViewer(QOpenGLWidget):
     def mousePressEvent(self, event):
         """Handle mouse press"""
         self.last_pos = event.position()
-        
+        self.is_dragging = True
+        # Stop momentum when user starts dragging
+        self.velocity_x = 0.0
+        self.velocity_y = 0.0
+    
+    def mouseReleaseEvent(self, event):
+        """Handle mouse release"""
+        self.is_dragging = False
+    
     def mouseMoveEvent(self, event):
         """Handle mouse drag for rotation"""
         if self.last_pos is None:
@@ -279,15 +289,15 @@ class OpenGLViewer(QOpenGLWidget):
         if event.buttons() & Qt.MouseButton.LeftButton:
             self.target_rotation_x += dy * self.mouse_sensitivity
             self.target_rotation_y += dx * self.mouse_sensitivity
-            self.velocity_x = dy * self.mouse_sensitivity * 0.3
-            self.velocity_y = dx * self.mouse_sensitivity * 0.3
+            if self.is_dragging:
+                self.velocity_x = dy * self.mouse_sensitivity * 0.2
+                self.velocity_y = dx * self.mouse_sensitivity * 0.2
+ 
             # self.rotation_x += (self.target_rotation_x - self.rotation_x) * 0.2
             # self.rotation_y += (self.target_rotation_y - self.rotation_y) * 0.2
-
-
         elif event.buttons() & Qt.MouseButton.RightButton:
-            # self.zoom += dy * 0.01
             self.target_zoom += dy * 0.01
+            # self.zoom += dy * 0.01
         
         self.last_pos = event.position()
         
@@ -297,9 +307,19 @@ class OpenGLViewer(QOpenGLWidget):
         self.rotation_x += (self.target_rotation_x - self.rotation_x) * self.smoothing_factor
         self.rotation_y += (self.target_rotation_y - self.rotation_y) * self.smoothing_factor
 
+        if not self.is_dragging:
+            # Stop momentum if velocity is very small
+            if abs(self.velocity_x) < self.velocity_threshold:
+                self.velocity_x = 0.0
+            if abs(self.velocity_y) < self.velocity_threshold:
+                self.velocity_y = 0.0
+                
         # Apply momentum
         self.rotation_x += self.velocity_x
         self.rotation_y += self.velocity_y
+        self.target_rotation_x += self.velocity_x
+        self.target_rotation_y += self.velocity_y
+        
         self.velocity_x *= self.momentum_decay
         self.velocity_y *= self.momentum_decay
 
@@ -311,7 +331,8 @@ class OpenGLViewer(QOpenGLWidget):
     def wheelEvent(self, event):
         """Handle mouse wheel for zoom"""
         delta = event.angleDelta().y() / 120 
-        self.target_zoom += delta * 0.15   
+        self.target_zoom += delta * 0.15
+        self.target_zoom = max(-20.0, min(-1.0, self.target_zoom))
         self.update()
     
     def set_view(self, elev, azim, zoom=None):
@@ -320,8 +341,10 @@ class OpenGLViewer(QOpenGLWidget):
         self.target_rotation_y = azim
         self.rotation_x = elev
         self.rotation_y = azim
+        
         self.velocity_x = 0
         self.velocity_y = 0
+        
         if zoom is not None:
             self.target_zoom = zoom
             self.zoom = zoom

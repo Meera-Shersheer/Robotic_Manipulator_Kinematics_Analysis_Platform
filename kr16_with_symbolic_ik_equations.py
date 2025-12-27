@@ -265,14 +265,119 @@ def do_fk(robot):
 # ============================================================================
 # Inverse kinematics
 # ============================================================================
+
+# ---------------------------------------------------------------------------
+# HARD-CODED SYMBOLIC IK EQUATIONS (no user input)
+# ---------------------------------------------------------------------------
+def ik_equations_symbolic_hardcoded_kr16(robot: KR16, euler_order: str = "ZYX"):
+    """Print SymPy equations used by ik_kr16(), hard-coded symbols (x,y,z,α,β,γ)."""
+    x, y, z, alpha, beta, gamma = sp.symbols("x y z alpha beta gamma", real=True)
+
+    R06 = eulerR_s(alpha, beta, gamma, euler_order)
+    p06 = sp.Matrix([x, y, z])
+
+    d6 = sp.nsimplify(robot.d[5])
+    pwc = sp.simplify(p06 - d6 * R06[:, 2])
+
+    a1 = sp.nsimplify(robot.a[0])
+    a2 = sp.Abs(sp.nsimplify(robot.a[1]))
+    a3 = sp.nsimplify(robot.a[2])
+    d1 = sp.nsimplify(robot.d[0])
+    d4 = sp.nsimplify(robot.d[3])
+
+    # θ1 geometry with shoulder offset a1
+    rxy = sp.sqrt(pwc[0]**2 + pwc[1]**2)
+    phi = sp.atan2(pwc[1], pwc[0])
+    s = sp.sqrt(rxy**2 - a1**2)
+
+    th1a = sp.simplify(phi - sp.atan2(a1,  s))
+    th1b = sp.simplify(phi - sp.atan2(a1, -s))
+
+    # Transform pwc into frame-1 for planar arm solve
+    th1_sym = sp.Symbol("theta1", real=True)
+    T01 = dhA(th1_sym, d1, a1, sp.nsimplify(robot.alpha[0]), sym=True)
+    p1 = sp.simplify(T01.inv() * sp.Matrix([pwc[0], pwc[1], pwc[2], 1]))
+    x1, z1 = sp.simplify(p1[0]), sp.simplify(p1[2])
+    r = sp.sqrt(x1**2 + z1**2)  # arm lies in x1–z1 plane for this DH family
+
+    L2 = a2
+    L3 = sp.sqrt(a3**2 + d4**2)
+    gam = sp.atan2(d4, a3)
+    D = sp.simplify((r**2 - L2**2 - L3**2) / (2*L2*L3))
+    th3p = sp.Symbol("theta3_prime", real=True)
+    th3 = sp.simplify(th3p - gam)
+
+    phi2 = sp.atan2(z1, x1)
+    psi2 = sp.atan2(L3*sp.sin(th3p), L2 + L3*sp.cos(th3p))
+    th2 = sp.simplify(phi2 - psi2)
+
+    # Orientation: R36 = R03^T R06
+    th2_sym = sp.Symbol("theta2", real=True)
+    th3_sym = sp.Symbol("theta3", real=True)
+    T03 = sp.simplify(dhA(th1_sym, d1, a1, sp.nsimplify(robot.alpha[0]), True) *
+                      dhA(th2_sym, sp.nsimplify(robot.d[1]), sp.nsimplify(robot.a[1]), sp.nsimplify(robot.alpha[1]), True) *
+                      dhA(th3_sym, sp.nsimplify(robot.d[2]), sp.nsimplify(robot.a[2]), sp.nsimplify(robot.alpha[2]), True))
+    R03 = sp.simplify(T03[:3,:3])
+    R36 = sp.simplify(R03.T * R06)
+
+    # Wrist extraction matches ik_kr16()
+    th5_base = sp.acos(sp.Max(-1, sp.Min(1, R36[2,2])))  # conceptual; numeric clamps
+    # Using the same algebraic form as code (θ5 = ±acos(R36[2,2]))
+    th5 = sp.Symbol("theta5", real=True)
+    s5 = sp.sin(th5)
+    th4 = sp.atan2(R36[1,2]/s5, R36[0,2]/s5)
+    th6 = sp.atan2(R36[2,1]/s5, -R36[2,0]/s5)
+
+    print("\n" + "="*70)
+    print("HARD-CODED SYMBOLIC IK EQUATIONS (KR16) — matches ik_kr16()")
+    print("="*70)
+    print("\nWrist center: p_wc = p06 - d6*z06   (d6 =", float(robot.d[5]), ")")
+    sp.pprint(pwc)
+
+    print("\nθ1 (shoulder offset a1):")
+    print("  rxy = sqrt(p_wc_x^2 + p_wc_y^2)")
+    print("  φ = atan2(p_wc_y, p_wc_x)")
+    print("  s = sqrt(rxy^2 - a1^2)")
+    print("  θ1 = φ - atan2(a1, ±s)")
+    print("  θ1a =", th1a)
+    print("  θ1b =", th1b)
+
+    print("\nTransform to frame-1: p1 = inv(T01(θ1))*[p_wc;1]")
+    print("  arm plane is x1–z1, so r = sqrt(x1^2 + z1^2)")
+    print("  x1 =", x1)
+    print("  z1 =", z1)
+    print("  r  =", r)
+
+    print("\nElbow/shoulder (θ2, θ3):")
+    print("  D = (r^2 - L2^2 - L3^2)/(2 L2 L3), θ3' = ±acos(D), θ3 = θ3' - γ")
+    sp.pprint(D)
+    print("  θ2 = atan2(z1,x1) - atan2(L3*sin(θ3'), L2 + L3*cos(θ3'))")
+    sp.pprint(th2)
+
+    print("\nWrist (θ4, θ5, θ6):")
+    print("  R36 = R03^T R06")
+    print("  θ5 = ±acos(R36[2,2])")
+    print("  θ4 = atan2(R36[1,2]/sinθ5, R36[0,2]/sinθ5)")
+    print("  θ6 = atan2(R36[2,1]/sinθ5, -R36[2,0]/sinθ5)\n")
+
+    return {
+        "symbols": (x,y,z,alpha,beta,gamma),
+        "pwc": pwc,
+        "theta1": (th1a, th1b),
+        "D": D,
+        "theta2": th2,
+        "theta3": th3,
+        "R36": R36,
+    }
+
+
 def do_ik(robot):
     print("\n"+"="*70+"\nINVERSE KINEMATICS\n"+"="*70)
     mode=(input("\nMode (N/S) [N]: ").strip().upper() or "N")
     want_sym=mode.startswith("S")
     
     if want_sym:
-        print("\n[Symbolic IK equations display]")
-        print("Maximum 8 solutions: 2×2×2 from θ1, θ3, θ5 branches")
+        ik_equations_symbolic_hardcoded_kr16(robot, euler_order="ZYX")
         return
     
     print("\nInput: 1) 4×4 matrix  2) x,y,z,α,β,γ")

@@ -43,11 +43,27 @@ def rpy_to_R(alpha, beta, gamma, sym=False):
     # ZYX: Rz(gamma)*Ry(beta)*Rx(alpha)
     return rot_z(gamma, sym) @ rot_y(beta, sym) @ rot_x(alpha, sym)
 
+def Rx_s(a): ca,sa=sp.cos(a),sp.sin(a); return sp.Matrix([[1,0,0],[0,ca,-sa],[0,sa,ca]])
+def Ry_s(b): cb,sb=sp.cos(b),sp.sin(b); return sp.Matrix([[cb,0,sb],[0,1,0],[-sb,0,cb]])
+def Rz_s(g): cg,sg=sp.cos(g),sp.sin(g); return sp.Matrix([[cg,-sg,0],[sg,cg,0],[0,0,1]])
 
-def in_limits(robot, q):
+
+def eulerR(a,b,g,order="ZYX"):
+    order=order.upper()
+    if order=="ZYX": return Rz(g)@Ry(b)@Rx(a)
+    if order=="XYZ": return Rx(a)@Ry(b)@Rz(g)
+    raise ValueError("Use ZYX or XYZ")
+
+def eulerR_s(a,b,g,order="ZYX"):
+    order=order.upper()
+    if order=="ZYX": return sp.simplify(Rz_s(g)*Ry_s(b)*Rx_s(a))
+    if order=="XYZ": return sp.simplify(Rx_s(a)*Ry_s(b)*Rz_s(g))
+    raise ValueError("Use ZYX or XYZ")
+
+def in_limits(self, q):
     msgs = []
     ok = True
-    for i,(lo,hi) in enumerate(robot.lim):
+    for i,(lo,hi) in enumerate(self.lim):
         if q[i] < lo-1e-9 or q[i] > hi+1e-9:
             ok = False
             msgs.append(f"θ{i+1} out of limits [{lo:.3f}, {hi:.3f}]")
@@ -588,7 +604,98 @@ class ABB_IRB_1600(RoboticManipulator):
                 unique_solutions.append(s)
         
         return unique_solutions
-    
+    def do_ik_symbolic(self):
+        """
+        Returns a dict of SymPy expressions you can show in GUI.
+
+        IMPORTANT:
+        - This prints/returns equations; it does NOT solve numerically.
+        - Uses the same geometry assumptions as your numeric IK:
+          wrist center, triangle in (x1,y1), gamma offset, etc.
+        """
+        order="ZYX"
+        # task-space symbols
+        x = sp.Symbol('x', real=True)
+        y = sp.Symbol('y', real=True)
+        z = sp.Symbol('z', real=True)
+        alpha = sp.Symbol('α', real=True)
+        beta = sp.Symbol('β', real=True)
+        gamma = sp.Symbol('γ', real=True)
+
+        R06 = eulerR_s(alpha, beta, gamma, order)
+        p06 = sp.Matrix([x, y, z])
+
+        d6 = sp.nsimplify(self.d[5])
+        pwc = sp.simplify(p06 - d6 * R06[:, 2])
+
+        # theta1 equations
+        theta1 = sp.atan2(pwc[1], pwc[0])
+        theta1_alt = theta1 + sp.pi
+
+        # geometry constants
+        a2 = sp.nsimplify(self.a[1])
+        a3 = sp.nsimplify(self.a[2])
+        d4 = sp.nsimplify(self.d[3])
+
+        L2 = sp.Abs(a2)
+        L3 = sp.sqrt(a3**2 + d4**2)
+        gamma_off = sp.atan2(d4, a3)
+
+        # frame-1 planar coords (to avoid huge inv(T01) symbolic expansion in GUI)
+        r, s = sp.symbols("r s", real=True)
+
+        D = sp.simplify((r**2 + s**2 - L2**2 - L3**2) / (2*L2*L3))
+
+        theta3_prime = sp.Symbol("theta3_prime", real=True)
+        theta3 = sp.simplify(theta3_prime - gamma_off)
+
+        theta2 = sp.simplify(
+            sp.atan2(s, r) - sp.atan2(L3*sp.sin(theta3_prime), L2 + L3*sp.cos(theta3_prime))
+        )
+
+        # Wrist orientation: formula relationships (symbolic extraction depends on DH wrist)
+        # Keep these as equations / definitions for GUI display:
+        R03, R36 = sp.MatrixSymbol("R03", 3, 3), sp.MatrixSymbol("R36", 3, 3)
+
+        eq_R36 = sp.Eq(R36, R03.T * R06)
+
+        theta5 = sp.Symbol("theta5", real=True)
+        theta5_def = sp.Eq(theta5, sp.atan2(sp.sqrt(R36[2,0]**2 + R36[2,1]**2), R36[2,2]))
+
+        # your convention note
+        theta4_note = "For this DH: theta4 is taken as (theta4 + pi) in numeric extraction."
+
+        return {
+            # input symbols
+            "symbols": {"x": x, "y": y, "z": z, "alpha": alpha, "beta": beta, "gamma": gamma_e},
+            # target rotation/position
+            "R06": R06,
+            "p06": p06,
+            # wrist center
+            "d6": d6,
+            "pwc": pwc,
+            # theta1
+            "theta1": theta1,
+            "theta1_alt": theta1_alt,
+            # geometry
+            "L2": L2,
+            "L3": L3,
+            "gamma_offset": gamma_off,
+            # planar definitions
+            "r": r,
+            "s": s,
+            # law of cosines
+            "D": D,
+            "theta3_prime": theta3_prime,
+            "theta3": theta3,
+            "theta2": theta2,
+            # wrist relationship
+            "eq_R36": eq_R36,
+            "theta5_def": theta5_def,
+            "theta4_note": theta4_note,
+            # branch count
+            "branches": "2(theta1) * 2(theta3) * 2(wrist flip) = 8 max"
+        }
     
 
 

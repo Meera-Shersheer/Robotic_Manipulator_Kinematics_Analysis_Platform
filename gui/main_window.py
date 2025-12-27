@@ -145,12 +145,15 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
        
         # right_widget.setSpacing(0)
         # right_widget.setContentsMargins(0, 0, 0, 0)
-        control_cad = self.create_cad_control_panel()
+        #Color("#ec1c31", "2D_section")
+       
         #Color("#ec1c31", "2D_section")
         #self.create_cad_control_panel()
          
       #  view3d_widget = QWidget()
       #  view2d_widget = QWidget()
+        self.view3d_widget = OpenGLViewer()
+        control_cad =  self.create_cad_control_panel()
         view2d_widget = Color("#f7838f", "2D VIEW")
         
         left_layout.addWidget(control_cad, 1)  # top: control
@@ -160,9 +163,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         # choose_2d_widget = self.create_2d_selector_widget()
         # view2d_widget = self.create_2d_view_widget()
         
-        self.view3d_widget = OpenGLViewer()
         #Color("#1cccec", "3D VIEW") 
-
+       
         cad_layout.addWidget(left_widget, 3)      # 25%
         cad_layout.addWidget(self.view3d_widget, 5) 
 
@@ -1279,17 +1281,348 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         group.setLayout(layout)
         return group
         
-                
-                
-                
-                
-                
-                
-            
-            
-            
-            
-            
+
+    def create_cad_control_panel(self):
+        """Create control panel for CAD viewer with custom view controls"""
+        container = QWidget()
+        main_layout = QVBoxLayout(container)
+        main_layout.setSpacing(10)
+        main_layout.setContentsMargins(10, 10, 10, 10)
+
+        container.setStyleSheet("""
+            QWidget {
+                background-color: #f9f9f9;
+            }
+        """)
+
+        # ============ Model Selection Group ============
+        model_group = self.create_cad_control_group("Model Selection")
+        model_layout = QVBoxLayout()
+
+        model_label = QLabel("Select Robot Model:")
+        model_label.setFont(self.standard_font)
+        model_label.setStyleSheet("border: none; background: transparent; color: #333;")
+        model_layout.addWidget(model_label)
+
+        self.cad_model_combo = self.create_selector("Select a manipulator:", ["UR5", "ABB IRB 1600", "KUKA KR16"])
+        # self.cad_model_combo.setFont(self.standard_font)
+        # self.cad_model_combo.addItems(["UR5", "ABB IRB 1600", "KUKA KR16"])
+        # self.cad_model_combo.setStyleSheet("""
+        #     QComboBox {
+        #         padding: 8px;
+        #         border: 2px solid #8e24aa;
+        #         border-radius: 5px;
+        #         background-color: white;
+        #     }
+        #     QComboBox:hover {
+        #         border: 2px solid #7b1fa2;
+        #     }
+        #     QComboBox::drop-down {
+        #         border: none;
+        #     }
+        #     QComboBox::down-arrow {
+        #         image: none;
+        #         border-left: 5px solid transparent;
+        #         border-right: 5px solid transparent;
+        #         border-top: 5px solid #8e24aa;
+        #         margin-right: 10px;
+        #     }
+        # """)
+        self.cad_model_combo.currentIndexChanged.connect(self.load_cad_model)
+        model_layout.addWidget(self.cad_model_combo)
+
+        model_group.layout().addLayout(model_layout)
+        main_layout.addWidget(model_group)
+
+        # ============ View Presets Group ============
+        presets_group = self.create_cad_control_group("View Presets")
+        presets_layout = QVBoxLayout()
+        presets_layout.setSpacing(8)
+
+        preset_buttons = [
+            ("Isometric", 35, 45, -3),
+            ("Top", 90, 0, -3),
+            ("Front", 0, 0, -3),
+            ("Side", 0, 90, -3)
+        ]
+
+        for name, elev, azim, zoom in preset_buttons:
+            btn = QPushButton(name)
+            btn.setFont(self.standard_font)
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn.setFixedHeight(40)
+            btn.setStyleSheet("""
+                QPushButton {
+                    background-color: white;
+                    color: #8e24aa;
+                    border: 2px solid #8e24aa;
+                    border-radius: 5px;
+                    padding: 8px;
+                    font-weight: 600;
+                }
+                QPushButton:hover {
+                    background-color: #f3e5f5;
+                }
+                QPushButton:pressed {
+                    background-color: #8e24aa;
+                    color: white;
+                }
+            """)
+            btn.clicked.connect(lambda checked, e=elev, a=azim, z=zoom: 
+                              self.view3d_widget.set_view(e, a, z))
+            presets_layout.addWidget(btn)
+
+        presets_group.layout().addLayout(presets_layout)
+        main_layout.addWidget(presets_group)
+
+        # ============ Custom View Group ============
+        custom_group = self.create_cad_control_group("Custom View")
+        custom_layout = QVBoxLayout()
+        custom_layout.setSpacing(10)
+
+        # Elevation control
+        elev_layout = QHBoxLayout()
+        elev_label = QLabel("Elevation:")
+        elev_label.setFont(self.standard_font)
+        elev_label.setStyleSheet("border: none; background: transparent; color: #333;")
+        elev_label.setFixedWidth(80)
+
+        self.elev_spin = QSpinBox()
+        self.elev_spin.setFont(self.standard_font)
+        self.elev_spin.setRange(-180, 180)
+        self.elev_spin.setValue(35)
+        self.elev_spin.setSuffix("°")
+        self.elev_spin.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.elev_spin.setStyleSheet("""
+            QSpinBox {
+                padding: 6px;
+                border: 2px solid #00897b;
+                border-radius: 4px;
+                background-color: white;
+            }
+            QSpinBox:focus {
+                border: 2px solid #00695c;
+            }
+        """)
+
+        elev_layout.addWidget(elev_label)
+        elev_layout.addWidget(self.elev_spin)
+        custom_layout.addLayout(elev_layout)
+
+        # Azimuth control
+        azim_layout = QHBoxLayout()
+        azim_label = QLabel("Azimuth:")
+        azim_label.setFont(self.standard_font)
+        azim_label.setStyleSheet("border: none; background: transparent; color: #333;")
+        azim_label.setFixedWidth(80)
+
+        self.azim_spin = QSpinBox()
+        self.azim_spin.setFont(self.standard_font)
+        self.azim_spin.setRange(-180, 180)
+        self.azim_spin.setValue(45)
+        self.azim_spin.setSuffix("°")
+        self.azim_spin.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.azim_spin.setStyleSheet("""
+            QSpinBox {
+                padding: 6px;
+                border: 2px solid #00897b;
+                border-radius: 4px;
+                background-color: white;
+            }
+            QSpinBox:focus {
+                border: 2px solid #00695c;
+            }
+        """)
+
+        azim_layout.addWidget(azim_label)
+        azim_layout.addWidget(self.azim_spin)
+        custom_layout.addLayout(azim_layout)
+
+        # Set View button
+        set_view_btn = QPushButton("Set View")
+        set_view_btn.setFont(self.standard_font)
+        set_view_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        set_view_btn.setFixedHeight(40)
+        set_view_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #00897b;
+                color: white;
+                border: 2px solid #00897b;
+                border-radius: 5px;
+                padding: 8px;
+                font-weight: 600;
+            }
+            QPushButton:hover {
+                background-color: #00695c;
+                border-color: #00695c;
+            }
+            QPushButton:pressed {
+                background-color: #004d40;
+            }
+        """)
+        set_view_btn.clicked.connect(self.set_custom_view)
+        custom_layout.addWidget(set_view_btn)
+
+        custom_group.layout().addLayout(custom_layout)
+        main_layout.addWidget(custom_group)
+
+        # ============ Zoom Controls Group ============
+        zoom_group = self.create_cad_control_group("Zoom Controls")
+        zoom_layout = QVBoxLayout()
+        zoom_layout.setSpacing(8)
+
+        zoom_buttons_layout = QHBoxLayout()
+        zoom_buttons_layout.setSpacing(8)
+
+        zoom_in_btn = QPushButton("Zoom In (+)")
+        zoom_out_btn = QPushButton("Zoom Out (−)")
+        zoom_reset_btn = QPushButton("Reset Zoom")
+
+        for btn in [zoom_in_btn, zoom_out_btn, zoom_reset_btn]:
+            btn.setFont(self.standard_font)
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn.setFixedHeight(40)
+            btn.setStyleSheet("""
+                QPushButton {
+                    background-color: white;
+                    color: #8e24aa;
+                    border: 2px solid #8e24aa;
+                    border-radius: 5px;
+                    padding: 8px;
+                    font-weight: 600;
+                }
+                QPushButton:hover {
+                    background-color: #f3e5f5;
+                }
+                QPushButton:pressed {
+                    background-color: #8e24aa;
+                    color: white;
+                }
+            """)
+
+        zoom_in_btn.clicked.connect(lambda: self.zoom_cad_view(0.5))
+        zoom_out_btn.clicked.connect(lambda: self.zoom_cad_view(-0.5))
+        zoom_reset_btn.clicked.connect(lambda: self.view3d_widget.set_view(
+            self.view3d_widget.rotation_x, 
+            self.view3d_widget.rotation_y, 
+            -3.0
+        ))
+
+        zoom_layout.addWidget(zoom_in_btn)
+        zoom_layout.addWidget(zoom_out_btn)
+        zoom_layout.addWidget(zoom_reset_btn)
+
+        zoom_group.layout().addLayout(zoom_layout)
+        main_layout.addWidget(zoom_group)
+
+        # ============ Display Options Group ============
+        display_group = self.create_cad_control_group("Display Options")
+        display_layout = QVBoxLayout()
+        display_layout.setSpacing(8)
+
+        self.cad_edges_check = QCheckBox("Show Edges")
+        self.cad_edges_check.setChecked(True)
+        self.cad_edges_check.setFont(self.standard_font)
+        self.cad_edges_check.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.cad_edges_check.setStyleSheet("""
+            QCheckBox {
+                spacing: 8px;
+                color: #333;
+            }
+            QCheckBox::indicator {
+                width: 20px;
+                height: 20px;
+                border: 2px solid #8e24aa;
+                border-radius: 4px;
+                background-color: white;
+            }
+            QCheckBox::indicator:checked {
+                background-color: #8e24aa;
+                image: none;
+            }
+            QCheckBox::indicator:checked:after {
+                content: "✓";
+                color: white;
+            }
+        """)
+        self.cad_edges_check.toggled.connect(self.view3d_widget.toggle_edges)
+
+        self.cad_wireframe_check = QCheckBox("Wireframe Mode")
+        self.cad_wireframe_check.setFont(self.standard_font)
+        self.cad_wireframe_check.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.cad_wireframe_check.setStyleSheet(self.cad_edges_check.styleSheet())
+        self.cad_wireframe_check.toggled.connect(self.view3d_widget.toggle_wireframe)
+
+        display_layout.addWidget(self.cad_edges_check)
+        display_layout.addWidget(self.cad_wireframe_check)
+
+        display_group.layout().addLayout(display_layout)
+        main_layout.addWidget(display_group)
+
+        # ============ Info Display ============
+        self.cad_info_label = QLabel("Left-drag: Rotate | Right-drag/Wheel: Zoom")
+        self.cad_info_label.setFont(self.standard_font)
+        self.cad_info_label.setWordWrap(True)
+        self.cad_info_label.setStyleSheet("""
+            QLabel {
+                background-color: #e1f5fe;
+                color: #01579b;
+                padding: 10px;
+                border-radius: 5px;
+                border: 1px solid #81d4fa;
+            }
+        """)
+        main_layout.addWidget(self.cad_info_label)
+
+        main_layout.addStretch()
+
+        # Load initial model
+        self.load_cad_model(0)
+
+        return container
+
+    def load_cad_model(self, index):
+        """Load CAD model into viewer"""
+        models = [
+            'cad_models/ur5.obj',
+            'cad_models/irb_1600_10kg_1.45m.obj',
+            'cad_models/ur5.obj'  # Placeholder for KUKA
+        ]
+
+        filepath = models[index]
+        success = self.view3d_widget.load_model(filepath)
+
+        if success and self.view3d_widget.mesh:
+            self.cad_info_label.setText(
+                f"Loaded: {filepath.split('/')[-1]} | "
+                f"Vertices: {len(self.view3d_widget.mesh.vertices):,} | "
+                f"Faces: {len(self.view3d_widget.mesh.faces):,}"
+            )
+        else:
+            self.cad_info_label.setText(f"Failed to load {filepath}")
+            QMessageBox.warning(self, "Load Error", 
+                              f"Could not load model: {filepath}")
+
+    def set_custom_view(self):
+        """Set custom view from spinbox values"""
+        elev = self.elev_spin.value()
+        azim = self.azim_spin.value()
+        self.view3d_widget.set_view(elev, azim)
+
+    def zoom_cad_view(self, delta):
+        """Zoom in or out by specified amount"""
+        self.view3d_widget.target_zoom += delta
+        self.view3d_widget.target_zoom = max(-20.0, min(-1.0, self.view3d_widget.target_zoom))  
+
+
+
+
+
+
+
+
+
+
             
             
             

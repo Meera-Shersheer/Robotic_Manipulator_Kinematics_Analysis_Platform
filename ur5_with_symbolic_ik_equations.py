@@ -234,25 +234,123 @@ def ik_ur5_closed_form(robot: UR5, T06: np.ndarray):
             uniq.append(s)
     return uniq
 
+
+# -------------------- HARD-CODED SYMBOLIC IK EQUATIONS (no user input) --------------------
+def ur5_ik_equations_symbolic_hardcoded(robot: UR5):
+    """Print SymPy equations used by ik_ur5_closed_form(), hard-coded symbols and same DH."""
+    x, y, z, alpha, beta, gamma = sp.symbols("x y z alpha beta gamma", real=True)
+
+    # Target transform (ZYX RPY)
+    R06 = rpy_to_R(alpha, beta, gamma, sym=True)
+    T06 = sp.Matrix([[R06[0,0], R06[0,1], R06[0,2], x],
+                     [R06[1,0], R06[1,1], R06[1,2], y],
+                     [R06[2,0], R06[2,1], R06[2,2], z],
+                     [0,0,0,1]])
+
+    d1, a2, a3, d4, d5, d6 = map(sp.nsimplify, [robot.d1, robot.a2, robot.a3, robot.d4, robot.d5, robot.d6])
+
+    # Wrist center p05
+    p06 = sp.Matrix([x, y, z])
+    p05 = sp.simplify(p06 - d6 * R06[:, 2])
+    rxy = sp.sqrt(p05[0]**2 + p05[1]**2)
+
+    # θ1 (two solutions)
+    c = d4 / rxy
+    phi = sp.acos(c)
+    psi = sp.atan2(p05[1], p05[0])
+    q1a = sp.simplify(psi + phi + sp.pi/2)
+    q1b = sp.simplify(psi - phi + sp.pi/2)
+
+    # θ5 from c5 = (px*s1 - py*c1 - d4)/d6
+    q1_sym = sp.Symbol("theta1", real=True)
+    s1, c1 = sp.sin(q1_sym), sp.cos(q1_sym)
+    c5 = sp.simplify((x*s1 - y*c1 - d4) / d6)
+    q5_sym = sp.Symbol("theta5", real=True)  # θ5 = ±acos(c5)
+
+    # θ6
+    s5 = sp.sin(q5_sym)
+    q6 = sp.atan2(
+        (-R06[0,1]*s1 + R06[1,1]*c1) / s5,
+        ( R06[0,0]*s1 - R06[1,0]*c1) / s5
+    )
+
+    # Build T01, T45, T56 and T14 = inv(T01)*T06*inv(T45*T56)
+    T01 = dhA(q1_sym, d1, 0.0, sp.pi/2, sym=True)
+    T45 = dhA(q5_sym, d5, 0.0, -sp.pi/2, sym=True)
+    T56 = dhA(q6,    d6, 0.0, 0.0, sym=True)
+    T14 = sp.simplify(T01.inv() * T06 * (T45*T56).inv())
+
+    # θ2, θ3 from planar solve using p14 x,y (matches code)
+    p14 = T14[:3, 3]
+    X, Y = sp.simplify(p14[0]), sp.simplify(p14[1])
+    D = sp.simplify((X**2 + Y**2 - a2**2 - a3**2) / (2*a2*a3))
+    q3p = sp.Symbol("theta3", real=True)  # θ3 = ±acos(D) in code
+    q2 = sp.simplify(sp.atan2(Y, X) - sp.atan2(a3*sp.sin(q3p), a2 + a3*sp.cos(q3p)))
+
+    # θ4 from R34 = R03^T R04 (same as code path)
+    q2_sym = sp.Symbol("theta2", real=True)
+    q3_sym = sp.Symbol("theta3", real=True)
+    # R03 from first three joints
+    T03 = sp.simplify(dhA(q1_sym, d1, 0.0, sp.pi/2, True) *
+                      dhA(q2_sym, 0.0, a2, 0.0, True) *
+                      dhA(q3_sym, 0.0, a3, 0.0, True))
+    R03 = sp.simplify(T03[:3,:3])
+    # R04 = (T01*T14) rotation
+    R04 = sp.simplify((T01*T14)[:3,:3])
+    R34 = sp.simplify(R03.T * R04)
+    q4 = sp.atan2(R34[1,0], R34[0,0])
+
+    print("\n" + "="*70)
+    print("HARD-CODED SYMBOLIC IK EQUATIONS (UR5) — matches ik_ur5_closed_form()")
+    print("="*70)
+
+    print("\nTarget T06(x,y,z,α,β,γ) with ZYX RPY:")
+    sp.pprint(T06)
+
+    print("\nWrist center p05 = p06 - d6*z06")
+    sp.pprint(p05)
+
+    print("\nθ1 branches:")
+    print("  c = d4 / sqrt(p05x^2 + p05y^2)")
+    print("  ψ = atan2(p05y,p05x),  φ = acos(c)")
+    print("  θ1 = ψ ± φ + π/2")
+    print("  θ1a =", q1a)
+    print("  θ1b =", q1b)
+
+    print("\nθ5 branches (given θ1):")
+    print("  c5 = (x*sinθ1 - y*cosθ1 - d4) / d6")
+    sp.pprint(c5)
+    print("  θ5 = ±acos(c5)")
+
+    print("\nθ6 (given θ1,θ5):")
+    sp.pprint(q6)
+
+    print("\nθ2, θ3 (planar from p14):")
+    print("  T14 = inv(T01)*T06*inv(T45*T56)")
+    print("  D = (X^2 + Y^2 - a2^2 - a3^2)/(2 a2 a3),  θ3 = ±acos(D)")
+    sp.pprint(D)
+    print("  θ2 = atan2(Y,X) - atan2(a3*sinθ3, a2 + a3*cosθ3)")
+    sp.pprint(q2)
+
+    print("\nθ4 from R34:")
+    sp.pprint(q4)
+    print()
+
+    return {
+        "symbols": (x,y,z,alpha,beta,gamma),
+        "p05": p05,
+        "theta1": (q1a, q1b),
+        "c5": c5,
+        "theta6": q6,
+        "D": D,
+        "theta2": q2,
+        "theta4": q4,
+    }
+
+
 # -------------------- SYMBOLIC IK (Equations only) --------------------
 def do_ik_symbolic(robot: UR5):
-    print("\n======================================================================")
-    print("SYMBOLIC INVERSE KINEMATICS (Equations Only)")
-    print("======================================================================")
-    names = ask_symbols("  Symbols: x y z alpha beta gamma: ", 6)
-    x,y,z,alpha,beta,gamma = sp.symbols(" ".join(names), real=True)
-
-    R = rpy_to_R(alpha, beta, gamma, sym=True)
-    T = sp.Matrix([[R[0,0],R[0,1],R[0,2],x],
-                   [R[1,0],R[1,1],R[1,2],y],
-                   [R[2,0],R[2,1],R[2,2],z],
-                   [0,0,0,1]])
-
-    print("\nTarget T =")
-    sp.pprint(T)
-
-    print("\n(Closed-form UR5 IK is implemented numerically; symbolic derivation is long.)")
-    print("This mode is for displaying the symbolic target transform you entered.\n")
+    ur5_ik_equations_symbolic_hardcoded(robot)
 
 # -------------------- I/O MENU --------------------
 def read_T_matrix():
