@@ -47,6 +47,15 @@ def Rx_s(a): ca,sa=sp.cos(a),sp.sin(a); return sp.Matrix([[1,0,0],[0,ca,-sa],[0,
 def Ry_s(b): cb,sb=sp.cos(b),sp.sin(b); return sp.Matrix([[cb,0,sb],[0,1,0],[-sb,0,cb]])
 def Rz_s(g): cg,sg=sp.cos(g),sp.sin(g); return sp.Matrix([[cg,-sg,0],[sg,cg,0],[0,0,1]])
 
+def _f(x, n=6):
+    return f"{x:.{n}f}"
+
+def _hdr(i, title):
+    return f"{i}) {title}"
+
+def _wrap_note():
+    return "NOTE: If your solver wraps angles, apply wrap(theta) -> (-pi, pi]."
+
 
 def eulerR(a,b,g,order="ZYX"):
     order=order.upper()
@@ -455,35 +464,7 @@ class UR5(RoboticManipulator):
                        [R[2,0],R[2,1],R[2,2],z],
                        [0,0,0,1]])
 
-        UR5_IK_EQUATIONS = [
-            r'$\mathbf{UR5\ Inverse\ Kinematics\ (Symbolic)}$',
-            r'$\mathbf{Given:}\ \mathbf{p}_{06}=[x,\ y,\ z]^T,\ \mathbf{R}_{06}=R_z(\gamma)R_y(\beta)R_x(\alpha)$',
-            r'',
-            r'$\mathbf{1)\ Wrist\ center:}$',
-            r'$\mathbf{p}_{05}=\mathbf{p}_{06}-d_6\,\mathbf{z}_{06}$',
-            r'',
-            r'$\mathbf{2)\ Joint\ 1\ (2\ branches):}$',
-            r'$r=\sqrt{p_{05,x}^2+p_{05,y}^2},\quad \psi=\mathrm{atan2}(p_{05,y},p_{05,x})$',
-            r'$\phi=\arccos(d_4/r)$',
-            r'$\theta_1=\psi+\phi+\pi/2,\quad \theta_1^{(alt)}=\psi-\phi+\pi/2$',
-            r'',
-            r'$\mathbf{3)\ Joint\ 5\ (2\ branches,\ depends\ on\ }\theta_1\mathbf{):}$',
-            r'$c_5=\frac{p_x\sin\theta_1-p_y\cos\theta_1-d_4}{d_6}$',
-            r'$\theta_5=\pm\arccos(c_5)$',
-            r'',
-            r'$\mathbf{4)\ Joint\ 6\ (depends\ on\ }\theta_1,\theta_5\mathbf{):}$',
-            r'$\theta_6=\mathrm{atan2}\!\left(\frac{-R_{06,12}\sin\theta_1+R_{06,22}\cos\theta_1}{\sin\theta_5},\ \frac{R_{06,11}\sin\theta_1-R_{06,21}\cos\theta_1}{\sin\theta_5}\right)$',
-            r'',
-            r'$\mathbf{5)\ Joints\ 2,3\ from\ planar\ triangle:}$',
-            r'$\mathbf{T}_{14}=T_{01}(\theta_1)^{-1}\,T_{06}\,\left(T_{45}(\theta_5)T_{56}(\theta_6)\right)^{-1}$',
-            r'$\mathrm{Let}\ x=p_{14,x},\ y=p_{14,y}$',
-            r'$D=\frac{x^2+y^2-a_2^2-a_3^2}{2a_2a_3},\quad \theta_3=\pm\arccos(D)$',
-            r'$\theta_2=\mathrm{atan2}(y,x)-\mathrm{atan2}(a_3\sin\theta_3,\ a_2+a_3\cos\theta_3)$',
-            r'',
-            r'$\mathbf{6)\ Joint\ 4:}$',
-            r'$\mathbf{R}_{34}=\mathbf{R}_{03}^T\mathbf{R}_{04},\quad \theta_4=\mathrm{atan2}(R_{34,21},R_{34,11})$',
-        ]
-        return UR5_IK_EQUATIONS , T
+        return eq , T
 
 
 
@@ -635,87 +616,117 @@ class ABB_IRB_1600(RoboticManipulator):
         
         return unique_solutions
     
+       # Add these updated methods to your robot classes in base_manipulator.py
+
+    # # For UR5 class:
+    # def do_ik_symbolic_detailed(self):
+    #     """
+    #     Complete symbolic IK derivation for UR5
+    #     Returns both the target matrix and detailed solution steps
+    #     """
+    #     import sympy as sp
+
+    #     # Define symbolic variables
+    #     x, y, z = sp.symbols('x y z', real=True)
+    #     alpha, beta, gamma = sp.symbols('alpha beta gamma', real=True)
+
+    #     # Build symbolic rotation matrix
+    #     R = rpy_to_R(alpha, beta, gamma, sym=True)
+
+    #     # Target transformation matrix
+    #     T = sp.Matrix([
+    #         [R[0,0], R[0,1], R[0,2], x],
+    #         [R[1,0], R[1,1], R[1,2], y],
+    #         [R[2,0], R[2,1], R[2,2], z],
+    #         [0, 0, 0, 1]
+    #     ])
+
+    #     # DH parameters
+    #     d1, a2, a3, d4, d5, d6 = self.d1, self.a2, self.a3, self.d4, self.d5, self.d6
+
+    #     # Wrist center symbolic expression
+    #     p_wc = sp.Matrix([x, y, z]) - d6 * R[:, 2]
+
+    #     # Generate equation list for display
+    #     equations = [
+    #         r'$\mathbf{UR5\ Inverse\ Kinematics\ (Symbolic\ Derivation)}$',
+    #         r'',
+    #         r'$\mathbf{Given:}\ \text{Target pose}\ T_{06} = \begin{bmatrix} \mathbf{R}_{06} & \mathbf{p}_{06} \\ 0 & 1 \end{bmatrix}$',
+    #         r'$\text{where}\ \mathbf{p}_{06} = [x,\ y,\ z]^T,\ \mathbf{R}_{06} = R_z(\gamma)R_y(\beta)R_x(\alpha)$',
+    #         r'',
+    #         r'$\mathbf{Step\ 1:\ Calculate\ Wrist\ Center}$',
+    #         r'$\mathbf{p}_{wc} = \mathbf{p}_{06} - d_6 \mathbf{z}_{06}$',
+    #         f'$p_{{wc,x}} = {sp.latex(sp.simplify(p_wc[0]))}$',
+    #         f'$p_{{wc,y}} = {sp.latex(sp.simplify(p_wc[1]))}$',
+    #         f'$p_{{wc,z}} = {sp.latex(sp.simplify(p_wc[2]))}$',
+    #         r'',
+    #         r'$\mathbf{Step\ 2:\ Solve\ for\ }\theta_1\mathbf{\ (Base\ Rotation)}$',
+    #         r'$r_{xy} = \sqrt{p_{wc,x}^2 + p_{wc,y}^2}$',
+    #         r'$\psi = \mathrm{atan2}(p_{wc,y}, p_{wc,x})$',
+    #         r'$\phi = \arccos\left(\frac{d_4}{r_{xy}}\right)$',
+    #         r'$\theta_1^{(1)} = \psi + \phi + \frac{\pi}{2}$',
+    #         r'$\theta_1^{(2)} = \psi - \phi + \frac{\pi}{2}$',
+    #         r'$\text{Two solutions (left/right arm configuration)}$',
+    #         r'',
+    #         r'$\mathbf{Step\ 3:\ Solve\ for\ }\theta_5\mathbf{\ (Wrist\ Rotation)}$',
+    #         r'$\text{For each}\ \theta_1\text{, solve:}$',
+    #         r'$\cos(\theta_5) = \frac{x\sin(\theta_1) - y\cos(\theta_1) - d_4}{d_6}$',
+    #         r'$\theta_5^{(1)} = \arccos(\cos(\theta_5))$',
+    #         r'$\theta_5^{(2)} = -\arccos(\cos(\theta_5))$',
+    #         r'$\text{Two solutions (wrist up/down)}$',
+    #         r'',
+    #         r'$\mathbf{Step\ 4:\ Solve\ for\ }\theta_6\mathbf{\ (Tool\ Rotation)}$',
+    #         r'$\text{For}\ \sin(\theta_5) \neq 0:$',
+    #         r'$\theta_6 = \mathrm{atan2}\left(\frac{-R_{01}\sin(\theta_1) + R_{11}\cos(\theta_1)}{\sin(\theta_5)},\ \frac{R_{00}\sin(\theta_1) - R_{10}\cos(\theta_1)}{\sin(\theta_5)}\right)$',
+    #         r'',
+    #         r'$\mathbf{Step\ 5:\ Transform\ to\ Frame\ 1}$',
+    #         r'$\mathbf{T}_{14} = T_{01}(\theta_1)^{-1} \cdot T_{06} \cdot [T_{45}(\theta_5) \cdot T_{56}(\theta_6)]^{-1}$',
+    #         r'$\text{Extract}\ p_{14} = [x_{14},\ y_{14},\ z_{14}]^T\ \text{from}\ \mathbf{T}_{14}$',
+    #         r'',
+    #         r'$\mathbf{Step\ 6:\ Solve\ Planar\ 2R\ Problem\ for\ }\theta_2, \theta_3$',
+    #         r'$\text{Arm geometry in frame 1 (x-y plane):}$',
+    #         r'$L_2 = |a_2| = 0.425\ \text{m}$',
+    #         r'$L_3 = \sqrt{a_3^2 + d_4^2} = 0.392\ \text{m}$',
+    #         r'$\text{Law of cosines:}$',
+    #         r'$D = \frac{x_{14}^2 + y_{14}^2 - L_2^2 - L_3^2}{2 L_2 L_3}$',
+    #         r'$\theta_3^{(1)} = \arccos(D)\ \ \ \text{(elbow up)}$',
+    #         r'$\theta_3^{(2)} = -\arccos(D)\ \ \ \text{(elbow down)}$',
+    #         r'$\text{For each}\ \theta_3:$',
+    #         r'$\theta_2 = \mathrm{atan2}(y_{14}, x_{14}) - \mathrm{atan2}(L_3\sin(\theta_3), L_2 + L_3\cos(\theta_3))$',
+    #         r'',
+    #         r'$\mathbf{Step\ 7:\ Solve\ for\ }\theta_4\mathbf{\ (Remaining\ DOF)}$',
+    #         r'$\text{Calculate}\ \mathbf{R}_{03}\ \text{using}\ \theta_1, \theta_2, \theta_3$',
+    #         r'$\mathbf{R}_{34} = \mathbf{R}_{03}^T \cdot \mathbf{R}_{04}$',
+    #         r'$\theta_4 = \mathrm{atan2}(R_{34,21}, R_{34,11})$',
+    #         r'',
+    #         r'$\mathbf{Solution\ Summary:}$',
+    #         r'$\text{Total configurations:}\ 2\ (\theta_1) \times 2\ (\theta_5) \times 2\ (\theta_3) = \mathbf{8\ solutions}$',
+    #         r'$\text{Each solution:}\ \mathbf{q} = [\theta_1,\ \theta_2,\ \theta_3,\ \theta_4,\ \theta_5,\ \theta_6]^T$',
+    #     ]
+
+    #     return equations, T
+
+
+    # For ABB_IRB_1600 class - update the existing method:
     def do_ik_symbolic(self):
-        order="ZYX"
-        x = sp.Symbol('x', real=True)
-        y = sp.Symbol('y', real=True)
-        z = sp.Symbol('z', real=True)
-        alpha = sp.Symbol('α', real=True)
-        beta = sp.Symbol('β', real=True)
-        gamma = sp.Symbol('γ', real=True)
-        
+        """Enhanced symbolic IK for IRB1600 with complete derivation"""
+        x, y, z = sp.symbols('x y z', real=True)
+        alpha, beta, gamma = sp.symbols('alpha beta gamma', real=True)
+
         R = rpy_to_R(alpha, beta, gamma, sym=True)
-        T = sp.Matrix([[R[0,0],R[0,1],R[0,2],x],
-                       [R[1,0],R[1,1],R[1,2],y],
-                       [R[2,0],R[2,1],R[2,2],z],
-                       [0,0,0,1]])
-        """
-        Returns formatted text equations for IRB1600 symbolic IK.
-        This replaces the previous implementation that returned a dict.
-        """
-        x, y, z = sp.symbols("x y z", real=True)
-        alpha, beta, gamma = sp.symbols("α β γ", real=True)
-        
-        # Build symbolic rotation matrix
-        R06 = eulerR_s(alpha, beta, gamma, order)
-        p06 = sp.Matrix([x, y, z])
-        
-        # Robot parameters
-        d6 = sp.nsimplify(self.d[5])
-        a2 = sp.nsimplify(self.a[1])
-        a3 = sp.nsimplify(self.a[2])
-        d4 = sp.nsimplify(self.d[3])
-        
-        L2 = sp.Abs(a2)
-        L3 = sp.sqrt(a3**2 + d4**2)
-        gamma_off = sp.atan2(d4, a3)
-        
-        # Wrist center
-        pwc = sp.simplify(p06 - d6 * R06[:, 2])
-        
-        # Planar symbols
-        r, s = sp.symbols("r s", real=True)
-        th3p = sp.Symbol("θ₃'", real=True)
-        
-        # Law of cosines
-        D = sp.simplify((r**2 + s**2 - L2**2 - L3**2) / (2*L2*L3))
-        
-        # Theta expressions
-        th1 = sp.atan2(pwc[1], pwc[0])
-        th2 = sp.simplify(sp.atan2(s, r) - sp.atan2(L3*sp.sin(th3p), L2 + L3*sp.cos(th3p)))
-        th3 = sp.simplify(th3p - gamma_off)
-        
-        # Build formatted output
-        IRB1600_IK_EQUATIONS = [
-            r'$\mathbf{IRB1600\ Inverse\ Kinematics\ (Symbolic)}$',
-            r'$\mathbf{Given:}\ \mathbf{p}_{06}=[x,\ y,\ z]^T,\ \mathbf{R}_{06}=R(\alpha,\beta,\gamma)$',
-            r'',
-            r'$\mathbf{1)\ Wrist\ center:}$',
-            r'$\mathbf{p}_{wc}=\mathbf{p}_{06}-d_6\,\mathbf{z}_{06},\quad \mathbf{z}_{06}=\mathbf{R}_{06}[:,3]$',
-            r'',
-            r'$\mathbf{2)\ Joint\ 1\ (2\ branches):}$',
-            r'$\theta_1=\mathrm{atan2}(p_{wc,y},p_{wc,x}),\quad \theta_{1}^{(alt)}=\theta_1+\pi$',
-            r'',
-            r'$\mathbf{3)\ Arm\ triangle\ in\ frame\ 1:}$',
-            r'$r=p_{1,x},\ s=p_{1,y},\quad \mathbf{p}_1=T_{01}(\theta_1)^{-1}\,[\mathbf{p}_{wc};1]$',
-            r'',
-            r'$\mathbf{4)\ Geometry:}$',
-            r'$L_2=|a_2|,\quad L_3=\sqrt{a_3^2+d_4^2},\quad \gamma=\mathrm{atan2}(d_4,a_3)$',
-            r'',
-            r'$\mathbf{5)\ Joint\ 3\ (2\ branches):}$',
-            r'$D=\frac{r^2+s^2-L_2^2-L_3^2}{2L_2L_3}$',
-            r'$\theta_3^\prime=\pm\arccos(D),\quad \theta_3=\theta_3^\prime-\gamma$',
-            r'',
-            r'$\mathbf{6)\ Joint\ 2:}$',
-            r'$\theta_2=\mathrm{atan2}(s,r)-\mathrm{atan2}\!\left(L_3\sin\theta_3^\prime,\ L_2+L_3\cos\theta_3^\prime\right)$',
-            r'',
-            r'$\mathbf{7)\ Wrist:}$',
-            r'$\mathbf{R}_{36}=\mathbf{R}_{03}^T\mathbf{R}_{06}$',
-            r'$\theta_5=\mathrm{atan2}\!\left(\sqrt{R_{36,31}^2+R_{36,32}^2},\ R_{36,33}\right),\ \theta_5^{(alt)}=-\theta_5$',
-            r'$\theta_4=\mathrm{atan2}(R_{36,23},R_{36,13}),\quad \theta_6=\mathrm{atan2}(-R_{36,32},R_{36,31})$',
-            r'$\theta_4\leftarrow \mathrm{wrap}(\theta_4+\pi)\ \ \ (\mathrm{DH\ convention\ in\ code})$',
-        ]
-        return IRB1600_IK_EQUATIONS, T
+        T = sp.Matrix([
+            [R[0,0], R[0,1], R[0,2], x],
+            [R[1,0], R[1,1], R[1,2], y],
+            [R[2,0], R[2,1], R[2,2], z],
+            [0, 0, 0, 1]
+        ])
+
+
+        return eq, T
+
+
+    # For KUKA_KR16 class:
+   
 
 
 
@@ -877,52 +888,55 @@ class KUKA_KR16(RoboticManipulator):
 
 
     def do_ik_symbolic(self):
-
-        x = sp.Symbol('x', real=True)
-        y = sp.Symbol('y', real=True)
-        z = sp.Symbol('z', real=True)
-        alpha = sp.Symbol('α', real=True)
-        beta = sp.Symbol('β', real=True)
-        gamma = sp.Symbol('γ', real=True)
+        """Enhanced symbolic IK for KUKA KR16"""
+        x, y, z = sp.symbols('x y z', real=True)
+        alpha, beta, gamma = sp.symbols('alpha beta gamma', real=True)
         
         R = rpy_to_R(alpha, beta, gamma, sym=True)
-        T = sp.Matrix([[R[0,0],R[0,1],R[0,2],x],
-                       [R[1,0],R[1,1],R[1,2],y],
-                       [R[2,0],R[2,1],R[2,2],z],
-                       [0,0,0,1]])
-        KR16_IK_EQUATIONS = [
-            r'$\mathbf{KR16\ Inverse\ Kinematics\ (Symbolic)}$',
-            r'$\mathbf{Given:}\ \mathbf{p}_{06}=[x,\ y,\ z]^T,\ \mathbf{R}_{06}=R(\alpha,\beta,\gamma)$',
+        T = sp.Matrix([
+            [R[0,0], R[0,1], R[0,2], x],
+            [R[1,0], R[1,1], R[1,2], y],
+            [R[2,0], R[2,1], R[2,2], z],
+            [0, 0, 0, 1]
+        ])
+        
+        equations = [
+            r'$\mathbf{KUKA\ KR16\ Inverse\ Kinematics\ (Symbolic)}$',
             r'',
-            r'$\mathbf{1)\ Wrist\ center:}$',
-            r'$\mathbf{p}_{wc}=\mathbf{p}_{06}-d_6\,\mathbf{z}_{06}$',
+            r'$\mathbf{Given:}\ T_{06},\ \text{find}\ \mathbf{q} = [\theta_1, \ldots, \theta_6]^T$',
             r'',
-            r'$\mathbf{2)\ Joint\ 1\ with\ shoulder\ offset\ a_1\ (2\ branches):}$',
-            r'$r_{xy}=\sqrt{p_{wc,x}^2+p_{wc,y}^2},\quad \psi=\mathrm{atan2}(p_{wc,y},p_{wc,x})$',
-            r'$s=\sqrt{r_{xy}^2-a_1^2}$',
-            r'$\theta_{1a}=\psi-\mathrm{atan2}(a_1,+s),\quad \theta_{1b}=\psi-\mathrm{atan2}(a_1,-s)$',
+            r'$\mathbf{Robot\ Parameters:}$',
+            f'$a_1 = {self.a1:.3f}\ \text{{m}},\ a_2 = {self.a2:.3f}\ \text{{m}},\ a_3 = {self.a3:.3f}\ \text{{m}}$',
+            f'$d_1 = {self.d1:.3f}\ \text{{m}},\ d_4 = {self.d4:.3f}\ \text{{m}},\ d_6 = {self.d6:.3f}\ \text{{m}}$',
             r'',
-            r'$\mathbf{3)\ Arm\ triangle\ in\ frame\ 1\ (x_1,z_1):}$',
-            r'$\mathbf{p}_1=T_{01}(\theta_1)^{-1}\,[\mathbf{p}_{wc};1],\quad r=\sqrt{x_1^2+z_1^2}$',
+            r'$\mathbf{Solution\ Procedure:}$',
             r'',
-            r'$\mathbf{4)\ Geometry:}$',
-            r'$L_2=|a_2|,\quad L_3=\sqrt{a_3^2+d_4^2},\quad \gamma=\mathrm{atan2}(d_4,a_3)$',
+            r'$\mathbf{1.\ Wrist\ Center:}$',
+            r'$\mathbf{p}_{wc} = \mathbf{p}_{06} - d_6 \mathbf{z}_{06}$',
             r'',
-            r'$\mathbf{5)\ Joint\ 3\ (2\ branches):}$',
-            r'$\cos(\theta_3^\prime)=\frac{r^2-L_2^2-L_3^2}{2L_2L_3}$',
-            r'$\theta_3^\prime=\pm\arccos(\cos(\theta_3^\prime)),\quad \theta_3=\theta_3^\prime-\gamma$',
+            r'$\mathbf{2.\ Base\ Joint:}$',
+            r'$r_{xy} = \sqrt{x_{wc}^2 + y_{wc}^2}$',
+            r'$\phi = \mathrm{atan2}(y_{wc}, x_{wc})$',
+            r'$s = \sqrt{r_{xy}^2 - a_1^2}$',
+            r'$\theta_1 = \phi - \mathrm{atan2}(a_1, \pm s)$',
             r'',
-            r'$\mathbf{6)\ Joint\ 2:}$',
-            r'$\phi=\mathrm{atan2}(z_1,x_1),\ \ \psi=\mathrm{atan2}(L_3\sin\theta_3^\prime,\ L_2+L_3\cos\theta_3^\prime)$',
-            r'$\theta_2=\phi-\psi$',
+            r'$\mathbf{3.\ Arm\ Plane\ (x_1-z_1):}$',
+            r'$L_2 = |a_2|,\ L_3 = \sqrt{a_3^2 + d_4^2}$',
+            r'$r = \sqrt{x_1^2 + z_1^2}$',
+            r'$\cos(\theta_3^\prime) = \frac{r^2 - L_2^2 - L_3^2}{2L_2 L_3}$',
+            r'$\theta_3 = \pm\arccos(\cos(\theta_3^\prime)) - \mathrm{atan2}(d_4, a_3)$',
+            r'$\theta_2 = \mathrm{atan2}(z_1, x_1) - \mathrm{atan2}(L_3\sin(\theta_3^\prime), L_2 + L_3\cos(\theta_3^\prime))$',
             r'',
-            r'$\mathbf{7)\ Wrist:}$',
-            r'$\mathbf{R}_{36}=\mathbf{R}_{03}^T\mathbf{R}_{06}$',
-            r'$\theta_5=\pm\arccos(R_{36,33})$',
-            r'$\theta_4=\mathrm{atan2}\!\left(\frac{R_{36,23}}{\sin\theta_5},\frac{R_{36,13}}{\sin\theta_5}\right),\ \ \theta_6=\mathrm{atan2}\!\left(\frac{R_{36,32}}{\sin\theta_5},\frac{-R_{36,31}}{\sin\theta_5}\right)$',
+            r'$\mathbf{4.\ Wrist:}$',
+            r'$R_{36} = R_{03}^T R_{06}$',
+            r'$\theta_5 = \pm\arccos(R_{36,33})$',
+            r'$\theta_4 = \mathrm{atan2}(R_{36,23}/\sin(\theta_5), R_{36,13}/\sin(\theta_5))$',
+            r'$\theta_6 = \mathrm{atan2}(R_{36,32}/\sin(\theta_5), -R_{36,31}/\sin(\theta_5))$',
+            r'',
+            r'$\mathbf{Result:}\ \text{Up to 8 valid configurations}$',
         ]
-
-        return KR16_IK_EQUATIONS, T
+        
+        return equations, T
 
 
 # ==================== FACTORY FUNCTION ====================

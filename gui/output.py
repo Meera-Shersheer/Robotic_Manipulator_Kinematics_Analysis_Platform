@@ -1,6 +1,5 @@
 from imports import *
 
-
 # def run_output_test(self):
 #     """Display comprehensive test of all output capabilities"""
 #     # Clear existing content
@@ -60,55 +59,164 @@ def add_section_header(self, title, color="#d2598e"):
     header.setFixedHeight(60)
     self.output_layout.addWidget(header)
 
-def add_equations_section(self, eq_list):
-    """Display equations using matplotlib's LaTeX renderer"""
 
-    add_section_header(self, "Symbolic Equations", "#673ab7")
+
+
+# def add_equations_section(self, eq_list):
+#     """Display equations using native Qt with beautiful styling"""
     
-    group = create_result_group(self, "Inverse Kinematics Equations")
+#     add_section_header(self, "Symbolic Equations", "#673ab7")
     
-    # Create figure for equations
-    num_equations = len(eq_list)
-    fig_height = max(12, num_equations * 0.6)  # More generous spacing
-  
-    # Create figure
-    fig = Figure(figsize=(9, fig_height), facecolor='#fafafa', dpi=100)
-    canvas = FigureCanvas(fig)
-    ax = fig.add_subplot(111)
-    ax.axis('off')
+#     group = create_result_group(self, "Inverse Kinematics Equations")
     
-    canvas.setMinimumHeight(360)
-    canvas.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-    # LaTeX equations
-    equations = eq_list
+#     # Create scrollable area
+#     scroll_area = QScrollArea()
+#     scroll_area.setWidgetResizable(True)
+#     scroll_area.setMinimumHeight(450)
+#     scroll_area.setMaximumHeight(650)
     
-    y_pos = 0.98
-    line_spacing = 0.04 
-    for eq in equations:
-        if eq:
-            fontsize = 14 if 'mathbf' in eq else 12
-            try:
-                ax.text(0.5, y_pos, eq, fontsize=fontsize, verticalalignment='top', horizontalalignment='center',
-                           transform=ax.transAxes)
-                y_pos -= 0.15
-            except Exception as e:
-                print(f"Failed to render: {eq}\nError: {e}")
-                y_pos -= line_spacing
-        else:
-             y_pos -= line_spacing * 0.5
+#     scroll_area.setStyleSheet("""
+#         QScrollArea {
+#             border: 2px solid #673ab7;
+#             border-radius: 8px;
+#             background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+#                 stop:0 #fafafa, stop:1 #f5f5f5);
+#         }
+#         QScrollBar:vertical {
+#             border: none;
+#             background-color: #e8e8e8;
+#             width: 10px;
+#             border-radius: 5px;
+#             margin: 2px;
+#         }
+#         QScrollBar::handle:vertical {
+#             background: #673ab7;
+#             border-radius: 5px;
+#             min-height: 20px;
+#         }
+#         QScrollBar::handle:vertical:hover {
+#             background: #7b1fa2;
+#         }
+#         QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+#             height: 0px;
+#         }
+#     """)
     
-    canvas.setStyleSheet("""
-        QWidget {
-            background-color: white;
-            border-left: 5px solid #673ab7;
-            border-radius: 8px;
-            border: 1px solid #e0e0e0;
-            padding: 15px;
-        }
-    """)
-    # fig.tight_layout()
-    group.layout().addWidget(canvas)
-    self.output_layout.addWidget(group)
+#     # Container for equations
+#     equations_container = QWidget()
+#     equations_layout = QVBoxLayout(equations_container)
+#     equations_layout.setSpacing(10)
+#     equations_layout.setContentsMargins(20, 20, 20, 20)
+    
+#     # Track sections for card-based layout
+#     current_section_header = None
+#     current_section_eqs = []
+    
+#     for eq in eq_list:
+#         if not eq:
+#             # Empty line - create card if we have equations
+#             if current_section_eqs:
+#                 card = create_equation_card(self, current_section_header, current_section_eqs)
+#                 equations_layout.addWidget(card)
+#                 current_section_eqs = []
+#                 current_section_header = None
+#             continue
+        
+#         # Check if it's a section header
+#         is_header = 'mathbf' in eq and any(f'{i})' in eq for i in range(1, 10))
+        
+#         if is_header:
+#             # Save previous section
+#             if current_section_eqs:
+#                 card = create_equation_card(self, current_section_header, current_section_eqs)
+#                 equations_layout.addWidget(card)
+#                 current_section_eqs = []
+#             current_section_header = eq
+#         else:
+#             current_section_eqs.append(eq)
+    
+#     # Add last section
+#     if current_section_eqs:
+#         card = create_equation_card(self, current_section_header, current_section_eqs)
+#         equations_layout.addWidget(card)
+    
+#     equations_layout.addStretch()
+#     scroll_area.setWidget(equations_container)
+    
+#     group.layout().addWidget(scroll_area)
+#     self.output_layout.addWidget(group)
+
+
+# def create_equation_card(self, header, equations):
+#     """Create a beautiful card for a section of equations"""
+    
+#     card = QFrame()
+#     card.setStyleSheet("""
+#         QFrame {
+#             background-color: white;
+#             border: 2px solid #e0e0e0;
+#             border-radius: 10px;
+#         }
+#     """)
+    
+#     card_layout = QVBoxLayout(card)
+#     card_layout.setSpacing(0)
+#     card_layout.setContentsMargins(0, 0, 0, 0)
+    
+#     # Header
+#     if header:
+#         header_widget = QWidget()
+#         header_widget.setStyleSheet("""
+#             QWidget {
+#                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+#                     stop:0 #673ab7, stop:1 #8e24aa);
+#                 border-radius: 8px 8px 0px 0px;
+#             }
+#         """)
+#         header_layout = QHBoxLayout(header_widget)
+#         header_layout.setContentsMargins(15, 12, 15, 12)
+        
+#         # Add icon
+#         icon_label = QLabel("📐")
+#         icon_label.setFont(QFont("Segoe UI Emoji", 14))
+#         header_layout.addWidget(icon_label)
+        
+#         header_text = clean_latex_to_unicode(header)
+#         header_label = QLabel(header_text)
+#         header_label.setFont(QFont("Roboto", 13, QFont.Weight.Bold))
+#         header_label.setStyleSheet("color: white; margin-left: 5px;")
+#         header_label.setTextFormat(Qt.TextFormat.RichText)
+#         header_layout.addWidget(header_label)
+#         header_layout.addStretch()
+        
+#         card_layout.addWidget(header_widget)
+    
+#     # Equations
+#     eq_container = QWidget()
+#     eq_layout = QVBoxLayout(eq_container)
+#     eq_layout.setSpacing(6)
+#     eq_layout.setContentsMargins(15, 12, 15, 12)
+    
+#     for eq in equations:
+#         eq_text = clean_latex_to_unicode(eq)
+#         eq_label = QLabel(eq_text)
+#         eq_label.setFont(QFont("Roboto", 12))
+#         eq_label.setStyleSheet("""
+#             QLabel {
+#                 color: #2c3e50;
+#                 padding: 10px 12px;
+#                 background-color: #f8f9fa;
+#                 border-left: 4px solid #9c27b0;
+#                 border-radius: 5px;
+#             }
+#         """)
+#         eq_label.setTextFormat(Qt.TextFormat.RichText)
+#         eq_label.setWordWrap(True)
+#         eq_layout.addWidget(eq_label)
+    
+#     card_layout.addWidget(eq_container)
+    
+#     return card
     
 def create_result_group(self, title):
     """Create a styled group box for results"""
@@ -348,10 +456,9 @@ def display_ik_symbolic_results(self, T_symbolic, eq_list):
     self.output_layout.addWidget(note_widget)
     add_spacing(self, self.output_layout, 15)
     
-    # Create scrollable text display for equations
     
     
-    add_equations_section(self, eq_list)
+    # add_equations_section(self, eq_list)
     add_spacing(self, self.output_layout, 15)
     self.output_layout.addWidget(group)
     
