@@ -659,7 +659,63 @@ def display_ik_numeric_results(self, solutions, target_matrix):
         add_ik_solution_display(self, solution, sol_idx, target_matrix, angle_unit)
         add_spacing(self, self.output_layout, 15)
 
-
+def display_ik_symbolic_results(self, T_symbolic):
+    """Display symbolic IK representation"""
+    clear_output(self)
+    
+    add_section_header(self, "Inverse Kinematics (Symbolic)", "#8e24aa")
+    
+    # Explanation
+    group = create_result_group(self, "Symbolic Target Pose Representation")
+    
+    info = QLabel(
+        "For inverse kinematics, the target end-effector pose is represented symbolically as:\n"
+        "• Position: (x, y, z)\n"
+        "• Orientation: Roll-Pitch-Yaw angles (α, β, γ)\n\n"
+        "The transformation matrix is constructed from these parameters:"
+    )
+    info.setFont(self.standard_font)
+    info.setWordWrap(True)
+    info.setStyleSheet("padding: 10px; color: #333;")
+    group.layout().addWidget(info)
+    
+    self.output_layout.addWidget(group)
+    add_spacing(self, self.output_layout, 15)
+    
+    # Display the symbolic transformation matrix
+    add_symbolic_transformation_matrix_simple(self, T_symbolic, "Target Transformation Matrix T₀⁶")
+    add_spacing(self, self.output_layout, 15)
+    
+    # Add note about numeric mode
+    note_widget = QWidget()
+    note_layout = QHBoxLayout(note_widget)
+    note_layout.setContentsMargins(10, 8, 10, 8)
+    
+    icon_lbl = QLabel("ℹ")
+    icon_lbl.setFont(QFont("Roboto", 14, QFont.Weight.Bold))
+    icon_lbl.setStyleSheet("color: #2196f3;")
+    
+    text_lbl = QLabel(
+        "To compute numeric IK solutions, switch to 'Numeric' mode and provide specific values "
+        "for the target pose (either as x, y, z, α, β, γ or as a 4×4 matrix)."
+    )
+    text_lbl.setFont(QFont("Roboto", 11))
+    text_lbl.setWordWrap(True)
+    
+    note_widget.setStyleSheet("""
+        QWidget {
+            background-color: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            border-radius: 3px;
+        }
+    """)
+    
+    note_layout.addWidget(icon_lbl)
+    note_layout.addWidget(text_lbl)
+    note_layout.addStretch()
+    
+    self.output_layout.addWidget(note_widget)
+    
 def display_ik_no_solution(self, target_matrix):
     """Display message when no IK solution found"""
     clear_output(self)

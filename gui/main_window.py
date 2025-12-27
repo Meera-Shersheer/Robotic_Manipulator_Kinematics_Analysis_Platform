@@ -335,6 +335,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.manipulator_list_widget.currentRowChanged.connect(self.update_dh_table)
         self.theta_system_widget.currentRowChanged.connect(self.update_dh_headers)
         self.sym_num_widget.currentRowChanged.connect(self.toggle_value_column)
+        self.ik_fk_widget.currentRowChanged.connect(self.toggle_value_column)
         # Initialize table with first manipulator
         self.update_dh_table(0)
         return widget
@@ -342,8 +343,9 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
     def toggle_value_column(self):
         """Show/hide the Value column based on computation mode"""
         computation_mode = self.sym_num_widget.currentRow()
+        ik_or_fk = self.ik_fk_widget.currentRow()
 
-        if computation_mode == 0:  # Symbolic
+        if (computation_mode == 0) or (ik_or_fk == 1) :  # Symbolic
             self.dh_table.setColumnHidden(6, True)  # Hide Value column
         else:  # Numeric
             self.dh_table.setColumnHidden(6, False)  # Show Value column
@@ -527,7 +529,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
         # Matrix display table
         self.matrix_table = QTableWidget(4, 4)
-        self.matrix_table.setItemDelegate(MatrixDelegate(self.matrix_table,  lambda: self.sym_num_widget.currentRow()))
+        self.matrix_table.setItemDelegate(MatrixDelegate(self.matrix_table))
         self.matrix_table.setFont(self.standard_font)
         self.matrix_table.horizontalHeader().setVisible(False)
         self.matrix_table.verticalHeader().setVisible(False)
@@ -586,6 +588,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
     def read_T_matrix_from_table(self):
         T = [[None]*4 for _ in range(4)]
         comp_mode = self.sym_num_widget.currentRow()
+        kinematics_type = self.ik_fk_widget.currentRow()
+        
         for i in range(4):
             for j in range(4):
                 item = self.matrix_table.item(i, j)
@@ -605,7 +609,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                     except:
                         T[i][j] = 0.0
 
-        return sympy.Matrix(T) if self.is_symbolic_ik() else np.array(T)
+        return sympy.Matrix(T) if ( (kinematics_type == 1) and (comp_mode  == 0) ) else np.array(T)
     
     def reset_matrix(self):
         """Reset matrix to identity matrix"""
@@ -1173,9 +1177,9 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
     def read_pose_from_inputs(self):
         """Read x, y, z, α, β, γ from pose input fields and convert to T matrix"""
         try:
-            x = float(self.pose_inputs['x'].text())
-            y = float(self.pose_inputs['y'].text())
-            z = float(self.pose_inputs['z'].text())
+            x = float(self.pose_inputs['X'].text())
+            y = float(self.pose_inputs['Y'].text())
+            z = float(self.pose_inputs['Z'].text())
             alpha = float(self.pose_inputs['alpha'].text())
             beta = float(self.pose_inputs['beta'].text())
             gamma = float(self.pose_inputs['gamma'].text())
@@ -1192,23 +1196,35 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
         except ValueError as e:
             raise ValueError(f"Invalid pose input: {e}")
+        except KeyError as e:
+            raise ValueError(f"Missing pose input field: {e}")
 
     def do_ik(self):
         """Execute inverse kinematics"""
         comp_mode = self.sym_num_widget.currentRow()
 
         if comp_mode == 0: 
-            self.create_execute_widgetdo_ik_symbolic()#
+            T_symbolic = self.current_manipulator.do_ik_symbolic()
+            display_ik_symbolic_results(self, T_symbolic)
+            self.tabs.setCurrentIndex(1)
             return
 
         # Get target matrix based on input mode
         if self.ik_pose_radio.isChecked():
-            self.current_T = self.read_pose_from_inputs()
+            try:
+                self.current_T = self.read_pose_from_inputs()
+            except ValueError as e:
+                QMessageBox.warning(self, "Input Error", str(e))
+                return
         else:
             self.current_T = self.read_T_matrix_from_table()
 
-        solutions = self.current_manipulator.ik_ur5_closed_form(self.current_T)
-
+        try:
+               solutions = self.current_manipulator.ik_ur5_closed_form(self.current_T)
+        except Exception as e:
+               QMessageBox.critical(self, "IK Error", f"Error computing IK: {str(e)}")
+               return
+           
         if not solutions:
             display_ik_no_solution(self, self.current_T)
         else:

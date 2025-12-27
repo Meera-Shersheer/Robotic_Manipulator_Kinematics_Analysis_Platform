@@ -429,7 +429,7 @@ class UR5(RoboticManipulator):
         c = max(-1.0, min(1.0, c))
         phi = math.acos(c)
         psi = math.atan2(p05[1], p05[0])
-        q1_candidates = [wrap(psi + phi + pi/2), wrap(psi - phi + pi/2)]
+        q1_candidates = [wrap_angle(psi + phi + pi/2), wrap_angle(psi - phi + pi/2)]
 
         for q1 in q1_candidates:
             s1, c1 = math.sin(q1), math.cos(q1)
@@ -440,7 +440,7 @@ class UR5(RoboticManipulator):
                 continue
             c5 = max(-1.0, min(1.0, c5))
             q5a = math.acos(c5)
-            q5_candidates = [wrap(q5a), wrap(-q5a)]
+            q5_candidates = [wrap_angle(q5a), wrap_angle(-q5a)]
 
             for q5 in q5_candidates:
                 s5 = math.sin(q5)
@@ -452,7 +452,7 @@ class UR5(RoboticManipulator):
                     (-R06[0,1]*s1 + R06[1,1]*c1) / s5,
                     (R06[0,0]*s1 - R06[1,0]*c1) / s5
                 )
-                q6 = wrap(q6)
+                q6 = wrap_angle(q6)
 
                 # Compute T14 = inv(T01)*T06*inv(T45*T56)
                 T01 = dhA(q1, d1, 0.0, pi/2, sym=False)
@@ -472,7 +472,7 @@ class UR5(RoboticManipulator):
 
                 for q3 in [math.acos(D), -math.acos(D)]:
                     q2 = math.atan2(y, x) - math.atan2(a3*math.sin(q3), a2 + a3*math.cos(q3))
-                    q2, q3 = wrap(q2), wrap(q3)
+                    q2, q3 = wrap_angle(q2), wrap_angle(q3)
 
                     # θ4 from rotation
                     qtemp = [q1, q2, q3, 0.0, 0.0, 0.0]
@@ -480,9 +480,9 @@ class UR5(RoboticManipulator):
                     R03 = Ts[2][:3, :3]
                     R04 = (T01 @ T14)[:3, :3]
                     R34 = R03.T @ R04
-                    q4 = wrap(math.atan2(R34[1,0], R34[0,0]))
+                    q4 = wrap_angle(math.atan2(R34[1,0], R34[0,0]))
 
-                    candidate = [wrap(q1), wrap(q2), wrap(q3), wrap(q4), wrap(q5), wrap(q6)]
+                    candidate = [wrap_angle(q1), wrap_angle(q2), wrap_angle(q3), wrap_angle(q4), wrap_angle(q5), wrap_angle(q6)]
 
                     # Validate by FK to guarantee consistency
                     _, Tchk = self.fk_all(candidate, sym=False)
@@ -492,7 +492,7 @@ class UR5(RoboticManipulator):
         # Remove duplicates (wrap-aware)
         uniq = []
         for s in sols:
-            if not any(sum((wrap(si-ui))**2 for si,ui in zip(s,u)) < 1e-10 for u in uniq):
+            if not any(sum((wrap_angle(si-ui))**2 for si,ui in zip(s,u)) < 1e-10 for u in uniq):
                 uniq.append(s)
         return uniq
 
@@ -501,12 +501,13 @@ class UR5(RoboticManipulator):
     def do_ik_symbolic(self):
    
         #x,y,z,alpha,beta,gamma = sp.symbols(" ".join(names), real=True)
-        x = 'x'
-        y = 'y'
-        z = 'z'
-        alpha = 'α'
-        beta = 'β'
-        gamma = 'γ'
+        x = sp.Symbol('x', real=True)
+        y = sp.Symbol('y', real=True)
+        z = sp.Symbol('z', real=True)
+        alpha = sp.Symbol('α', real=True)
+        beta = sp.Symbol('β', real=True)
+        gamma = sp.Symbol('γ', real=True)
+        
         R = rpy_to_R(alpha, beta, gamma, sym=True)
         T = sp.Matrix([[R[0,0],R[0,1],R[0,2],x],
                        [R[1,0],R[1,1],R[1,2],y],
