@@ -149,7 +149,7 @@ def display_fk_symbolic_results(self, individual_Ts, cumulative_Ts, final_T, q_s
     """Display symbolic FK results using existing style"""
     clear_output(self)
     
-    add_section_header(self, "Forward Kinematics Results (Symbolic)", "#8e24aa")
+    add_section_header(self, "Forward Kinematics Results (Symbolic)", "#00897b")
     
     # joint variables
     group = create_result_group(self, "Joint Variables")
@@ -164,11 +164,11 @@ def display_fk_symbolic_results(self, individual_Ts, cumulative_Ts, final_T, q_s
         var_box.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignHCenter )
         var_box.setStyleSheet("""
             QLabel {
-                background-color: #e3f2fd;
-                border: 2px solid #2196f3;
+                background-color: #e0f7fa;
+                border: 2px solid #00897b;
                 border-radius: 5px;
                 padding: 2px 6px;
-                color: #1976d2;
+                color: #024f48;
             }
         """)
         var_box.setFixedHeight(35)

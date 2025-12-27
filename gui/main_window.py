@@ -30,7 +30,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.current_manipulator = None
         self.current_T = None
         self.setWindowTitle("  ")   # giving a title to the window 
-        self.resize(1600, 1100) # resizing the window
+        self.resize(1800, 1300) # resizing the window
        
         central = QWidget()  # Create a central widget (required in QMainWindow)
         #central = Color("yellow")
@@ -145,19 +145,23 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
        
         # right_widget.setSpacing(0)
         # right_widget.setContentsMargins(0, 0, 0, 0)
-        choose_2D_sec = Color("#ec1c31", "2D_section") 
+        control_cad = self.create_cad_control_panel()
+        #Color("#ec1c31", "2D_section")
+        #self.create_cad_control_panel()
+         
       #  view3d_widget = QWidget()
       #  view2d_widget = QWidget()
         view2d_widget = Color("#f7838f", "2D VIEW")
         
-        left_layout.addWidget(choose_2D_sec, 1)  # top: control
+        left_layout.addWidget(control_cad, 1)  # top: control
         left_layout.addWidget(view2d_widget, 1)  # bottom: 2D view
 #### ganna work on them
         # view3d_widget = self.create_3d_view_widget()
         # choose_2d_widget = self.create_2d_selector_widget()
         # view2d_widget = self.create_2d_view_widget()
         
-        self.view3d_widget = Color("#1cccec", "3D VIEW") 
+        self.view3d_widget = OpenGLViewer()
+        #Color("#1cccec", "3D VIEW") 
 
         cad_layout.addWidget(left_widget, 3)      # 25%
         cad_layout.addWidget(self.view3d_widget, 5) 
@@ -1246,13 +1250,41 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             display_ik_numeric_results(self, solutions, self.current_T)
 
         self.tabs.setCurrentIndex(1)
-            
-            
-            
-            
-            
-            
-            
+        
+        
+    def create_cad_control_group(self, title):
+        """Create a styled control group for CAD tab"""
+        group = QGroupBox(title)
+        group.setFont(self.label_font)
+        group.setStyleSheet("""
+            QGroupBox {
+                border: 2px solid #8e24aa;
+                border-radius: 8px;
+                margin-top: 10px;
+                padding-top: 15px;
+                background-color: #f9f9f9;
+                font-weight: bold;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                subcontrol-position: top center;
+                padding: 5px 10px;
+                background-color: white;
+                border-radius: 4px;
+                color: #8e24aa;
+            }
+        """)
+        layout = QVBoxLayout()
+        layout.setSpacing(8)
+        group.setLayout(layout)
+        return group
+        
+                
+                
+                
+                
+                
+                
             
             
             
