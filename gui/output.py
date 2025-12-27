@@ -643,21 +643,25 @@ def display_ik_numeric_results(self, solutions, target_matrix):
     """Display numeric IK results using existing solutions style"""
     clear_output(self)
     
-    add_section_header(self, "✓ Inverse Kinematics Results", "#ff9800")
+    add_section_header(self, "Inverse Kinematics Results", "#8e24aa")
     
     # Target Matrix Display
-    add_transformation_matrix_section(self, target_matrix, "🎯 Target Transformation Matrix")
-    add_spacing(self, self.output_layout, 15)
+    add_section_header(self, "Target Transformation Matrix and End-Effector Pose", "#00897b")
+    add_transformation_matrix_section(self, target_matrix, "Target Transformation Matrix")
+    add_spacing(self, self.output_layout, 10)
+    
+    add_end_effector_pose_section(self, target_matrix)
+    add_spacing(self, self.output_layout, 10)
     
     # Solutions Header
-    add_section_header(self, f"Found {len(solutions)} Solution(s)", "#4caf50")
+    add_section_header(self, f"Found {len(solutions)} Solution(s)", "#673ab7")
     
     angle_unit = "deg" if self.theta_system_widget.currentRow() == 1 else "rad"
     
     # Display each solution (matching your existing solutions style)
     for sol_idx, solution in enumerate(solutions, 1):
         add_ik_solution_display(self, solution, sol_idx, target_matrix, angle_unit)
-        add_spacing(self, self.output_layout, 15)
+        add_spacing(self, self.output_layout, 10)
 
 def display_ik_symbolic_results(self, T_symbolic):
     """Display symbolic IK representation"""
@@ -720,7 +724,18 @@ def display_ik_no_solution(self, target_matrix):
     """Display message when no IK solution found"""
     clear_output(self)
     
-    add_section_header(self, "❌ Inverse Kinematics - No Solution", "#f44336")
+    add_section_header(self, "Inverse Kinematics Results", "#8e24aa")
+    
+    # Target Matrix Display
+    add_section_header(self, "Target Transformation Matrix and End-Effector Pose", "#00897b")
+    add_transformation_matrix_section(self, target_matrix, "Target Transformation Matrix")
+    add_spacing(self, self.output_layout, 10)
+    
+    add_end_effector_pose_section(self, target_matrix)
+    add_spacing(self, self.output_layout, 10)
+   
+   
+    add_section_header(self, " ✗ Inverse Kinematics - No Solution", "#c02c2c")
     
     # Error message (using your existing status message style)
     msg_widget = QWidget()
@@ -728,14 +743,14 @@ def display_ik_no_solution(self, target_matrix):
     msg_layout.setContentsMargins(10, 8, 10, 8)
     
     icon_lbl = QLabel("✗")
-    icon_lbl.setFont(QFont("Roboto", 14, QFont.Weight.Bold))
+    icon_lbl.setFont(QFont("Roboto", 16, QFont.Weight.Bold))
     icon_lbl.setStyleSheet("color: #f44336;")
     
     text_lbl = QLabel(
         "No valid inverse kinematics solution found.\n"
         "The target pose may be outside the robot's workspace or unreachable."
     )
-    text_lbl.setFont(QFont("Roboto", 11))
+    text_lbl.setFont(QFont("Roboto", 14))
     text_lbl.setWordWrap(True)
     
     msg_widget.setStyleSheet("""
@@ -746,15 +761,16 @@ def display_ik_no_solution(self, target_matrix):
         }
     """)
     
+    
     msg_layout.addWidget(icon_lbl)
     msg_layout.addWidget(text_lbl)
     msg_layout.addStretch()
+    msg_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
     
     self.output_layout.addWidget(msg_widget)
-    add_spacing(self, self.output_layout, 15)
+    add_spacing(self, self.output_layout, 10)
     
     # Show target matrix
-    add_transformation_matrix_section(self, target_matrix, "Target Matrix (Unreachable)")
 
 
 # ==================== HELPER FUNCTIONS (Matching Your Style) ====================

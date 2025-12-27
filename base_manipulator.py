@@ -53,7 +53,8 @@ def in_limits(robot, q):
             msgs.append(f"θ{i+1} out of limits [{lo:.3f}, {hi:.3f}]")
     return ok, msgs
 
-
+def allclose(A,B,t=1e-6):
+    return np.allclose(A,B,atol=t,rtol=0)
 # Base class for robotic manipulators.
 # Focuses on DH parameter management and interaction with GUI controls.
 class RoboticManipulator:

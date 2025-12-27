@@ -9,7 +9,7 @@ import re
 
 # Symbolic mathematics (for deriving and verifying equations)
 import sympy as sp
-from sympy import *
+from sympy import Symbol, Matrix, simplify, latex, sympify
 from scipy.spatial.transform import Rotation as R
 
 # GUI Framework
