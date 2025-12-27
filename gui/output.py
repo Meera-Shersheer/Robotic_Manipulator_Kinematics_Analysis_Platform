@@ -1274,7 +1274,7 @@ def add_ik_solution_display(self, solution, sol_idx, target_matrix, angle_unit):
     group = create_result_group(self, f"Solution {sol_idx}")
     
     # Validity check using FK
-    _, T_verify = self.current_manipulator.compute_fk_numeric(solution)
+    _, _, T_verify = self.current_manipulator.fk_all(solution, sym=False)
     error = np.linalg.norm(T_verify - target_matrix)
     is_valid = error < 1e-5
     

@@ -476,8 +476,8 @@ class UR5(RoboticManipulator):
 
                     # θ4 from rotation
                     qtemp = [q1, q2, q3, 0.0, 0.0, 0.0]
-                    Ts, _ = self.fk_all(qtemp, sym=False)
-                    R03 = Ts[2][:3, :3]
+                    _, cumulative_Ts, _ = self.fk_all(qtemp, sym=False)
+                    R03 = cumulative_Ts[2][:3, :3]
                     R04 = (T01 @ T14)[:3, :3]
                     R34 = R03.T @ R04
                     q4 = wrap_angle(math.atan2(R34[1,0], R34[0,0]))
