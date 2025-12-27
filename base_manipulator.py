@@ -419,7 +419,7 @@ class UR5(RoboticManipulator):
 
         # wrist center (p05)
         p05 = p06 - d6 * R06[:, 2]
-        rxy = math.hypot(p05[0], p05[1])
+        rxy = np.hypot(p05[0], p05[1])
         if rxy < 1e-12:
             return []
 
@@ -427,29 +427,29 @@ class UR5(RoboticManipulator):
         c = d4 / rxy
         if abs(c) > 1.0 + 1e-9:
             return []
-        c = max(-1.0, min(1.0, c))
-        phi = math.acos(c)
-        psi = math.atan2(p05[1], p05[0])
+        c = np.clip(c, -1.0, 1.0) 
+        phi = np.arccos(c)
+        psi = np.arctan2(p05[1], p05[0])
         q1_candidates = [wrap_angle(psi + phi + pi/2), wrap_angle(psi - phi + pi/2)]
 
         for q1 in q1_candidates:
-            s1, c1 = math.sin(q1), math.cos(q1)
+            s1, c1 = sin(q1), cos(q1)
 
             # θ5 (two solutions)
             c5 = (px*s1 - py*c1 - d4) / d6
             if abs(c5) > 1.0 + 1e-9:
                 continue
-            c5 = max(-1.0, min(1.0, c5))
-            q5a = math.acos(c5)
+            c5 = np.clip(c5, -1.0, 1.0) 
+            q5a = np.arccos(c5)
             q5_candidates = [wrap_angle(q5a), wrap_angle(-q5a)]
 
             for q5 in q5_candidates:
-                s5 = math.sin(q5)
+                s5 = sin(q5)
                 if abs(s5) < 1e-10:
                     continue
 
                 # θ6
-                q6 = math.atan2(
+                q6 = np.arctan2( 
                     (-R06[0,1]*s1 + R06[1,1]*c1) / s5,
                     (R06[0,0]*s1 - R06[1,0]*c1) / s5
                 )
@@ -469,10 +469,10 @@ class UR5(RoboticManipulator):
                 D = (x*x + y*y - a2*a2 - a3*a3) / (2*a2*a3)
                 if abs(D) > 1.0 + 1e-9:
                     continue
-                D = max(-1.0, min(1.0, D))
+                D = np.clip(D, -1.0, 1.0)
 
-                for q3 in [math.acos(D), -math.acos(D)]:
-                    q2 = math.atan2(y, x) - math.atan2(a3*math.sin(q3), a2 + a3*math.cos(q3))
+                for q3 in [np.arccos(D), -np.arccos(D)]:
+                    q2 = np.arctan2(y, x) - np.arctan2(a3*sin(q3), a2 + a3*cos(q3))
                     q2, q3 = wrap_angle(q2), wrap_angle(q3)
 
                     # θ4 from rotation
@@ -481,7 +481,7 @@ class UR5(RoboticManipulator):
                     R03 = cumulative_Ts[2][:3, :3]
                     R04 = (T01 @ T14)[:3, :3]
                     R34 = R03.T @ R04
-                    q4 = wrap_angle(math.atan2(R34[1,0], R34[0,0]))
+                    q4 = wrap_angle(np.arctan2(R34[1,0], R34[0,0]))
 
                     candidate = [wrap_angle(q1), wrap_angle(q2), wrap_angle(q3), wrap_angle(q4), wrap_angle(q5), wrap_angle(q6)]
 
