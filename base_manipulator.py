@@ -15,8 +15,8 @@ def dhA(theta, d, a, alpha, sym=False):
             [0,       0,      0,    1]
         ])
     else:
-        ct, st = math.cos(theta), math.sin(theta)
-        ca, sa = math.cos(alpha), math.sin(alpha)
+        ct, st = np.cos(theta), np.sin(theta)
+        ca, sa = np.cos(alpha), np.sin(alpha)
         return np.array([
             [ct, -st*ca,  st*sa, a*ct],
             [st,  ct*ca, -ct*sa, a*st],
@@ -25,18 +25,18 @@ def dhA(theta, d, a, alpha, sym=False):
         ], dtype=float)
         
 def rot_x(a, sym=False):
-    c = sp.cos(a) if sym else math.cos(a)
-    s = sp.sin(a) if sym else math.sin(a)
+    c = sp.cos(a) if sym else np.cos(a)
+    s = sp.sin(a) if sym else np.sin(a)
     return sp.Matrix([[1,0,0],[0,c,-s],[0,s,c]]) if sym else np.array([[1,0,0],[0,c,-s],[0,s,c]])
 
 def rot_y(a, sym=False):
-    c = sp.cos(a) if sym else math.cos(a)
-    s = sp.sin(a) if sym else math.sin(a)
+    c = sp.cos(a) if sym else np.cos(a)
+    s = sp.sin(a) if sym else np.sin(a)
     return sp.Matrix([[c,0,s],[0,1,0],[-s,0,c]]) if sym else np.array([[c,0,s],[0,1,0],[-s,0,c]])
 
 def rot_z(a, sym=False):
-    c = sp.cos(a) if sym else math.cos(a)
-    s = sp.sin(a) if sym else math.sin(a)
+    c = sp.cos(a) if sym else np.cos(a)
+    s = sp.sin(a) if sym else np.sin(a)
     return sp.Matrix([[c,-s,0],[s,c,0],[0,0,1]]) if sym else np.array([[c,-s,0],[s,c,0],[0,0,1]])
 
 def rpy_to_R(alpha, beta, gamma, sym=False):
@@ -433,7 +433,7 @@ class UR5(RoboticManipulator):
         q1_candidates = [wrap_angle(psi + phi + pi/2), wrap_angle(psi - phi + pi/2)]
 
         for q1 in q1_candidates:
-            s1, c1 = sin(q1), cos(q1)
+            s1, c1 = np.sin(q1), np.cos(q1)
 
             # θ5 (two solutions)
             c5 = (px*s1 - py*c1 - d4) / d6
@@ -444,7 +444,7 @@ class UR5(RoboticManipulator):
             q5_candidates = [wrap_angle(q5a), wrap_angle(-q5a)]
 
             for q5 in q5_candidates:
-                s5 = sin(q5)
+                s5 = np.sin(q5)
                 if abs(s5) < 1e-10:
                     continue
 
@@ -472,7 +472,7 @@ class UR5(RoboticManipulator):
                 D = np.clip(D, -1.0, 1.0)
 
                 for q3 in [np.arccos(D), -np.arccos(D)]:
-                    q2 = np.arctan2(y, x) - np.arctan2(a3*sin(q3), a2 + a3*cos(q3))
+                    q2 = np.arctan2(y, x) - np.arctan2(a3*np.sin(q3), a2 + a3*np.cos(q3))
                     q2, q3 = wrap_angle(q2), wrap_angle(q3)
 
                     # θ4 from rotation
