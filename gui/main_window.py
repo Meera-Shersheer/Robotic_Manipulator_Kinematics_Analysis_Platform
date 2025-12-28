@@ -1314,10 +1314,10 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         model_group = self.create_cad_control_group("Model Selection")
         model_layout = QVBoxLayout()
 
-        model_label = QLabel("Select Robot Model:")
-        model_label.setFont(self.standard_font)
-        model_label.setStyleSheet("border: none; background: transparent; color: #333;")
-        model_layout.addWidget(model_label)
+        # model_label = QLabel("Select Robot Model:")
+        # model_label.setFont(self.standard_font)
+        # model_label.setStyleSheet("border: none; background: transparent; color: #333;")
+        # model_layout.addWidget(model_label)
 
         cad_model_widget, self.cad_model_list  = self.create_selector("Select a manipulator:", ["UR5", "ABB IRB 1600", "KUKA KR16"])
         # self.cad_model_combo.setFont(self.standard_font)
@@ -1352,7 +1352,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         # ============ View Presets Group ============
         presets_group = self.create_cad_control_group("View Presets")
         presets_layout = QGridLayout()
-        presets_layout.setSpacing(5)
+        presets_layout.setSpacing(3)
 
         preset_buttons = [
             ("Isometric", 35, 45, -3),
@@ -1365,7 +1365,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             btn = QPushButton(name)
             btn.setFont(self.standard_font)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            btn.setFixedHeight(32)
+            btn.setFixedHeight(30)
             btn.setStyleSheet("""
                 QPushButton {
                     background-color: white;
@@ -1402,7 +1402,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         elev_label = QLabel("Elevation:")
         elev_label.setFont(self.standard_font)
         elev_label.setStyleSheet("border: none; background: transparent; color: #333;")
-        elev_label.setFixedWidth(70)
+        elev_label.setFixedWidth(80)
 
         controls_layout = QVBoxLayout()
         self.elev_spin = QSpinBox()
@@ -1430,7 +1430,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
 
         for btn in (plus, minus):
-            btn.setFixedSize(25, 30)
+            btn.setFixedSize(25, 15)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
             btn.setStyleSheet("""
                 QPushButton {
@@ -1499,7 +1499,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
 
         for btn_2 in (plus_2, minus_2):
-            btn_2.setFixedSize(25, 30)
+            btn_2.setFixedSize(25, 15)
             btn_2.setCursor(Qt.CursorShape.PointingHandCursor)
             btn_2.setStyleSheet("""
                 QPushButton {
@@ -1562,7 +1562,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
         # ============ Zoom Controls Group ============
         zoom_group = self.create_cad_control_group("Zoom Controls")
-        zoom_layout = QVBoxLayout()
+        zoom_layout = QHBoxLayout()
         zoom_layout.setSpacing(5)
 
         zoom_buttons_layout = QHBoxLayout()
@@ -1771,10 +1771,10 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.dh_image_label = QLabel()
         self.dh_image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.dh_image_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.dh_image_label.setScaledContents(False)  # Don't scale contents
+        self.dh_image_label.setScaledContents(True)  # Don't scale contents
 
         # Connect selector to updater
-        self.cad_model_combo.currentIndexChanged.connect(self.update_model_dh)
+        self.cad_model_list.currentRowChanged.connect(self.update_model_dh)
         # Initial image
         self.update_model_dh(0)
         return self.dh_image_label
@@ -1809,12 +1809,13 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.section_image_label = QLabel()
         self.section_image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.section_image_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.section_image_label.setScaledContents(False)
+     
 
         # Connect selector to updater
-        self.cad_model_combo.currentIndexChanged.connect(self.update_2d_section)
+        self.cad_model_list.currentRowChanged.connect(self.update_2d_section)
         # Initial image
         self.update_2d_section(0)
+        
         return self.section_image_label
 
     def update_2d_section(self, index):
@@ -1839,21 +1840,21 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         Qt.TransformationMode.SmoothTransformation
         )
         self.section_image_label.setPixmap(scaled_pixmap)
-    
+
     def resizeEvent(self, event):
         """Handle window resize to update images"""
         super().resizeEvent(event)
-        
+
         # Update DH diagram if it exists
         if hasattr(self, 'dh_image_label') and hasattr(self, 'cad_model_combo'):
             current_index = self.cad_model_combo.currentIndex()
             self.update_model_dh(current_index)
-        
+
         # Update 2D section if it exists
         if hasattr(self, 'section_image_label') and hasattr(self, 'cad_model_combo'):
             current_index = self.cad_model_combo.currentIndex()
             self.update_2d_section(current_index)
-    
+
 
 
 
