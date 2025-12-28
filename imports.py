@@ -16,7 +16,7 @@ from scipy.spatial.transform import Rotation as R
 import PyQt6
 from PyQt6.QtWidgets import *
 from PyQt6.QtCore import *
-from PyQt6.QtGui import QAction, QColor, QPalette, QIcon, QKeySequence, QFont,QPainter, QDoubleValidator, QMouseEvent
+from PyQt6.QtGui import QAction, QColor, QPalette, QIcon, QKeySequence, QFont,QPainter, QDoubleValidator, QMouseEvent, QPixmap
 import trimesh
 import tempfile
 

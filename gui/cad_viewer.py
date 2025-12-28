@@ -664,7 +664,7 @@ class ManipulatorViewer(QWidget):
         models = [
             'cad_models/ur5.obj',
             'cad_models/irb_1600_10kg_1.45m.obj',
-            'cad_models/ur5.obj'
+            'cad_models/kuka_kr16.obj'
         ]
         
         filepath = models[index]

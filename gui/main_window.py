@@ -158,7 +158,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.control_cad = self.create_cad_control_panel()
         # Color("#ec1c31", "2D_section")
         # self.create_cad_control_panel()
-        view2d_widget =Color("#f7838f", "2D VIEW")
+        view2d_widget =self.model_dh()
+        #Color("#f7838f", "2D VIEW")
         
         left_layout.addWidget(self.control_cad, 1)  # top: control
         left_layout.addWidget(view2d_widget, 1)  # bottom: 2D view
@@ -172,7 +173,14 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         cad_layout.addWidget(left_widget, 3)      # 25%
         cad_layout.addWidget(self.view3d_widget, 5) 
 
-        self.tabs.addTab(cad_tab, "CAD Model")
+        self.tabs.addTab(cad_tab, "3D CAD Model")
+        
+        models_2d = QWidget()
+        cad_2d_layout = QHBoxLayout(models_2d)
+        self.tabs.addTab(models_2d, "2D Sections")
+        sections_2d_widget = self.create_2d_sections_widget()
+        #Color("orange", "OUTPUT")
+        cad_2d_layout.addWidget(sections_2d_widget, 6)
         outer_layout.addWidget(self.tabs)
         # test_output_widget(self)
         self.toggle_value_column()
@@ -1683,7 +1691,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         models = [
             'cad_models/ur5.obj',
             'cad_models/irb_1600_10kg_1.45m.obj',
-            'cad_models/ur5.obj'  # Placeholder for KUKA
+            'cad_models/kuka_kr16_assembly.obj'  # Placeholder for KUKA
         ]
 
         filepath = models[index]
@@ -1727,6 +1735,9 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             self.cad_model_list.blockSignals(False)
             # Also load the CAD model
             self.load_cad_model(index)
+            self.update_model_dh(index)
+            self.update_2d_section(index)
+            
         elif self.sender() == self.cad_model_list:
             # CAD tab changed, update Input tab
             self.manipulator_list_widget.blockSignals(True)
@@ -1734,17 +1745,98 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             self.manipulator_list_widget.blockSignals(False)
             # Also update DH table
             self.update_dh_table(index)
-    def toggle_smooth_shading(self, enabled):
-        """Toggle between smooth and flat shading"""
-        self.view3d_widget.toggle_smooth_shading(enabled)
+            self.update_2d_section(index)
+            self.update_model_dh(index)
+            # self.update_model_dh(index)
+    # def toggle_smooth_shading(self, enabled):
+    #     """Toggle between smooth and flat shading"""
+    #     self.view3d_widget.toggle_smooth_shading(enabled)
 
-    def toggle_lighting(self, enabled):
-        """Toggle lighting on/off"""
-        self.view3d_widget.toggle_lighting(enabled)
+    # def toggle_lighting(self, enabled):
+    #     """Toggle lighting on/off"""
+    #     self.view3d_widget.toggle_lighting(enabled)
 
     def toggle_axes(self, enabled):
         """Toggle coordinate axes display"""
         self.view3d_widget.toggle_axes(enabled)
+        
+    def model_dh(self):
+        
+        # Image label
+        self.image_label = QLabel()
+        self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # self.image_label.setFixedSize(400, 300)
+        self.image_label.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
+
+        # Connect selector to updater
+        self.cad_model_list.currentRowChanged.connect(self.update_model_dh)
+        # Initial image
+        self.update_model_dh(0)
+        return self.image_label
+
+    def update_model_dh(self, index):
+        models = [
+            'cad_models/UR5_DH.jpeg',
+            'cad_models/ABB_IRB_1600_DH.jpeg',
+            'cad_models/KUKA_DH.jpeg'
+        ]
+        
+        if index < 0 or index >= len(models):
+            return
+        
+        pixmap = QPixmap(models[index])
+        
+        if pixmap.isNull():
+            self.section_label.setText("The image requested is not available")
+            return
+
+        self.image_label.setPixmap(
+            pixmap.scaled(
+                self.image_label.size(),
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation
+            )
+        )
+        
+    def create_2d_sections_widget(self):
+        
+        # Image label
+        self.image_label = QLabel()
+        self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # self.image_label.setFixedSize(400, 300)
+        self.image_label.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
+
+        # Connect selector to updater
+        self.cad_model_list.currentRowChanged.connect(self.update_2d_section)
+        # Initial image
+        self.update_2d_section(0)
+        return self.image_label
+
+    def update_2d_section(self, index):
+        models = [
+            'cad_models/UR5_DH.jpeg',
+            'cad_models/ABB_IRB_1600_DH.jpeg',
+            'cad_models/KUKA_DH.jpeg'
+        ]
+        
+        if index < 0 or index >= len(models):
+            return
+        
+        pixmap = QPixmap(models[index])
+        
+        if pixmap.isNull():
+            self.section_label.setText("2D sections requested are not available")
+            return
+        
+        self.image_label.setPixmap(
+            pixmap.scaled(
+                self.image_label.size(),
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation
+            )
+        )
 
 
 
