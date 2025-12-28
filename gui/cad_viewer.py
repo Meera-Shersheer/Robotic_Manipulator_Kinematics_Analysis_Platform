@@ -32,8 +32,6 @@ class OpenGLViewer(QOpenGLWidget):
         self.show_edges = True
         self.wireframe_mode = False
         
-        self.smooth_shading = True
-        self.lighting_enabled = True
         self.show_axes = False
         
         # Vertex and color data
@@ -98,6 +96,8 @@ class OpenGLViewer(QOpenGLWidget):
         glTranslatef(0.0, 0.0, self.zoom)
         glRotatef(self.rotation_x, 1, 0, 0)
         glRotatef(self.rotation_y, 0, 1, 0)
+        
+        self.draw_axes()
         
         if self.mesh is not None and self.vertices is not None:
             self.draw_mesh()
@@ -369,7 +369,6 @@ class OpenGLViewer(QOpenGLWidget):
         """Draw a small axis indicator in the bottom-left corner"""
         if not self.show_axes:
             return
-
         # Save current matrices
         glMatrixMode(GL_PROJECTION)
         glPushMatrix()
@@ -386,7 +385,10 @@ class OpenGLViewer(QOpenGLWidget):
         height = viewport[3]
 
         # Create small viewport in bottom-left corner (100x100 pixels)
-        axis_size = 100
+        axis_size = 150          # Change from 100 to 150 (50% larger)
+        axis_line_length = 1.2   # How long the axis lines are (increase for longer)
+        axis_line_width = 4.0    # Thickness of axis lines (increase for thicker)
+        label_size = 0.10
         glViewport(10, 10, axis_size, axis_size)
 
         # Set up orthographic projection for the axis indicator
@@ -399,38 +401,41 @@ class OpenGLViewer(QOpenGLWidget):
         glLoadIdentity()
         glRotatef(self.rotation_x, 1, 0, 0)
         glRotatef(self.rotation_y, 0, 1, 0)
+        
+        self.draw_axis_background()
 
         # Draw the axes
-        glLineWidth(3.0)
+        glLineWidth(axis_line_width)
         glBegin(GL_LINES)
 
         # X-axis (Red)
         glColor3f(0.9, 0.2, 0.2)
         glVertex3f(0, 0, 0)
-        glVertex3f(1.0, 0, 0)
+        glVertex3f(axis_line_length, 0, 0)
 
         # Y-axis (Green)
         glColor3f(0.2, 0.8, 0.2)
         glVertex3f(0, 0, 0)
-        glVertex3f(0, 1.0, 0)
+        glVertex3f(0, axis_line_length, 0)
 
         # Z-axis (Blue)
         glColor3f(0.2, 0.2, 0.9)
         glVertex3f(0, 0, 0)
-        glVertex3f(0, 0, 1.0)
+        glVertex3f(0, 0, axis_line_length)
 
         glEnd()
 
         # Draw arrow heads for each axis
-        self.draw_arrow_head(1.0, 0, 0, 0.9, 0.2, 0.2)  # X
-        self.draw_arrow_head(0, 1.0, 0, 0.2, 0.8, 0.2)  # Y
-        self.draw_arrow_head(0, 0, 1.0, 0.2, 0.2, 0.9)  # Z
+        self.draw_arrow_head(axis_line_length, 0, 0, 0.9, 0.2, 0.2)  # X
+        self.draw_arrow_head(0, axis_line_length, 0, 0.2, 0.8, 0.2)  # Y
+        self.draw_arrow_head(0, 0, axis_line_length, 0.2, 0.2, 0.9) # Z
 
         # Draw axis labels using simple geometry
-        glLineWidth(2.0)
-        self.draw_axis_label_X(1.2, 0, 0, 0.9, 0.2, 0.2)
-        self.draw_axis_label_Y(0, 1.2, 0, 0.2, 0.8, 0.2)
-        self.draw_axis_label_Z(0, 0, 1.2, 0.2, 0.2, 0.9)
+        glLineWidth(2.5)
+        label_offset = axis_line_length + 0.15
+        self.draw_axis_label_X(label_offset, 0, 0, 0.9, 0.2, 0.2, label_size)
+        self.draw_axis_label_Y(0, label_offset, 0, 0.2, 0.8, 0.2, label_size)
+        self.draw_axis_label_Z(0, 0, label_offset, 0.2, 0.2, 0.9, label_size)
 
         glLineWidth(1.0)
 
@@ -443,17 +448,24 @@ class OpenGLViewer(QOpenGLWidget):
         glPopMatrix()
 
         # Restore lighting state
+        glDisable(GL_BLEND)
         if lighting_was_enabled:
             glEnable(GL_LIGHTING)
+            
+        # Add this method to OpenGLViewer class
+    def toggle_axes(self, show):
+        """Toggle coordinate axes display"""
+        self.show_axes = show
+        self.update()
 
     def draw_arrow_head(self, x, y, z, r, g, b):
         """Draw a small arrow head at the end of an axis"""
         glColor3f(r, g, b)
 
         # Determine which axis this is
-        cone_base = 0.85
-        cone_height = 0.15
-        cone_radius = 0.06
+        cone_base = 0.8
+        cone_height = 0.2
+        cone_radius = 0.08
 
         if x > 0.5:  # X-axis
             # Cone pointing in +X direction
@@ -507,11 +519,11 @@ class OpenGLViewer(QOpenGLWidget):
 
         glEnd()
 
-    def draw_axis_label_X(self, x, y, z, r, g, b):
+    def draw_axis_label_X(self, x, y, z, r, g, b, size=0.08):
         """Draw 'X' label using lines"""
         glColor3f(r, g, b)
         glBegin(GL_LINES)
-        size = 0.08
+        
         # X as two crossing lines
         glVertex3f(x - size, y - size, z)
         glVertex3f(x + size, y + size, z)
@@ -519,11 +531,10 @@ class OpenGLViewer(QOpenGLWidget):
         glVertex3f(x + size, y - size, z)
         glEnd()
 
-    def draw_axis_label_Y(self, x, y, z, r, g, b):
+    def draw_axis_label_Y(self, x, y, z, r, g, b, size=0.08):
         """Draw 'Y' label using lines"""
         glColor3f(r, g, b)
         glBegin(GL_LINES)
-        size = 0.08
         # Y as two lines meeting at center, plus stem
         glVertex3f(x - size, y + size, z)
         glVertex3f(x, y, z)
@@ -533,11 +544,10 @@ class OpenGLViewer(QOpenGLWidget):
         glVertex3f(x, y - size, z)
         glEnd()
 
-    def draw_axis_label_Z(self, x, y, z, r, g, b):
+    def draw_axis_label_Z(self, x, y, z, r, g, b, size=0.08):
         """Draw 'Z' label using lines"""
         glColor3f(r, g, b)
         glBegin(GL_LINES)
-        size = 0.08
         # Z as horizontal line, diagonal, horizontal line
         glVertex3f(x - size, y + size, z)
         glVertex3f(x + size, y + size, z)

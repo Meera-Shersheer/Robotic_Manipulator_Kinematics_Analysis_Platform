@@ -1608,23 +1608,18 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.cad_edges_check.setCursor(Qt.CursorShape.PointingHandCursor)
         self.cad_edges_check.setStyleSheet("""
             QCheckBox {
-                spacing: 8px;
+                spacing: 6px;
                 color: #333;
             }
             QCheckBox::indicator {
-                width: 20px;
-                height: 20px;
+                width: 15px;
+                height: 15px;
                 border: 2px solid #8e24aa;
                 border-radius: 4px;
                 background-color: white;
             }
             QCheckBox::indicator:checked {
                 background-color: #8e24aa;
-                image: none;
-            }
-            QCheckBox::indicator:checked:after {
-                content: "✓";
-                color: white;
             }
         """)
         self.cad_edges_check.toggled.connect(self.view3d_widget.toggle_edges)
@@ -1635,13 +1630,20 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.cad_wireframe_check.setStyleSheet(self.cad_edges_check.styleSheet())
         self.cad_wireframe_check.toggled.connect(self.view3d_widget.toggle_wireframe)
 
-
+         #NEW: Show Coordinate Axes
+        self.cad_axes_check = QCheckBox("Show Coordinate Axes")
+        self.cad_axes_check.setChecked(False)
+        self.cad_axes_check.setFont(self.standard_font)
+        self.cad_axes_check.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.cad_axes_check.setStyleSheet(self.cad_edges_check.styleSheet())
+        self.cad_axes_check.toggled.connect(self.toggle_axes)
 
        
         
         
         display_layout.addWidget(self.cad_edges_check)
         display_layout.addWidget(self.cad_wireframe_check)
+        display_layout.addWidget(self.cad_axes_check) 
 
 
         display_group.layout().addLayout(display_layout)
