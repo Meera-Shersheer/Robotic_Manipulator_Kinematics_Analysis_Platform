@@ -47,15 +47,6 @@ def Rx_s(a): ca,sa=sp.cos(a),sp.sin(a); return sp.Matrix([[1,0,0],[0,ca,-sa],[0,
 def Ry_s(b): cb,sb=sp.cos(b),sp.sin(b); return sp.Matrix([[cb,0,sb],[0,1,0],[-sb,0,cb]])
 def Rz_s(g): cg,sg=sp.cos(g),sp.sin(g); return sp.Matrix([[cg,-sg,0],[sg,cg,0],[0,0,1]])
 
-# def _f(x, n=6):
-#     return f"{x:.{n}f}"
-
-# def _hdr(i, title):
-#     return f"{i}) {title}"
-
-# def _wrap_note():
-#     return "NOTE: If your solver wraps angles, apply wrap(theta) -> (-pi, pi]."
-
 
 def eulerR(a,b,g,order="ZYX"):
     order=order.upper()
@@ -203,7 +194,6 @@ class RoboticManipulator:
         for i in range(self.num_joints):
             values.append(self.get_joint_value(i, in_degrees))
         return values
-        # ==================== FORWARD KINEMATICS ====================
     
 
 
@@ -236,8 +226,6 @@ class RoboticManipulator:
             [0,       0,      0,    1]
         ])
         
-  
-    # ==================== UTILITY FUNCTIONS ====================
     
     def extract_position(self, T):
         """Extract position vector from transformation matrix"""
@@ -287,20 +275,6 @@ class RoboticManipulator:
         T[:3, 3] = [x, y, z]
         return T
     
-    # def do_ik_symbolic(self):
-    #     x = sp.Symbol('x', real=True)
-    #     y = sp.Symbol('y', real=True)
-    #     z = sp.Symbol('z', real=True)
-    #     alpha = sp.Symbol('α', real=True)
-    #     beta = sp.Symbol('β', real=True)
-    #     gamma = sp.Symbol('γ', real=True)
-        
-    #     R = rpy_to_R(alpha, beta, gamma, sym=True)
-    #     T = sp.Matrix([[R[0,0],R[0,1],R[0,2],x],
-    #                    [R[1,0],R[1,1],R[1,2],y],
-    #                    [R[2,0],R[2,1],R[2,2],z],
-    #                    [0,0,0,1]])
-    #     return T
     
     def fk_all(self, q, sym=False):
         individual_Ts = []  # Individual: 1→2, 2→3, etc.
@@ -323,11 +297,6 @@ class RoboticManipulator:
         else:
             return individual_Ts, cumulative_Ts, T
     
-    
-
-
-
-
 
 class UR5(RoboticManipulator):
     """Universal Robots UR5 manipulator"""
@@ -336,7 +305,6 @@ class UR5(RoboticManipulator):
         super().__init__()
         self.name = "UR5"
     
-    #   UR5 DH parameters (Modified DH convention)
     def _initialize_dh_parameters(self) :
         self.d1 = 0.089159
         self.a2= -0.425
@@ -359,8 +327,6 @@ class UR5(RoboticManipulator):
         ]  
          
 
-
-    # -------------------- CLOSED FORM IK (CONSISTENT WITH FK ABOVE) --------------------
     def ik_ur5_closed_form(self, T06: np.ndarray):
         d1, a2, a3, d4, d5, d6 = self.d1, self.a2, self.a3, self.d4, self.d5, self.d6
 
@@ -450,21 +416,7 @@ class UR5(RoboticManipulator):
                 uniq.append(s)
         return uniq
     
-    # def do_ik_symbolic(self, order="ZYX"):
-    #     x = sp.Symbol('x', real=True)
-    #     y = sp.Symbol('y', real=True)
-    #     z = sp.Symbol('z', real=True)
-    #     alpha = sp.Symbol('α', real=True)
-    #     beta = sp.Symbol('β', real=True)
-    #     gamma = sp.Symbol('γ', real=True)
-        
-    #     R = rpy_to_R(alpha, beta, gamma, sym=True)
-    #     T = sp.Matrix([[R[0,0],R[0,1],R[0,2],x],
-    #                    [R[1,0],R[1,1],R[1,2],y],
-    #                    [R[2,0],R[2,1],R[2,2],z],
-    #                    [0,0,0,1]])
 
-    #     return T
     def do_ik_symbolic(self):
         #  Convention: R = Rz(γ) * Ry(β) * Rx(α)
         self.x = sp.Symbol('x', real=True)
@@ -572,7 +524,6 @@ class ABB_IRB_1600(RoboticManipulator):
         super().__init__()
         self.name = "ABB_IRB_1600"
     
-        # ABB IRB1600 DH parameters
     def _initialize_dh_parameters(self):
         self.a1 = 0.448
         self.a2 = 1.066
@@ -600,22 +551,8 @@ class ABB_IRB_1600(RoboticManipulator):
             {"a": 0, "alpha": 0, "d": self.d6, "theta": 0.0, "variable": "theta"},
         ]
         
-    
-    # def wrist_sing(q): 
-    #     return abs(math.sin(q[4]))<1e-6
-    
-    # def shoulder_sing(pwc): 
-    #     return math.hypot(pwc[0],pwc[1])<1e-3
-    
-    # def elbow_sing(r,s,L2,L3):
-    #     reach=math.sqrt(r*r+s*s)
-    #     return reach>L2+L3-1e-3 or reach<abs(L2-L3)+1e-3
 
-    # def fk_verify(robot,q,Tt,tol=1e-4):
-    #     _,T=robot.fk_all(q,False)
-    #     return allclose(T,Tt,tol)
-
-    # Inverse kinematics (FIXED, COMPLETE BRANCHES)
+    
     def ik_irb1600_closed_form(self, T06: np.ndarray):
         """
         Closed-form IK for the 6R ABB IRB1600-style arm (spherical wrist), consistent with THIS file's DH.
@@ -699,12 +636,6 @@ class ABB_IRB_1600(RoboticManipulator):
 
 
         # # Remove near-duplicates
-        # uniq = []
-        # for s in solutions:
-        #     if not any(all(abs(wrap(s[i] - u[i])) < 1e-6 for i in range(6)) for u in uniq):
-        #         uniq.append(s)
-        # return uniq
-        # Remove duplicates
         unique_solutions = []
         for s in solutions:
             if not any(sum((wrap_angle(si-ui))**2 for si, ui in zip(s, u)) < 1e-10 
@@ -713,13 +644,8 @@ class ABB_IRB_1600(RoboticManipulator):
         
         return unique_solutions
     
-       # Add these updated methods to your robot classes in base_manipulator.py
-
-    # # For UR5 class:
 
 
-
-    # For ABB_IRB_1600 class - update the existing method:
     def do_ik_symbolic(self): #  Convention: R = Rz(γ) * Ry(β) * Rx(α)
         self.x = sp.Symbol('x', real=True)
         self.y = sp.Symbol('y', real=True)
@@ -847,7 +773,6 @@ class KUKA_KR16(RoboticManipulator):
         super().__init__()
         self.name = "KUKA_KR16"
     
-        # KUKA KR16 DH parameters
     def _initialize_dh_parameters(self):
         self.a1 = 0.26
         self.a2 = 0.68
@@ -1114,25 +1039,11 @@ class KUKA_KR16(RoboticManipulator):
         }
         return result, T
 
-    # def do_ik_symbolic(self):
-    #     """Enhanced symbolic IK for KUKA KR16"""
-    #     x, y, z = sp.symbols('x y z', real=True)
-    #     alpha, beta, gamma = sp.symbols('alpha beta gamma', real=True)
-        
-    #     R = rpy_to_R(alpha, beta, gamma, sym=True)
-    #     T = sp.Matrix([
-    #         [R[0,0], R[0,1], R[0,2], x],
-    #         [R[1,0], R[1,1], R[1,2], y],
-    #         [R[2,0], R[2,1], R[2,2], z],
-    #         [0, 0, 0, 1]
-    #     ])
-        
-    #     return  T
+   
 
 
-# ==================== FACTORY FUNCTION ====================
 
-    # Factory function to create manipulator instances.
+    # function to create manipulator instances.
     # Args:
     #     name: Manipulator name ("UR5", "ABB IRB1600", "ABB IRB2600")  
     # Returns:

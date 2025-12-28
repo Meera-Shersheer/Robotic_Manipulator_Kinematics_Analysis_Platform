@@ -1,0 +1,22 @@
+LICENSE
+
+Copyright (c) 2025 Meera Qasem Shersheer, Rama Fathi Haddad, Own Mathhar Al-Mazahreh
+
+All Rights Reserved.
+
+This software and associated documentation files (the "Software") are the 
+proprietary property of the copyright holders listed above.
+
+No part of this Software may be reproduced, distributed, or transmitted in 
+any form or by any means, including photocopying, recording, or other 
+electronic or mechanical methods, without the prior written permission of 
+the copyright holders.
+
+This Software was developed as part of academic coursework for the Robotic 
+Systems course taught by Professor Zaer Abu Hammour at the mechatronics engineering department at the University of Jordan during the First  First Semester of the 2025/2026 academic year.
+
+For permission requests, please contact the copyright holders via email.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.

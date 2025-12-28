@@ -4,25 +4,25 @@ from gui.cad_viewer import *
 
 
 
-class Color(QWidget):
-    def __init__(self, color, text=None):
-        super().__init__()
+# class Color(QWidget):
+#     def __init__(self, color, text=None):
+#         super().__init__()
 
-        self.setAutoFillBackground(True)
-        self.layout = QVBoxLayout(self) 
-        self.layout.setContentsMargins(8, 8, 8, 8) 
-        self.layout.setSpacing(0)
-        if text:
-            label = QLabel(text)
-            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            label.setStyleSheet("font-weight: bold; color: white;")
-            self.layout.addWidget(label)
+#         self.setAutoFillBackground(True)
+#         self.layout = QVBoxLayout(self) 
+#         self.layout.setContentsMargins(8, 8, 8, 8) 
+#         self.layout.setSpacing(0)
+#         if text:
+#             label = QLabel(text)
+#             label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+#             label.setStyleSheet("font-weight: bold; color: white;")
+#             self.layout.addWidget(label)
        
-        # Set border to clearly see divisions
-        self.setStyleSheet(f"""
-            background-color: {color};
-            border: 2px solid black;
-        """)  
+#         # Set border to clearly see divisions
+#         self.setStyleSheet(f"""
+#             background-color: {color};
+#             border: 2px solid black;
+#         """)  
         
 class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
     def __init__(self):    #Constructor
@@ -33,15 +33,13 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.resize(1800, 1300) # resizing the window
        
         central = QWidget()  # Create a central widget (required in QMainWindow)
-        #central = Color("yellow")
         self.setCentralWidget(central)
-        self.standard_font = QFont("Roboto", 13)  # or "Roboto", 11
+        self.standard_font = QFont("Roboto", 13)  
         self.label_font = QFont("Roboto", 15)
         self.large_font = QFont("Roboto", 18)
         
         outer_layout = QVBoxLayout(central)
 
-        # Title
         title = QLabel("Robotic Manipulator Kinematics Analysis Platform")
         title.setStyleSheet("font-size:28px; font-weight:bold; background-color: #8e24aa; color: white; padding : 10px; border-radius : 8px")
         title.setAlignment(Qt.AlignmentFlag.AlignHCenter)
@@ -89,7 +87,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         main_layout.addLayout(inputs_section, 7)
 
         
-        # Row 1: Controls
+        # Controls
         controls_widget = QHBoxLayout()
         controls_widget.setSpacing(5)
         controls_widget.setContentsMargins(0, 0, 0, 0) 
@@ -110,7 +108,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         controls_widget.addWidget(theta_system)
         fram_range.addWidget(self.input_options_widget)
         
-        # Row 2: DH Table
+        # DH Table
         tables_matrix_Row = QHBoxLayout()
         dh_widget = self.create_dh_table_widget()
         matrix_Widget = self.create_matrix_display_widget()
@@ -127,10 +125,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         output_tab = QWidget()
         output_layout = QHBoxLayout(output_tab)
         output_widget = self.create_output_widget()
-        #Color("orange", "OUTPUT")
         output_layout.addWidget(output_widget, 6)
         self.tabs.addTab(output_tab, "Outputs")
-        
         
 
         cad_tab = QWidget()
@@ -140,35 +136,14 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         left_layout = QVBoxLayout(left_widget)
         left_layout.setContentsMargins(0, 0, 0, 0)
         left_layout.setSpacing(4)
-        # right_widget = QVBoxLayout()
-        # main_layout.addLayout(right_widget, 1)
-       
-        # right_widget.setSpacing(0)
-        # right_widget.setContentsMargins(0, 0, 0, 0)
-        #Color("#ec1c31", "2D_section")
-       
-        #Color("#ec1c31", "2D_section")
-        #self.create_cad_control_panel()
-         
-      #  view3d_widget = QWidget()
-      #  view2d_widget = QWidget()
+
         self.view3d_widget = OpenGLViewer()
-        # Color("#1cccec", "3D VIEW") 
-        # OpenGLViewer()
+
         self.control_cad = self.create_cad_control_panel()
-        # Color("#ec1c31", "2D_section")
-        # self.create_cad_control_panel()
-        view2d_widget =self.model_dh()
-        #Color("#f7838f", "2D VIEW")
+        view2d_widget = self.model_dh()
         
         left_layout.addWidget(self.control_cad, 1)  # top: control
-        left_layout.addWidget(view2d_widget, 1)  # bottom: 2D view
-#### ganna work on them
-        # view3d_widget = self.create_3d_view_widget()
-        # choose_2d_widget = self.create_2d_selector_widget()
-        # view2d_widget = self.create_2d_view_widget()
-        
-        #Color("#1cccec", "3D VIEW") 
+        left_layout.addWidget(view2d_widget, 1)  # bottom: DH view
        
         cad_layout.addWidget(left_widget, 2)      # 25%
         cad_layout.addWidget(self.view3d_widget, 5) 
@@ -179,10 +154,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         cad_2d_layout = QHBoxLayout(models_2d)
         self.tabs.addTab(models_2d, "2D Sections")
         sections_2d_widget = self.create_2d_sections_widget()
-        #Color("orange", "OUTPUT")
         cad_2d_layout.addWidget(sections_2d_widget, 6)
         outer_layout.addWidget(self.tabs)
-        # test_output_widget(self)
         self.toggle_value_column()
         self.hide_matrix()
         self.hide_frame_selector()
@@ -229,7 +202,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         layout.addWidget(label)
 
-        # List widget
         list_widget = QListWidget()
         list_widget.setFont(self.standard_font)
         for text in items:
@@ -237,7 +209,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             list_widget.addItem(item)
         list_widget.setCurrentRow(0)
 
-        # Style list
         list_widget.setStyleSheet("""
             QListWidget {
                 border: 2px solid #cccccc;
@@ -260,7 +231,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             }
         """)
         
-        # Adjust height to remove empty space
         list_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         list_widget.setMinimumHeight(
             list_widget.sizeHintForRow(0) * list_widget.count() + 2 * list_widget.frameWidth())
@@ -300,8 +270,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                 background-color: #f9f9f9;
             }
         """)
-
-        # Title
 
         title_label = QLabel("DH Parameters Table")
         title_label.setFont(self.label_font)
@@ -346,7 +314,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.dh_table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.dh_table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
-        # Enable alternating row colors for better readability
         self.dh_table.setAlternatingRowColors(True)
         self.dh_table.verticalHeader().setVisible(False)
         layout.addWidget(self.dh_table)
@@ -356,7 +323,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.theta_system_widget.currentRowChanged.connect(self.update_dh_headers)
         self.sym_num_widget.currentRowChanged.connect(self.toggle_value_column)
         self.ik_fk_widget.currentRowChanged.connect(self.toggle_value_column)
-        # Initialize table with first manipulator
         self.update_dh_table(0)
         return widget
 
@@ -365,7 +331,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         computation_mode = self.sym_num_widget.currentRow()
         ik_or_fk = self.ik_fk_widget.currentRow()
 
-        if (computation_mode == 0) or (ik_or_fk == 1) :  # Symbolic
+        if (computation_mode == 0) or (ik_or_fk == 1) : 
             self.dh_table.setColumnHidden(6, True)  # Hide Value column
         else:  # Numeric
             self.dh_table.setColumnHidden(6, False)  # Show Value column
@@ -377,15 +343,9 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             return
 
         manipulator = manipulators[index]
-
-        # Store the current manipulator instance
-        self.current_manipulator = create_manipulator(manipulator)
-            
+        self.current_manipulator = create_manipulator(manipulator)       
         dh_params = self.current_manipulator.get_dh_parameters()
-
-        # Set number of rows
         self.dh_table.setRowCount(len(dh_params))
-
         # Get current angle unit (0 = Radians, 1 = Degrees)
         angle_unit = self.theta_system_widget.currentRow()
         in_degrees = (angle_unit == 1)
@@ -398,12 +358,10 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             self.dh_table.setItem(row, 0, joint_item)
         
         
-            # Column 0: θ (theta) - show ONLY if it's a FIXED value
             if params["variable"] == "theta":
                 var_symbol = f"θ{row + 1}"
                 theta_item = QTableWidgetItem(var_symbol)
             else:
-                # This is fixed, show the value
                 theta_val = params["theta"]
                 if in_degrees:
                     theta_val = np.rad2deg(theta_val)
@@ -414,13 +372,10 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             theta_item.setBackground(QColor("#faf8f8"))
             self.dh_table.setItem(row, 1, theta_item)
 
-            # Column 1: d - show ONLY if it's a FIXED value
             if params["variable"] == "d":
                 var_symbol = f"d{row + 1}"
-                # This is a variable joint, show empty or dash
                 d_item = QTableWidgetItem(var_symbol)
             else:
-                # This is fixed, show the value
                 d_item = QTableWidgetItem(f"{params['d']:.4f}")
 
             d_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -428,14 +383,12 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             d_item.setBackground(QColor("#faf8f8"))
             self.dh_table.setItem(row, 2, d_item)
 
-            # Column 2: a (always fixed)
             a_item = QTableWidgetItem(f"{params['a']:.4f}")
             a_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             a_item.setFlags(Qt.ItemFlag.ItemIsEnabled)
             a_item.setBackground(QColor("#faf8f8"))
             self.dh_table.setItem(row, 3, a_item)
 
-            # Column 3: α (alpha) - always fixed
             alpha_val = params["alpha"]
             alpha_val_num = float(alpha_val)
             if in_degrees:
@@ -446,7 +399,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             alpha_item.setBackground(QColor("#faf8f8"))
             self.dh_table.setItem(row, 4, alpha_item)
 
-            # Column 4: Variable (θ₁, θ₂, etc. or d₁, d₂ for prismatic)
             var_symbol = self.current_manipulator.get_joint_variable_name(row)
             var_item = QTableWidgetItem(var_symbol)
             var_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -458,7 +410,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             var_item.setFont(font)
             self.dh_table.setItem(row, 5, var_item)
 
-            # Column 5: Value (EDITABLE)
             value_item = QTableWidgetItem("0.0")
             value_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             value_item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable)
@@ -467,33 +418,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         if update_headers:
             self.update_dh_headers()
 
-# #    Returns numeric joint values (always in radians internally)
-#     def get_joint_values(self):
-#         if self.sym_num_widget.currentRow() == 0:
-#             return None  # symbolic mode
-
-#         values = []
-#         angle_unit = self.theta_system_widget.currentRow()  # 0=rad, 1=deg
-
-#         for row in range(self.dh_table.rowCount()):
-#             item = self.dh_table.item(row, 6)
-
-#             if item is None or item.text().strip() == "":
-#                 raise ValueError(f"Joint {row + 1} has no value")
-
-#             value = float(item.text())
-#             print(f"Joint {row+1}: raw =", item.text())
-
-#             # Revolute joint → angle
-#             joint_type = self.current_manipulator.get_joint_type(row)
-#             if joint_type == "revolute" and angle_unit == 1:
-#                 value = np.deg2rad(value)
-
-#             values.append(value)
-
-#         return values
-
-#Update table headers when angle unit changes
+    #Update table headers when angle unit changes
     def update_dh_headers(self):
         angle_unit = self.theta_system_widget.currentRow()
 
@@ -504,7 +429,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
         self.dh_table.setHorizontalHeaderLabels(headers)
 
-        # Re-update the table to convert angle values
         if hasattr(self, 'current_manipulator') and self.current_manipulator:
             current_index = self.manipulator_list_widget.currentRow()
             self.update_dh_table(current_index, update_headers=False)
@@ -547,7 +471,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         """)
         layout.addWidget(self.matrix_placeholder, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        # Matrix display table
         self.matrix_table = QTableWidget(4, 4)
         self.matrix_table.setItemDelegate(MatrixDelegate(self.matrix_table))
         self.matrix_table.setFont(self.standard_font)
@@ -579,13 +502,12 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         layout.addWidget(self.matrix_table)
         return widget
 
-    #Show/hide the T matrix based on mode mode
+    #Show/hide the T matrix based on mode 
     def hide_matrix(self):
         """Show/hide the T matrix based on mode"""
         kinematics_type = self.ik_fk_widget.currentRow()
 
         if kinematics_type == 1:  # IK mode
-            # Show matrix only if matrix input mode is selected
             use_matrix = self.ik_matrix_radio.isChecked()
             self.matrix_table.setVisible(use_matrix)
             self.matrix_placeholder.setVisible(not use_matrix)
@@ -639,18 +561,14 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         
         for i in range(4):
             for j in range(4):
-                # Create item if it doesn't exist
                 item = self.matrix_table.item(i, j)
                 if item is None:
                     item = QTableWidgetItem()
                     self.matrix_table.setItem(i, j, item)
-                
-                # Set the value
                 item.setText(identity[i][j])
                 item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
                 item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable)       
     
-    # Create execute button widget
     def create_execute_widget(self):
         widget = QWidget()
         layout = QHBoxLayout(widget)
@@ -666,7 +584,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                 
             }
         """)
-        # Execute button
         self.execute_button = QPushButton("Calculate")
         self.execute_button.setFont(self.label_font)
         self.execute_button.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -696,32 +613,9 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             }
             """)
         self.execute_button.clicked.connect(self.execute_calculation)
-        #self.execute_button.clicked.connect(self.test_rotation)
         layout.addWidget(self.execute_button)
-        
-        # self.test_3d_button = QPushButton("Rotate 3D View")
-        # self.test_3d_button.setFont(self.label_font)
-        # self.test_3d_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        # self.test_3d_button.setFixedSize(300, 50)
-        # self.test_3d_button.setStyleSheet("""
-        #     QPushButton {
-        #         background-color: #00897b;
-        #         color: #f9f9f9; 
-        #         border: 2px solid #00897b; 
-        #         border-radius: 7px;
-        #         padding: 10px 14px;
-        #         font-weight: 600;
-        #     }
-        #     QPushButton:hover {
-        #         background-color: #00695c;
-        #         border-color: #00695c;
-        #     }
-        # """)
-        #self.test_3d_button.clicked.connect(lambda: self.view3d_widget.rotate_mesh(0, 30, 'z'))
-        #layout.addWidget(self.test_3d_button)
         return widget
 
-#Create output display widget
     def create_output_widget(self):
         widget = QWidget()
         main_layout = QVBoxLayout(widget)
@@ -734,7 +628,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             }
         """)
 
-        # Title
         title = QLabel("Calculation Results")
         title.setFont(self.large_font)
         title.setStyleSheet("color: #8e24aa; padding: 10px; font-weight: 600;")
@@ -782,7 +675,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.output_layout.setSpacing(15)
         self.output_layout.setContentsMargins(15, 15, 15, 15)
 
-        # Add initial message
         initial_msg = QLabel("No results yet. Click 'Calculate' to see results here.")
         initial_msg.setFont(self.standard_font)
         initial_msg.setStyleSheet("color: #666; padding: 20px;")
@@ -796,7 +688,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         return widget
     
     def create_input_options_widget(self, dof=6):
-        # Container widget
         
         group = QGroupBox()
         layout = QVBoxLayout(group)
@@ -811,7 +702,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         
         self.fk_frame_widget = QWidget()
         fk_layout = QVBoxLayout(self.fk_frame_widget)
-        # ---- Title ----
         title = QLabel("Selected Frames Whose Transformation Matrices Will Be Displayed:")
         title.setFont(self.label_font)
         title.setStyleSheet("border: none; background: transparent;")
@@ -822,7 +712,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         radio_layout = QHBoxLayout()
         self.fk_all_radio = QRadioButton("All")
         self.fk_range_radio = QRadioButton("Range")
-        self.fk_all_radio.setChecked(True)  # default
+        self.fk_all_radio.setChecked(True) 
         
         self.fk_all_radio.setFont(self.standard_font)
         self.fk_all_radio.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -840,7 +730,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         
         from_widget, self.fk_from_spin, self.fk_from_buttons = self.create_spin_with_buttons(0, dof, 0)
         to_widget, self.fk_to_spin, self.fk_to_buttons = self.create_spin_with_buttons(0, dof, dof)
-        
         
         from_label = QLabel("From:")
         to_label = QLabel("To:")
@@ -862,8 +751,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         spin_layout.addSpacing(5)
         spin_layout.addWidget(to_widget)
         spin_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-
 
         self.fk_from_spin.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
         self.fk_to_spin.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
@@ -890,13 +777,13 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                               
         fk_layout.addLayout(radio_layout)
         fk_layout.addLayout(spin_layout)
+        
         # --- Tooltips ---
         self.fk_all_radio.setToolTip("Display all FK frames")
         self.fk_range_radio.setToolTip("Display only a specific frame range")
         self.fk_from_spin.setToolTip("Start frame (0–6)")
         self.fk_to_spin.setToolTip("End frame (0–6)")
     
-
         # Initially disable From/To if "All" is selected
         self.fk_from_spin.setEnabled(False)
         self.fk_to_spin.setEnabled(False)
@@ -914,10 +801,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         
         self.ik_pose_widget = QWidget()
         ik_layout = QVBoxLayout(self.ik_pose_widget)
-        #ik_layout.setSpacing(5)  # Tight spacing
         ik_layout.setContentsMargins(0, 0, 0, 0) 
 
-        # Title with input mode selector
         title_layout = QHBoxLayout()
         ik_title = QLabel("Select the method of entering the desired End-Effector Pose")
         ik_title.setFont(self.label_font)
@@ -927,10 +812,9 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
         title_layout.addSpacing(5)
 
-        # Radio buttons for input mode
         self.ik_matrix_radio = QRadioButton("Homogeneous Transformation Matrix (4×4)")
         self.ik_pose_radio = QRadioButton("Position & Orientation (x, y, z, α, β, γ)")
-        self.ik_pose_radio.setChecked(True)  # Default to pose (since matrix is below)
+        self.ik_pose_radio.setChecked(True)  # Default to Position & Orientation 
 
         self.ik_matrix_radio.setFont(self.standard_font)
         self.ik_pose_radio.setFont(self.standard_font)
@@ -938,9 +822,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.ik_pose_radio.setCursor(Qt.CursorShape.PointingHandCursor)
 
         title_layout.addWidget(self.ik_pose_radio)
-        #title_layout.addSpacing(10)
         title_layout.addWidget(self.ik_matrix_radio)
-        # title_layout.addStretch()
         title_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         ik_layout.addLayout(title_layout)
 
@@ -961,7 +843,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
             input_field = QLineEdit("0.0")
             input_field.setFont(self.standard_font)
-            input_field.setFixedWidth(120)  # Compact width
+            input_field.setFixedWidth(120) 
             input_field.setFixedHeight(40) 
             input_field.setAlignment(Qt.AlignmentFlag.AlignCenter)
             input_field.setValidator(QDoubleValidator())
@@ -984,8 +866,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             self.pose_inputs[axis] = input_field
 
         ik_layout.addLayout(pos_layout)
-
-
 
         ori_layout = QHBoxLayout()
         ori_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -1027,11 +907,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
         ik_layout.addLayout(ori_layout)
 
-
-        # Connect radio buttons
         self.ik_pose_radio.toggled.connect(self.toggle_ik_input_mode)
 
-        # ========== Add both widgets to main group ==========
         layout.addWidget(self.fk_frame_widget)
         layout.addWidget(self.ik_pose_widget)
 
@@ -1063,10 +940,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         spin.setValue(value)
         spin.setFixedWidth(70)
         
-
         plus = QPushButton("+")
         minus = QPushButton("–")
-
 
         for btn in (plus, minus):
             btn.setFixedSize(30, 15)
@@ -1101,12 +976,11 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
         return container, spin, (plus, minus)
 
-#Validate that From <= To and show visual feedback
+    #Validate that From <= To and show visual feedback
     def validate_frame_range(self):
         from_val = self.fk_from_spin.value()
         to_val = self.fk_to_spin.value()
 
-        # Update spinbox styling based on validity
         if from_val >= to_val:
             # Invalid range - show error styling
             error_style = """        
@@ -1141,15 +1015,11 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             return
 
         calc_mode = self.ik_fk_widget.currentRow()  # 0=FK, 1=IK
-        comp_mode = self.sym_num_widget.currentRow()  # 0=Symbolic, 1=Numeric
-
         try:
             if calc_mode == 0:  # Forward Kinematics
                self.do_fk()
             else:  # Inverse Kinematics
                 self.do_ik()
-                # self.current_T = self.read_T_matrix_from_table()
-                # self.current_manipulator.do_ik(self)
         except Exception as e:
             QMessageBox.critical(self, "Calculation Error", 
                                f"An error occurred:\n{str(e)}")
@@ -1164,7 +1034,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         
         unit = self.theta_system_widget.currentRow()
         for row in range(self.dh_table.rowCount()):
-            item = self.dh_table.item(row, 6)  # Value column
+            item = self.dh_table.item(row, 6) 
             if item is None or item.text().strip() == "":
                 raise ValueError(f"Joint {row + 1} value is empty")
 
@@ -1172,7 +1042,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
             # Convert degrees to radians if needed
             params = self.current_manipulator.get_dh_parameters()[row]
-            if params['variable'] == 'theta' and unit == 1:  # degrees
+            if params['variable'] == 'theta' and unit == 1: 
                 value = np.deg2rad(value)
 
             joint_values.append(value)
@@ -1206,9 +1076,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             beta = float(self.pose_inputs['beta'].text())
             gamma = float(self.pose_inputs['gamma'].text())
 
-            # Convert angles to radians if needed
             angle_unit = self.theta_system_widget.currentRow()
-            if angle_unit == 1:  # degrees
+            if angle_unit == 1:  
                 alpha = np.deg2rad(alpha)
                 beta = np.deg2rad(beta)
                 gamma = np.deg2rad(gamma)
@@ -1228,11 +1097,9 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
         if comp_mode == 0:  # Symbolic mode
             ik_result, T_symbolic = self.current_manipulator.do_ik_symbolic()
-            # Use the new detailed display function
             display_ik_symbolic_detailed(self, ik_result, T_symbolic)
             self.tabs.setCurrentIndex(1)
             return
-        # Get target matrix based on input mode
         if self.ik_pose_radio.isChecked():
             try:
                 self.current_T = self.read_pose_from_inputs()
@@ -1241,7 +1108,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                 return
         else:
             self.current_T = self.read_T_matrix_from_table()
-        # Call appropriate IK method based on robot type
         try:
             robot_name = self.current_manipulator.name
 
@@ -1310,46 +1176,15 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             }
         """)
 
-        # ============ Model Selection Group ============
         model_group = self.create_cad_control_group("Model Selection")
         model_layout = QVBoxLayout()
 
-        # model_label = QLabel("Select Robot Model:")
-        # model_label.setFont(self.standard_font)
-        # model_label.setStyleSheet("border: none; background: transparent; color: #333;")
-        # model_layout.addWidget(model_label)
-
         cad_model_widget, self.cad_model_list  = self.create_selector("Select a manipulator:", ["UR5", "ABB IRB 1600", "KUKA KR16"])
-        # self.cad_model_combo.setFont(self.standard_font)
-        # self.cad_model_combo.addItems(["UR5", "ABB IRB 1600", "KUKA KR16"])
-        # self.cad_model_combo.setStyleSheet("""
-        #     QComboBox {
-        #         padding: 8px;
-        #         border: 2px solid #8e24aa;
-        #         border-radius: 5px;
-        #         background-color: white;
-        #     }
-        #     QComboBox:hover {
-        #         border: 2px solid #7b1fa2;
-        #     }
-        #     QComboBox::drop-down {
-        #         border: none;
-        #     }
-        #     QComboBox::down-arrow {
-        #         image: none;
-        #         border-left: 5px solid transparent;
-        #         border-right: 5px solid transparent;
-        #         border-top: 5px solid #8e24aa;
-        #         margin-right: 10px;
-        #     }
-        # """)
         self.cad_model_list.currentRowChanged.connect(self.load_cad_model)
         model_layout.addWidget(cad_model_widget)
 
         model_group.layout().addLayout(model_layout)
         main_layout.addWidget(model_group)
-
-        # ============ View Presets Group ============
         presets_group = self.create_cad_control_group("View Presets")
         presets_layout = QGridLayout()
         presets_layout.setSpacing(3)
@@ -1392,7 +1227,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         presets_group.layout().addLayout(presets_layout)
         main_layout.addWidget(presets_group)
 
-        # ============ Custom View Group ============
         custom_group = self.create_cad_control_group("Custom View")
         custom_layout = QHBoxLayout()
         custom_layout.setSpacing(5)
@@ -1497,7 +1331,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         plus_2 = QPushButton("+")
         minus_2 = QPushButton("–")
 
-
         for btn_2 in (plus_2, minus_2):
             btn_2.setFixedSize(25, 15)
             btn_2.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -1531,7 +1364,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         azim_layout.addLayout(controls_layout_2)
         azim_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         custom_layout.addLayout(azim_layout)
-        #custom_layout.addSpacing(20)
         # Set View button
         set_view_btn = QPushButton("Set View")
         set_view_btn.setFont(self.standard_font)
@@ -1560,7 +1392,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         custom_group.layout().addLayout(custom_layout)
         main_layout.addWidget(custom_group)
 
-        # ============ Zoom Controls Group ============
         zoom_group = self.create_cad_control_group("Zoom Controls")
         zoom_layout = QHBoxLayout()
         zoom_layout.setSpacing(5)
@@ -1609,7 +1440,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         zoom_group.layout().addLayout(zoom_layout)
         main_layout.addWidget(zoom_group)
 
-        # ============ Display Options Group ============
         display_group = self.create_cad_control_group("Display Options")
         display_layout = QVBoxLayout()
         display_layout.setSpacing(5)
@@ -1642,7 +1472,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.cad_wireframe_check.setStyleSheet(self.cad_edges_check.styleSheet())
         self.cad_wireframe_check.toggled.connect(self.view3d_widget.toggle_wireframe)
 
-         #NEW: Show Coordinate Axes
+         # Show Coordinate Axes
         self.cad_axes_check = QCheckBox("Show Coordinate Axes")
         self.cad_axes_check.setChecked(True)
         self.cad_axes_check.setFont(self.standard_font)
@@ -1650,18 +1480,13 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.cad_axes_check.setStyleSheet(self.cad_edges_check.styleSheet())
         self.cad_axes_check.toggled.connect(self.toggle_axes)
 
-       
-        
-        
         display_layout.addWidget(self.cad_edges_check)
         display_layout.addWidget(self.cad_wireframe_check)
         display_layout.addWidget(self.cad_axes_check) 
 
-
         display_group.layout().addLayout(display_layout)
         main_layout.addWidget(display_group)
 
-        # ============ Info Display ============
         self.cad_info_label = QLabel("Left-drag: Rotate | Right-drag/Wheel: Zoom")
         self.cad_info_label.setFont(self.standard_font)
         self.cad_info_label.setWordWrap(True)
@@ -1678,7 +1503,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
         main_layout.addStretch()
 
-        # Load initial model
         self.load_cad_model(0)
 
         return container
@@ -1697,7 +1521,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         models = [
             'cad_models/ur5.obj',
             'cad_models/irb_1600_10kg_1.45m.obj',
-            'cad_models/kuka_kr16_assembly.obj'  # Placeholder for KUKA
+            'cad_models/kuka_kr16_assembly.obj'  
         ]
 
         filepath = models[index]
@@ -1729,11 +1553,10 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         new_zoom = max(-20.0, min(-1.0, new_zoom))
 
         self.view3d_widget.target_zoom = new_zoom
-        self.view3d_widget.zoom = new_zoom  # Set both to avoid animation
+        self.view3d_widget.zoom = new_zoom  
 
     def sync_model_selection(self, index):
         """Synchronize model selection between Input tab and CAD tab"""
-        # Update the other selector without triggering its signal
         if self.sender() == self.manipulator_list_widget:
             # Input tab changed, update CAD tab
             self.cad_model_list.blockSignals(True)
@@ -1751,23 +1574,12 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             self.manipulator_list_widget.blockSignals(False)
             # Also update DH table
             self.update_dh_table(index)
-            # self.update_2d_section(index)
-            # self.update_model_dh(index)
-            # self.update_model_dh(index)
-    # def toggle_smooth_shading(self, enabled):
-    #     """Toggle between smooth and flat shading"""
-    #     self.view3d_widget.toggle_smooth_shading(enabled)
-
-    # def toggle_lighting(self, enabled):
-    #     """Toggle lighting on/off"""
-    #     self.view3d_widget.toggle_lighting(enabled)
-
+           
     def toggle_axes(self, enabled):
         """Toggle coordinate axes display"""
         self.view3d_widget.toggle_axes(enabled)
         
     def model_dh(self):
-        # Image label
         self.dh_image_label = QLabel()
         self.dh_image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.dh_image_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
@@ -1775,7 +1587,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
         # Connect selector to updater
         self.cad_model_list.currentRowChanged.connect(self.update_model_dh)
-        # Initial image
         self.update_model_dh(0)
         return self.dh_image_label
 
@@ -1805,15 +1616,12 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         
     def create_2d_sections_widget(self):
         """Create widget for 2D section images"""
-        # Image label
         self.section_image_label = QLabel()
         self.section_image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.section_image_label.setMinimumSize(1600, 1100)  # Set minimum size
 
-        # Connect selector to updater
         self.section_image_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.cad_model_list.currentRowChanged.connect(self.update_2d_section)
-        # Initial image
         self.update_2d_section(0)
         
         return self.section_image_label

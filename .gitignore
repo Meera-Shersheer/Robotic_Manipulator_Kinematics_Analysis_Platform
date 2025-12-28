@@ -183,3 +183,6 @@ figures/
 logs/
 *.csv
 *.mp4
+
+# React Component Preview
+previewConfig.json

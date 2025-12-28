@@ -101,20 +101,17 @@ class OpenGLViewer(QOpenGLWidget):
             glEnable(GL_LIGHTING)
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
-        # Draw faces
         glBegin(GL_TRIANGLES)
-        for i in range(len(self.faces)):  # Changed from 'for i, face in enumerate(self.faces)'
+        for i in range(len(self.faces)):
             face = self.faces[i]
 
-            # Set color for this face
             if self.colors is not None and i < len(self.colors):
                 color = self.colors[i]
                 glColor3f(float(color[0]), float(color[1]), float(color[2]))
             else:
                 glColor3f(0.7, 0.7, 0.7)
 
-            # Draw triangle with normals
-            for j in range(len(face)):  # Changed from 'for j, vertex_idx in enumerate(face)'
+            for j in range(len(face)):
                 vertex_idx = face[j]
 
                 if self.normals is not None and i < len(self.normals):
@@ -125,7 +122,6 @@ class OpenGLViewer(QOpenGLWidget):
                 glVertex3f(float(vertex[0]), float(vertex[1]), float(vertex[2]))
         glEnd()
 
-    # Draw edges if enabled
         if self.show_edges and not self.wireframe_mode:
             glDisable(GL_LIGHTING)
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
@@ -133,9 +129,9 @@ class OpenGLViewer(QOpenGLWidget):
             glLineWidth(1.0)
 
             glBegin(GL_TRIANGLES)
-            for i in range(len(self.faces)):  # Changed iteration
+            for i in range(len(self.faces)):
                 face = self.faces[i]
-                for j in range(len(face)):  # Changed iteration
+                for j in range(len(face)):
                     vertex_idx = face[j]
                     vertex = self.vertices[vertex_idx]
                     glVertex3f(float(vertex[0]), float(vertex[1]), float(vertex[2]))
@@ -150,30 +146,23 @@ class OpenGLViewer(QOpenGLWidget):
             loaded = trimesh.load(filepath, force='mesh', process=False)
             if loaded.visual.kind != 'vertex' and hasattr(loaded.visual, 'to_color'):
                 loaded.visual = loaded.visual.to_color()
-            
-            # Handle Scene with multiple parts
+
             if isinstance(loaded, trimesh.Scene):
-                # print(f"\nScene with {len(loaded.geometry)} parts detected")
+
                 meshes = []
                 for name, geom in loaded.geometry.items():
                     if isinstance(geom, trimesh.Trimesh):
                         meshes.append(geom)
-                        # print(f"  Part: {name}, Vertices: {len(geom.vertices)}, Faces: {len(geom.faces)}")
                 
                 if meshes:
                     self.mesh = trimesh.util.concatenate(meshes)
-                    # print(f"\nCombined: {len(self.mesh.vertices)} vertices, {len(self.mesh.faces)} faces")
                 else:
                     return False
             else:
                 self.mesh = loaded
-                # print(f"Single mesh: {len(self.mesh.vertices)} vertices, {len(self.mesh.faces)} faces")
             
-            # Simplify if too complex
             if len(self.mesh.faces) > 50000:
-                # print(f"Simplifying from {len(self.mesh.faces)} faces...")
                 self.mesh = self.simplify_mesh(self.mesh, 30000)
-                # print(f"Simplified to {len(self.mesh.faces)} faces")
             
             # Prepare data for OpenGL
             self.prepare_mesh_data()
@@ -185,7 +174,6 @@ class OpenGLViewer(QOpenGLWidget):
             return True
             
         except Exception as e:
-            # print(f"Error loading: {e}")
             import traceback
             traceback.print_exc()
             return False
@@ -213,7 +201,6 @@ class OpenGLViewer(QOpenGLWidget):
     def get_face_colors(self):
         """Extract face colors from mesh"""
         try:
-            # Try direct face_colors
             if hasattr(self.mesh.visual, 'face_colors'):
                 colors = self.mesh.visual.face_colors
                 # Normalize to 0-1
@@ -258,7 +245,6 @@ class OpenGLViewer(QOpenGLWidget):
         center = self.mesh.bounds.mean(axis=0)
         self.vertices = self.vertices - center
         
-        # Scale to unit size
         max_extent = np.max(self.mesh.extents)
         if max_extent > 0:
             scale = 2.0 / max_extent
@@ -290,12 +276,8 @@ class OpenGLViewer(QOpenGLWidget):
             if self.is_dragging:
                 self.velocity_x = dy * self.mouse_sensitivity * 0.2
                 self.velocity_y = dx * self.mouse_sensitivity * 0.2
- 
-            # self.rotation_x += (self.target_rotation_x - self.rotation_x) * 0.2
-            # self.rotation_y += (self.target_rotation_y - self.rotation_y) * 0.2
         elif event.buttons() & Qt.MouseButton.RightButton:
             self.target_zoom += dy * 0.01
-            # self.zoom += dy * 0.01
         
         self.last_pos = event.position()
         
@@ -399,7 +381,7 @@ class OpenGLViewer(QOpenGLWidget):
         glRotatef(self.rotation_y, 0, 1, 0)
         
         glDisable(GL_DEPTH_TEST)
-        glColor4f(0.7, 0.95, 0.95, 0.9)  # Light teal (more visible)
+        glColor4f(0.7, 0.95, 0.95, 0.9)  # Light teal
         glBegin(GL_TRIANGLE_FAN)
         glVertex3f(0, 0, -0.1)
 
@@ -458,7 +440,6 @@ class OpenGLViewer(QOpenGLWidget):
         if lighting_was_enabled:
             glEnable(GL_LIGHTING)
             
-        # Add this method to OpenGLViewer class
     def toggle_axes(self, show):
         """Toggle coordinate axes display"""
         self.show_axes = show
@@ -468,7 +449,6 @@ class OpenGLViewer(QOpenGLWidget):
         """Draw a small arrow head at the end of an axis"""
         glColor3f(r, g, b)
 
-        # Determine which axis this is
         cone_base = 0.8
         cone_height = 0.25
         cone_radius = 0.1
@@ -555,7 +535,6 @@ class OpenGLViewer(QOpenGLWidget):
         glEnd()
 
 
-    # Optional: Add a background circle/square behind the axes for better visibility
     def draw_axis_background(self):
         """Draw a subtle background behind the axis indicator"""
         glDisable(GL_DEPTH_TEST)

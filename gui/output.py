@@ -59,164 +59,6 @@ def add_section_header(self, title, color="#d2598e"):
     header.setFixedHeight(60)
     self.output_layout.addWidget(header)
 
-
-
-
-# def add_equations_section(self, eq_list):
-#     """Display equations using native Qt with beautiful styling"""
-    
-#     add_section_header(self, "Symbolic Equations", "#673ab7")
-    
-#     group = create_result_group(self, "Inverse Kinematics Equations")
-    
-#     # Create scrollable area
-#     scroll_area = QScrollArea()
-#     scroll_area.setWidgetResizable(True)
-#     scroll_area.setMinimumHeight(450)
-#     scroll_area.setMaximumHeight(650)
-    
-#     scroll_area.setStyleSheet("""
-#         QScrollArea {
-#             border: 2px solid #673ab7;
-#             border-radius: 8px;
-#             background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-#                 stop:0 #fafafa, stop:1 #f5f5f5);
-#         }
-#         QScrollBar:vertical {
-#             border: none;
-#             background-color: #e8e8e8;
-#             width: 10px;
-#             border-radius: 5px;
-#             margin: 2px;
-#         }
-#         QScrollBar::handle:vertical {
-#             background: #673ab7;
-#             border-radius: 5px;
-#             min-height: 20px;
-#         }
-#         QScrollBar::handle:vertical:hover {
-#             background: #7b1fa2;
-#         }
-#         QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-#             height: 0px;
-#         }
-#     """)
-    
-#     # Container for equations
-#     equations_container = QWidget()
-#     equations_layout = QVBoxLayout(equations_container)
-#     equations_layout.setSpacing(10)
-#     equations_layout.setContentsMargins(20, 20, 20, 20)
-    
-#     # Track sections for card-based layout
-#     current_section_header = None
-#     current_section_eqs = []
-    
-#     for eq in eq_list:
-#         if not eq:
-#             # Empty line - create card if we have equations
-#             if current_section_eqs:
-#                 card = create_equation_card(self, current_section_header, current_section_eqs)
-#                 equations_layout.addWidget(card)
-#                 current_section_eqs = []
-#                 current_section_header = None
-#             continue
-        
-#         # Check if it's a section header
-#         is_header = 'mathbf' in eq and any(f'{i})' in eq for i in range(1, 10))
-        
-#         if is_header:
-#             # Save previous section
-#             if current_section_eqs:
-#                 card = create_equation_card(self, current_section_header, current_section_eqs)
-#                 equations_layout.addWidget(card)
-#                 current_section_eqs = []
-#             current_section_header = eq
-#         else:
-#             current_section_eqs.append(eq)
-    
-#     # Add last section
-#     if current_section_eqs:
-#         card = create_equation_card(self, current_section_header, current_section_eqs)
-#         equations_layout.addWidget(card)
-    
-#     equations_layout.addStretch()
-#     scroll_area.setWidget(equations_container)
-    
-#     group.layout().addWidget(scroll_area)
-#     self.output_layout.addWidget(group)
-
-
-# def create_equation_card(self, header, equations):
-#     """Create a beautiful card for a section of equations"""
-    
-#     card = QFrame()
-#     card.setStyleSheet("""
-#         QFrame {
-#             background-color: white;
-#             border: 2px solid #e0e0e0;
-#             border-radius: 10px;
-#         }
-#     """)
-    
-#     card_layout = QVBoxLayout(card)
-#     card_layout.setSpacing(0)
-#     card_layout.setContentsMargins(0, 0, 0, 0)
-    
-#     # Header
-#     if header:
-#         header_widget = QWidget()
-#         header_widget.setStyleSheet("""
-#             QWidget {
-#                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-#                     stop:0 #673ab7, stop:1 #8e24aa);
-#                 border-radius: 8px 8px 0px 0px;
-#             }
-#         """)
-#         header_layout = QHBoxLayout(header_widget)
-#         header_layout.setContentsMargins(15, 12, 15, 12)
-        
-#         # Add icon
-#         icon_label = QLabel("📐")
-#         icon_label.setFont(QFont("Segoe UI Emoji", 14))
-#         header_layout.addWidget(icon_label)
-        
-#         header_text = clean_latex_to_unicode(header)
-#         header_label = QLabel(header_text)
-#         header_label.setFont(QFont("Roboto", 13, QFont.Weight.Bold))
-#         header_label.setStyleSheet("color: white; margin-left: 5px;")
-#         header_label.setTextFormat(Qt.TextFormat.RichText)
-#         header_layout.addWidget(header_label)
-#         header_layout.addStretch()
-        
-#         card_layout.addWidget(header_widget)
-    
-#     # Equations
-#     eq_container = QWidget()
-#     eq_layout = QVBoxLayout(eq_container)
-#     eq_layout.setSpacing(6)
-#     eq_layout.setContentsMargins(15, 12, 15, 12)
-    
-#     for eq in equations:
-#         eq_text = clean_latex_to_unicode(eq)
-#         eq_label = QLabel(eq_text)
-#         eq_label.setFont(QFont("Roboto", 12))
-#         eq_label.setStyleSheet("""
-#             QLabel {
-#                 color: #2c3e50;
-#                 padding: 10px 12px;
-#                 background-color: #f8f9fa;
-#                 border-left: 4px solid #9c27b0;
-#                 border-radius: 5px;
-#             }
-#         """)
-#         eq_label.setTextFormat(Qt.TextFormat.RichText)
-#         eq_label.setWordWrap(True)
-#         eq_layout.addWidget(eq_label)
-    
-#     card_layout.addWidget(eq_container)
-    
-#     return card
     
 def create_result_group(self, title):
     """Create a styled group box for results"""
@@ -309,7 +151,6 @@ def display_fk_symbolic_results(self, individual_Ts, cumulative_Ts, final_T, q_s
     
     add_section_header(self, "Forward Kinematics Results (Symbolic)", "#00897b")
     
-    # joint variables
     group = create_result_group(self, "Joint Variables")
 
     var_layout = QHBoxLayout()
@@ -408,12 +249,12 @@ def display_ik_symbolic_detailed(self, ik_result, T_symbolic):
     # Main header
     add_section_header(self, "Inverse Kinematics - Symbolic Derivation", "#8e24aa")
     
-    # ========== Target Pose Section ==========
+    # Target Pose Section 
     add_section_header(self, "Target End-Effector Pose (Symbolic)", "#00897b")
     
     group = create_result_group(self, "Symbolic Variables")
     
-    # Display symbolic variables in a nice grid
+    # Display symbolic variables in a grid
     vars_container = QWidget()
     vars_layout = QGridLayout(vars_container)
     vars_layout.setSpacing(10)
@@ -433,7 +274,6 @@ def display_ik_symbolic_detailed(self, ik_result, T_symbolic):
         row = idx // 3
         col = (idx % 3) * 2
         
-        # Symbol label
         sym_lbl = QLabel(symbol)
         sym_lbl.setFont(QFont("Roboto", 16))
         sym_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -448,7 +288,6 @@ def display_ik_symbolic_detailed(self, ik_result, T_symbolic):
         """)
         vars_layout.addWidget(sym_lbl, row, col)
         
-        # Description label
         desc_lbl = QLabel(description)
         desc_lbl.setFont(self.standard_font)
         desc_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -466,11 +305,11 @@ def display_ik_symbolic_detailed(self, ik_result, T_symbolic):
     self.output_layout.addWidget(group)
     add_spacing(self, self.output_layout, 15)
     
-    # ========== Transformation Matrix ==========
+    # Transformation Matrix 
     add_symbolic_transformation_matrix_simple(self, T_symbolic, "Target Transformation Matrix T₀⁶")
     add_spacing(self, self.output_layout, 15)
     
-    # ========== Derivation Steps ==========
+    # Derivation Steps 
     add_section_header(self, "Solution Derivation Steps", "#673ab7")
     
     # Step 1: Wrist Center
@@ -592,7 +431,7 @@ def display_ik_symbolic_detailed(self, ik_result, T_symbolic):
     self.output_layout.addWidget(summary_group)
     add_spacing(self, self.output_layout, 15)
     
-    # ========== Note about Numeric Mode ==========
+    # Note about Numeric Mode 
     note_widget = QWidget()
     note_layout = QHBoxLayout(note_widget)
     note_layout.setContentsMargins(15, 12, 15, 12)
@@ -727,84 +566,6 @@ def create_derivation_step(self, step_num, title, description, equations, color)
     
     self.output_layout.addWidget(card)
 
-
-
-
-# ========== Update your main_window.py do_ik() method ==========
-# Replace the symbolic IK section with:
-
-
-
-    # ... rest of your numeric IK code remains the same ...
-
-# def display_ik_symbolic_results(self, T_symbolic, eq_list):
-#     """Display symbolic IK representation"""
-#     clear_output(self)
-    
-#     add_section_header(self, "Inverse Kinematics (Symbolic)", "#8e24aa")
-    
-#     group = create_result_group(self, "Symbolic Target Pose Representation")
-    
-#     info = QLabel(
-#         "For inverse kinematics, the target end-effector pose is represented symbolically as:\n"
-#         "• Position: (x, y, z)\n"
-#         "• Orientation: Roll-Pitch-Yaw angles (α, β, γ)\n\n"
-#         "The transformation matrix is constructed from these parameters:"
-#     )
-#     info.setFont(self.standard_font)
-#     info.setWordWrap(True)
-#     info.setStyleSheet("padding: 10px; color: #333;")
-#     group.layout().addWidget(info)
-    
-#     self.output_layout.addWidget(group)
-#     add_spacing(self, self.output_layout, 15)
-    
-#     # Display the symbolic transformation matrix
-#     add_symbolic_transformation_matrix_simple(self, T_symbolic, "Target Transformation Matrix T₀⁶")
-#     add_spacing(self, self.output_layout, 15)
-    
-#     # Note about numeric mode
-#     note_widget = QWidget()
-#     note_layout = QHBoxLayout(note_widget)
-#     note_layout.setContentsMargins(10, 8, 10, 8)
-    
-#     icon_lbl = QLabel("ℹ")
-#     icon_lbl.setFont(QFont("Roboto", 14, QFont.Weight.Bold))
-#     icon_lbl.setStyleSheet("color: #2196f3;")
-    
-#     text_lbl = QLabel(
-#         "Symbolic IK shows the mathematical relationships and solution procedure. "
-#         "To compute numeric solutions, switch to 'Numeric' mode and provide a target pose."
-#     )
-#     text_lbl.setFont(QFont("Roboto", 11))
-#     text_lbl.setWordWrap(True)
-    
-#     note_widget.setStyleSheet("""
-#         QWidget {
-#             background-color: #e3f2fd;
-#             border-left: 4px solid #2196f3;
-#             border-radius: 3px;
-#         }
-#     """)
-    
-#     note_layout.addWidget(icon_lbl)
-#     note_layout.addWidget(text_lbl)
-#     note_layout.addStretch()
-    
-#     self.output_layout.addWidget(note_widget)
-#     add_spacing(self, self.output_layout, 15)
-    
-    
-    
-#     # add_equations_section(self, eq_list)
-#     add_spacing(self, self.output_layout, 15)
-#     self.output_layout.addWidget(group)
-    
-#     add_spacing(self, self.output_layout, 15)
-    
-#     # Add export option
-
-    
     
 def display_ik_no_solution(self, target_matrix):
     """Display message when no IK solution found"""
@@ -872,7 +633,6 @@ def add_joint_values_display(self, joint_values):
         row = i // 3
         col = (i % 3) * 2
         
-        # Joint label
         if params['variable'] == 'theta':
             label_text = f"θ{i+1}"
             if angle_unit == "deg":
@@ -883,7 +643,6 @@ def add_joint_values_display(self, joint_values):
             label_text = f"d{i+1}"
             value_text = f"{val:.6f} m"
         
-        # Label with color background
         lbl = QLabel(label_text)
         lbl.setFont(QFont("Roboto", 13, QFont.Weight.Bold))
         lbl.setStyleSheet(f"""
@@ -897,7 +656,6 @@ def add_joint_values_display(self, joint_values):
         lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         grid.addWidget(lbl, row, col)
         
-        # Value with border
         val_lbl = QLabel(value_text)
         val_lbl.setFont(QFont("Roboto", 13))
         val_lbl.setStyleSheet(f"""
@@ -919,7 +677,7 @@ def add_transformation_matrix_section(self, T, title):
     """Display transformation matrix using your existing matrix style"""
     group = create_result_group(self, title)
     
-    # Create matrix table (matching your existing style)
+    # Create matrix table 
     matrix_table = QTableWidget(4, 4)
     matrix_table.setFont(self.standard_font)
     matrix_table.horizontalHeader().setVisible(False)
@@ -932,7 +690,6 @@ def add_transformation_matrix_section(self, T, title):
             item = QTableWidgetItem(f"{T[i, j]:.6f}")
             item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             
-            # Color code like your existing matrix
             if i < 3 and j < 3:  # Rotation part
                 item.setBackground(QColor("#f3e5f5"))
             elif i < 3 and j == 3:  # Translation part
@@ -973,7 +730,6 @@ def add_symbolic_transformation_matrix_simple(self, T_sym, title):
     """
     group = create_result_group(self, title)
     
-    # Main container with styled background
     container = QWidget()
     container_layout = QVBoxLayout(container)
     container_layout.setContentsMargins(15, 15, 15, 15)
@@ -998,7 +754,6 @@ def add_symbolic_transformation_matrix_simple(self, T_sym, title):
             element = T_sym[i, j]
             element_str = sp.pretty(element, use_unicode=True)
             
-            # Simplify display
             if element == 0:
                 element_str = "0"
             elif element == 1:
@@ -1074,7 +829,7 @@ def add_end_effector_pose_section(self, T):
     """Display end-effector pose using your existing style"""
     group = create_result_group(self, "End-Effector Pose")
     
-    # Position section (matching your existing style)
+    # Position section
     position = self.current_manipulator.extract_position(T)
     
     pos_label = QLabel("Position (meters):")
@@ -1113,7 +868,7 @@ def add_end_effector_pose_section(self, T):
     
     group.layout().addLayout(pos_layout)
     
-    # Orientation section (matching your existing style)
+    # Orientation section 
     add_spacing(self, group.layout(), 10)
     
     R = self.current_manipulator.extract_rotation(T)

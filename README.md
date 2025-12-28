@@ -441,14 +441,42 @@ This application is ideal for:
 
 ---
 
-## 📧 Support
+## 👥 Contributors
+Note: This project was developed as part of academic coursework under the Robotic Systems Course given by Professor Zaer Abu Hammour
+at the mechatronics engineering department at the University of Jordan in First Semester of the acadimic year of 2025/2026 by the amazing students:
 
-For issues, questions, or contributions:
-1. Check the Troubleshooting section above
-2. Review the code documentation in source files
-3. Create an issue in the repository
+Meera Qasem Shersheer
+
+Rama Fathi Haddad
+
+Own Mathhar Al-Mazahreh
+
 
 ---
+## 📧 Contact and support
+For questions or feedback about this project, please contact:
+ Meera Shersheer - [meera04qasemshersheer@gmail.com]
+
+---
+
+## 📚 Citation
+If you use this project in your research or academic work, please cite:
+bibtex@software{robotics_kinematics_2025,
+  title = {Robotic Manipulator Kinematics Analysis Platform},
+  author = {Shersheer, Meera Qasem and Haddad, Rama Fathi and Al-Mazahreh, Own Mathhar},
+  year = {2025},
+  note = {Course Project for Robotic Systems, First Semester 2025/2026},
+  instructor = {Prof. Zaer Abu Hammour},
+  institution = {University of Jordan},
+  copyright = {All Rights Reserved}
+}
+
+---
+## 🙏 Acknowledgments
+We thank the open-source community for the excellent libraries used in this project
+
+
+
 
 ## 📄 License
 
