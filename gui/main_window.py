@@ -160,7 +160,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         # self.create_cad_control_panel()
         view2d_widget =Color("#f7838f", "2D VIEW")
         
-        left_layout.addWidget(control_cad, 1)  # top: control
+        left_layout.addWidget(self.control_cad, 1)  # top: control
         left_layout.addWidget(view2d_widget, 1)  # bottom: 2D view
 #### ganna work on them
         # view3d_widget = self.create_3d_view_widget()
@@ -1309,7 +1309,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         model_label.setStyleSheet("border: none; background: transparent; color: #333;")
         model_layout.addWidget(model_label)
 
-        self.cad_model_combo, self.cad_model_combo_widget = self.create_selector("Select a manipulator:", ["UR5", "ABB IRB 1600", "KUKA KR16"])
+        cad_model_widget, self.cad_model_list  = self.create_selector("Select a manipulator:", ["UR5", "ABB IRB 1600", "KUKA KR16"])
         # self.cad_model_combo.setFont(self.standard_font)
         # self.cad_model_combo.addItems(["UR5", "ABB IRB 1600", "KUKA KR16"])
         # self.cad_model_combo.setStyleSheet("""
@@ -1333,8 +1333,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         #         margin-right: 10px;
         #     }
         # """)
-        self.currentRowChanged.connect(self.load_cad_model)
-        model_layout.addWidget(self.cad_model_combo)
+        self.cad_model_list.currentRowChanged.connect(self.load_cad_model)
+        model_layout.addWidget(cad_model_widget)
 
         model_group.layout().addLayout(model_layout)
         main_layout.addWidget(model_group)
