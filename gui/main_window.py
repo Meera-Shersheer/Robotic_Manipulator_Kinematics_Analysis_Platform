@@ -1808,10 +1808,10 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         # Image label
         self.section_image_label = QLabel()
         self.section_image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.section_image_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-     
+        self.section_image_label.setMinimumSize(1600, 1100)  # Set minimum size
 
         # Connect selector to updater
+        self.section_image_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.cad_model_list.currentRowChanged.connect(self.update_2d_section)
         # Initial image
         self.update_2d_section(0)
@@ -1846,13 +1846,13 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         super().resizeEvent(event)
 
         # Update DH diagram if it exists
-        if hasattr(self, 'dh_image_label') and hasattr(self, 'cad_model_combo'):
-            current_index = self.cad_model_combo.currentIndex()
+        if hasattr(self, 'dh_image_label') and hasattr(self, 'cad_model_list'):
+            current_index = self.cad_model_list.currentRow()
             self.update_model_dh(current_index)
 
         # Update 2D section if it exists
-        if hasattr(self, 'section_image_label') and hasattr(self, 'cad_model_combo'):
-            current_index = self.cad_model_combo.currentIndex()
+        if hasattr(self, 'section_image_label') and hasattr(self, 'cad_model_list'):
+            current_index = self.cad_model_list.currentRow()
             self.update_2d_section(current_index)
 
 

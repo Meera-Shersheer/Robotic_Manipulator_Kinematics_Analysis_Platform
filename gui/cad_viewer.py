@@ -6,18 +6,7 @@ Installation:
 pip install PyQt6 PyOpenGL PyOpenGL_accelerate numpy trimesh
 """
 
-from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
-                             QHBoxLayout, QPushButton, QLabel, QComboBox, 
-                             QGroupBox, QCheckBox)
-from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtOpenGLWidgets import QOpenGLWidget
-from OpenGL.GL import *
-from OpenGL.GLU import *
-import numpy as np
-import trimesh
-import sys
-import math
-
+from imports import *
 
 class OpenGLViewer(QOpenGLWidget):
     """Fast OpenGL-based 3D viewer"""
@@ -32,7 +21,7 @@ class OpenGLViewer(QOpenGLWidget):
         self.show_edges = True
         self.wireframe_mode = False
         
-        self.show_axes = False
+        self.show_axes = True
         
         # Vertex and color data
         self.vertices = None
@@ -46,7 +35,7 @@ class OpenGLViewer(QOpenGLWidget):
         self.velocity_y = 0.0
         self.target_zoom = self.zoom
         
-        # --- SolidWorks-like rotation parameters ---
+        # --- rotation parameters ---
         self.mouse_sensitivity = 0.5      # lower → slower, more controlled rotation
         self.smoothing_factor = 0.15      # lower → smoother, floaty rotation
         self.momentum_decay = 0.85        # closer to 1 → longer glide after release
@@ -164,27 +153,27 @@ class OpenGLViewer(QOpenGLWidget):
             
             # Handle Scene with multiple parts
             if isinstance(loaded, trimesh.Scene):
-                print(f"\nScene with {len(loaded.geometry)} parts detected")
+                # print(f"\nScene with {len(loaded.geometry)} parts detected")
                 meshes = []
                 for name, geom in loaded.geometry.items():
                     if isinstance(geom, trimesh.Trimesh):
                         meshes.append(geom)
-                        print(f"  Part: {name}, Vertices: {len(geom.vertices)}, Faces: {len(geom.faces)}")
+                        # print(f"  Part: {name}, Vertices: {len(geom.vertices)}, Faces: {len(geom.faces)}")
                 
                 if meshes:
                     self.mesh = trimesh.util.concatenate(meshes)
-                    print(f"\nCombined: {len(self.mesh.vertices)} vertices, {len(self.mesh.faces)} faces")
+                    # print(f"\nCombined: {len(self.mesh.vertices)} vertices, {len(self.mesh.faces)} faces")
                 else:
                     return False
             else:
                 self.mesh = loaded
-                print(f"Single mesh: {len(self.mesh.vertices)} vertices, {len(self.mesh.faces)} faces")
+                # print(f"Single mesh: {len(self.mesh.vertices)} vertices, {len(self.mesh.faces)} faces")
             
             # Simplify if too complex
             if len(self.mesh.faces) > 50000:
-                print(f"Simplifying from {len(self.mesh.faces)} faces...")
+                # print(f"Simplifying from {len(self.mesh.faces)} faces...")
                 self.mesh = self.simplify_mesh(self.mesh, 30000)
-                print(f"Simplified to {len(self.mesh.faces)} faces")
+                # print(f"Simplified to {len(self.mesh.faces)} faces")
             
             # Prepare data for OpenGL
             self.prepare_mesh_data()
@@ -196,7 +185,7 @@ class OpenGLViewer(QOpenGLWidget):
             return True
             
         except Exception as e:
-            print(f"Error loading: {e}")
+            # print(f"Error loading: {e}")
             import traceback
             traceback.print_exc()
             return False
@@ -586,125 +575,3 @@ class OpenGLViewer(QOpenGLWidget):
 
         glEnable(GL_DEPTH_TEST)
 
-
-class ManipulatorViewer(QWidget):
-    """Main viewer widget"""
-    
-    def __init__(self):
-        super().__init__()
-        self.viewer = None
-        self.init_ui()
-    
-    def init_ui(self):
-        layout = QVBoxLayout()
-        
-        # Control panel
-        control_group = QGroupBox("Controls")
-        control_layout = QHBoxLayout()
-        
-        # Model selector
-        self.model_combo = QComboBox()
-        self.model_combo.addItems(["UR5", "Manipulator 2", "Manipulator 3"])
-        self.model_combo.currentIndexChanged.connect(self.load_model)
-        control_layout.addWidget(QLabel("Model:"))
-        control_layout.addWidget(self.model_combo)
-        
-        # View presets
-        views_group = QGroupBox("View Presets")
-        views_layout = QHBoxLayout()
-        
-        iso_btn = QPushButton("Isometric")
-        iso_btn.clicked.connect(lambda: self.viewer.set_view(35, 45, zoom=-3))
-        views_layout.addWidget(iso_btn)
-        
-        top_btn = QPushButton("Top")
-        top_btn.clicked.connect(lambda: self.viewer.set_view(90, 0, zoom=-3))
-        views_layout.addWidget(top_btn)
-        
-        front_btn = QPushButton("Front")
-        front_btn.clicked.connect(lambda: self.viewer.set_view(0, 0, zoom=-3))
-        views_layout.addWidget(front_btn)
-        
-        side_btn = QPushButton("Side")
-        side_btn.clicked.connect(lambda: self.viewer.set_view(0, 90, zoom=-3))
-        views_layout.addWidget(side_btn)
-        
-        views_group.setLayout(views_layout)
-        control_layout.addWidget(views_group)
-        
-        # Display options
-        self.edges_check = QCheckBox("Show Edges")
-        self.edges_check.setChecked(True)
-        self.edges_check.toggled.connect(self.toggle_edges)
-        control_layout.addWidget(self.edges_check)
-        
-        self.wireframe_check = QCheckBox("Wireframe")
-        self.wireframe_check.toggled.connect(self.toggle_wireframe)
-        control_layout.addWidget(self.wireframe_check)
-        
-        control_layout.addStretch()
-        control_group.setLayout(control_layout)
-        layout.addWidget(control_group)
-        
-        # OpenGL viewer
-        self.viewer = OpenGLViewer(self)
-        layout.addWidget(self.viewer, stretch=1)
-        
-        # Info label
-        self.info_label = QLabel("Left-click drag: Rotate | Right-click drag: Zoom | Mouse wheel: Zoom")
-        layout.addWidget(self.info_label)
-        
-        self.setLayout(layout)
-        
-        # Load first model
-        self.load_model(0)
-        
-    def load_model(self, index):
-        """Load model file"""
-        models = [
-            'cad_models/ur5.obj',
-            'cad_models/irb_1600_10kg_1.45m.obj',
-            'cad_models/kuka_kr16.obj'
-        ]
-        
-        filepath = models[index]
-        success = self.viewer.load_model(filepath)
-        
-        if success and self.viewer.mesh:
-            self.info_label.setText(
-                f"Loaded: {filepath.split('/')[-1]} | "
-                f"Vertices: {len(self.viewer.mesh.vertices):,} | "
-                f"Faces: {len(self.viewer.mesh.faces):,} | "
-                f"Left drag: Rotate | Right drag/Wheel: Zoom"
-            )
-        else:
-            self.info_label.setText(f"Failed to load {filepath}")
-    
-    def toggle_edges(self, checked):
-        self.viewer.toggle_edges(checked)
-    
-    def toggle_wireframe(self, checked):
-        self.viewer.toggle_wireframe(checked)
-
-
-class MainWindow(QMainWindow):
-    """Main window"""
-    
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Robot Manipulator Viewer - OpenGL")
-        self.setGeometry(100, 100, 1400, 900)
-        
-        self.viewer = ManipulatorViewer()
-        self.setCentralWidget(self.viewer)
-
-
-def main():
-    app = QApplication(sys.argv)
-    window = MainWindow()
-    window.show()
-    sys.exit(app.exec())
-
-
-if __name__ == '__main__':
-    main()
