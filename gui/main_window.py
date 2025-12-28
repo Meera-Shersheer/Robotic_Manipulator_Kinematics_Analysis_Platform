@@ -1215,8 +1215,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
 
         if comp_mode == 0:  # Symbolic mode
-            ik_result = self.current_manipulator.do_ik_symbolic()
-            T_symbolic = self.current_manipulator.do_ik_symbolic()  # Get the T matrix
+            ik_result, T_symbolic = self.current_manipulator.do_ik_symbolic()
             # Use the new detailed display function
             display_ik_symbolic_detailed(self, ik_result, T_symbolic)
             self.tabs.setCurrentIndex(1)

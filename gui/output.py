@@ -418,14 +418,15 @@ def display_ik_symbolic_detailed(self, ik_result, T_symbolic):
     vars_layout = QGridLayout(vars_container)
     vars_layout.setSpacing(10)
     vars_layout.setContentsMargins(10, 10, 10, 10)
-    
+  
+  
     var_info = [
-        ("x", "X Position", "#ef5350"),
-        ("y", "Y Position", "#66bb6a"),
-        ("z", "Z Position", "#42a5f5"),
-        ("α", "Roll Angle", "#ff9800"),
-        ("β", "Pitch Angle", "#ab47bc"),
-        ("γ", "Yaw Angle", "#26c6da")
+        ("x", "X Position", "#e0f2f1"),
+        ("y", "Y Position", "#f3e5f5"),
+        ("z", "Z Position", "#fce4ec"),
+        ("α", "Roll Angle", "#b2dfdb"),
+        ("β", "Pitch Angle", "#e1bee7"),
+        ("γ", "Yaw Angle", "#f8bbd0")
     ]
     
     for idx, (symbol, description, color) in enumerate(var_info):
@@ -434,12 +435,12 @@ def display_ik_symbolic_detailed(self, ik_result, T_symbolic):
         
         # Symbol label
         sym_lbl = QLabel(symbol)
-        sym_lbl.setFont(QFont("Roboto", 16, QFont.Weight.Bold))
+        sym_lbl.setFont(QFont("Roboto", 16))
         sym_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         sym_lbl.setStyleSheet(f"""
             QLabel {{
                 background-color: {color};
-                color: white;
+                color: #333;
                 padding: 12px;
                 border-radius: 5px;
                 min-width: 50px;
@@ -450,7 +451,7 @@ def display_ik_symbolic_detailed(self, ik_result, T_symbolic):
         # Description label
         desc_lbl = QLabel(description)
         desc_lbl.setFont(self.standard_font)
-        desc_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        desc_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         desc_lbl.setStyleSheet(f"""
             QLabel {{
                 background-color: white;
@@ -478,9 +479,9 @@ def display_ik_symbolic_detailed(self, ik_result, T_symbolic):
         title="Computing Wrist Center (p₀₅)",
         description="The wrist center is computed by offsetting from the target position along the approach vector:",
         equations=[
-            ("p₀₅ₓ", f"{sp.pretty(ik_result['wrist_center'][0], use_unicode=True)}"),
-            ("p₀₅ᵧ", f"{sp.pretty(ik_result['wrist_center'][1], use_unicode=True)}"),
-            ("p₀₅ᵤ", f"{sp.pretty(ik_result['wrist_center'][2], use_unicode=True)}")
+            ("p₀₅ₓ", f"{ik_result['wrist_center'][0]}"),
+            ("p₀₅ᵧ", f"{ik_result['wrist_center'][1]}"),
+            ("p₀₅ᵤ", f"{ik_result['wrist_center'][2]}")
         ],
         color="#00897b"
     )
@@ -492,8 +493,8 @@ def display_ik_symbolic_detailed(self, ik_result, T_symbolic):
         title="Solving for θ₁ (Base Rotation)",
         description="Two solutions exist due to geometric ambiguity:",
         equations=[
-            ("θ₁⁽¹⁾", f"{sp.pretty(ik_result['theta1'][0], use_unicode=True)}"),
-            ("θ₁⁽²⁾", f"{sp.pretty(ik_result['theta1'][1], use_unicode=True)}")
+            ("θ₁⁽¹⁾", f"{ik_result['theta1'][0]}"),
+            ("θ₁⁽²⁾", f"{ik_result['theta1'][1]}")
         ],
         color="#1976d2"
     )
@@ -505,8 +506,8 @@ def display_ik_symbolic_detailed(self, ik_result, T_symbolic):
         title="Solving for θ₅ (Wrist Rotation)",
         description="Computed from the geometric constraint:",
         equations=[
-            ("θ₅⁽¹⁾", f"{sp.pretty(ik_result['theta5'][0], use_unicode=True)}"),
-            ("θ₅⁽²⁾", f"{sp.pretty(ik_result['theta5'][1], use_unicode=True)}")
+            ("θ₅⁽¹⁾", f"{ik_result['theta5'][0]}"),
+            ("θ₅⁽²⁾", f"{ik_result['theta5'][1]}")
         ],
         color="#d32f2f"
     )
@@ -518,7 +519,7 @@ def display_ik_symbolic_detailed(self, ik_result, T_symbolic):
         title="Solving for θ₆ (Wrist Orientation)",
         description="Derived from rotation matrix elements:",
         equations=[
-            ("θ₆", f"{sp.pretty(ik_result['theta6'], use_unicode=True)}")
+            ("θ₆", f"{ik_result['theta6']}")
         ],
         color="#7b1fa2"
     )
@@ -530,8 +531,8 @@ def display_ik_symbolic_detailed(self, ik_result, T_symbolic):
         title="Solving for θ₃ (Elbow Configuration)",
         description="Elbow-up and elbow-down configurations:",
         equations=[
-            ("θ₃⁽¹⁾", f"{sp.pretty(ik_result['theta3'][0], use_unicode=True)}"),
-            ("θ₃⁽²⁾", f"{sp.pretty(ik_result['theta3'][1], use_unicode=True)}")
+            ("θ₃⁽¹⁾", f"{ik_result['theta3'][0]}"),
+            ("θ₃⁽²⁾", f"{ik_result['theta3'][1]}")
         ],
         color="#f57c00"
     )
@@ -543,7 +544,7 @@ def display_ik_symbolic_detailed(self, ik_result, T_symbolic):
         title="Solving for θ₂ (Shoulder Rotation)",
         description="Computed from projected geometry:",
         equations=[
-            ("θ₂", f"{sp.pretty(ik_result['theta2'], use_unicode=True)}")
+            ("θ₂", f"{ik_result['theta2']}")
         ],
         color="#00796b"
     )
@@ -596,8 +597,6 @@ def display_ik_symbolic_detailed(self, ik_result, T_symbolic):
     note_layout = QHBoxLayout(note_widget)
     note_layout.setContentsMargins(15, 12, 15, 12)
     
-    icon_lbl = QLabel("💡")
-    icon_lbl.setFont(QFont("Segoe UI Emoji", 18))
     
     text_lbl = QLabel(
         "<b>Switch to Numeric Mode</b> to compute actual joint angles for a specific target pose. "
@@ -615,8 +614,6 @@ def display_ik_symbolic_detailed(self, ik_result, T_symbolic):
             border-radius: 5px;
         }
     """)
-    
-    note_layout.addWidget(icon_lbl)
     note_layout.addWidget(text_lbl, stretch=1)
     
     self.output_layout.addWidget(note_widget)
@@ -644,8 +641,7 @@ def create_derivation_step(self, step_num, title, description, equations, color)
     header = QWidget()
     header.setStyleSheet(f"""
         QWidget {{
-            background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                stop:0 {color}, stop:1 {adjust_color_brightness(color, 1.2)});
+            background: {color};
             border-radius: 6px 6px 0px 0px;
         }}
     """)
@@ -655,7 +651,7 @@ def create_derivation_step(self, step_num, title, description, equations, color)
     
     # Step number badge
     step_badge = QLabel(f"{step_num}")
-    step_badge.setFont(QFont("Roboto", 14, QFont.Weight.Bold))
+    step_badge.setFont(self.standard_font)
     step_badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
     step_badge.setFixedSize(35, 35)
     step_badge.setStyleSheet("""
@@ -669,8 +665,8 @@ def create_derivation_step(self, step_num, title, description, equations, color)
     
     # Title
     title_lbl = QLabel(title)
-    title_lbl.setFont(QFont("Roboto", 13, QFont.Weight.Bold))
-    title_lbl.setStyleSheet("color: white; margin-left: 10px;")
+    title_lbl.setFont(QFont(self.standard_font))
+    title_lbl.setStyleSheet("color: white; margin-left: 10px;font-weight: bold;")
     
     header_layout.addWidget(step_badge)
     header_layout.addWidget(title_lbl)
@@ -686,9 +682,10 @@ def create_derivation_step(self, step_num, title, description, equations, color)
     
     # Description
     desc_lbl = QLabel(description)
-    desc_lbl.setFont(QFont("Roboto", 11))
+    desc_lbl.setFont(self.standard_font)
+    desc_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
     desc_lbl.setWordWrap(True)
-    desc_lbl.setStyleSheet("color: #555; padding-bottom: 5px;")
+    desc_lbl.setStyleSheet("color: #333; padding-bottom: 5px;padding: 5px;")
     content_layout.addWidget(desc_lbl)
     
     # Equations
@@ -696,10 +693,12 @@ def create_derivation_step(self, step_num, title, description, equations, color)
         eq_container = QWidget()
         eq_layout = QHBoxLayout(eq_container)
         eq_layout.setContentsMargins(10, 8, 10, 8)
-        eq_layout.setSpacing(10)
+        eq_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        eq_layout.setSpacing(20)
         
         eq_container.setStyleSheet(f"""
             QWidget {{
+                padding: 5px;
                 background-color: #fafafa;
                 border-left: 3px solid {color};
                 border-radius: 4px;
@@ -714,7 +713,8 @@ def create_derivation_step(self, step_num, title, description, equations, color)
         
         # Equation expression
         expr_lbl = QLabel(eq_expr)
-        expr_lbl.setFont(QFont("Roboto Mono", 11))
+        expr_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        expr_lbl.setFont(self.standard_font)
         expr_lbl.setStyleSheet("background: transparent; color: #1a1a1a;")
         expr_lbl.setWordWrap(True)
         
@@ -728,24 +728,6 @@ def create_derivation_step(self, step_num, title, description, equations, color)
     self.output_layout.addWidget(card)
 
 
-def adjust_color_brightness(hex_color, factor):
-    """
-    Adjust the brightness of a hex color
-    factor > 1 makes it brighter, factor < 1 makes it darker
-    """
-    # Remove '#' if present
-    hex_color = hex_color.lstrip('#')
-    
-    # Convert to RGB
-    r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
-    
-    # Adjust brightness
-    r = min(255, int(r * factor))
-    g = min(255, int(g * factor))
-    b = min(255, int(b * factor))
-    
-    # Convert back to hex
-    return f"#{r:02x}{g:02x}{b:02x}"
 
 
 # ========== Update your main_window.py do_ik() method ==========

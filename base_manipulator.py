@@ -720,24 +720,119 @@ class ABB_IRB_1600(RoboticManipulator):
 
 
     # For ABB_IRB_1600 class - update the existing method:
-    # def do_ik_symbolic(self):
-    #     """Enhanced symbolic IK for IRB1600 with complete derivation"""
-    #     x, y, z = sp.symbols('x y z', real=True)
-    #     alpha, beta, gamma = sp.symbols('alpha beta gamma', real=True)
-
-    #     R = rpy_to_R(alpha, beta, gamma, sym=True)
-    #     T = sp.Matrix([
-    #         [R[0,0], R[0,1], R[0,2], x],
-    #         [R[1,0], R[1,1], R[1,2], y],
-    #         [R[2,0], R[2,1], R[2,2], z],
-    #         [0, 0, 0, 1]
-    #     ])
-
-
-    #     return  T
-
-
-    # For KUKA_KR16 class:
+    def do_ik_symbolic(self): #  Convention: R = Rz(γ) * Ry(β) * Rx(α)
+        self.x = sp.Symbol('x', real=True)
+        self.y = sp.Symbol('y', real=True)
+        self.z = sp.Symbol('z', real=True)
+        self.alpha = sp.Symbol('α', real=True)
+        self.beta = sp.Symbol('β', real=True)
+        self.gamma = sp.Symbol('γ', real=True)
+        
+        #DERIVING SYMBOLIC IK SOLUTION
+        R = rpy_to_R(self.alpha, self.beta, self.gamma, sym=True)
+        
+        T = sp.Matrix([[R[0,0],R[0,1],R[0,2],self.x],
+                       [R[1,0],R[1,1],R[1,2],self.y],
+                       [R[2,0],R[2,1],R[2,2],self.z],
+                       [0,0,0,1]])
+        R06 = T
+        
+        #"[1/6] Computing wrist center ..."
+        r13, r23, r33 = R06[0, 2], R06[1, 2], R06[2, 2]
+        
+        pwcx = self.x - self.d6 * r13
+        pwcy = self.y - self.d6 * r23
+        pwcz = self.z - self.d6 * r33
+        
+        #"  Wrist center = p06 - d6 * R06[:, 2]"
+        
+        #"[2/6] Solving for θ1 (base rotation)..."
+        th1_base = sp.atan2(pwcy, pwcx)
+        theta1_sol1 = th1_base
+        theta1_sol2 = th1_base + pi
+        
+        #"  θ1 = atan2(pwcy, pwcx) or atan2(pwcy, pwcx) + π"
+        
+        theta1 = theta1_sol1
+        
+        #"[3/6] Transform to frame 1 (for joints 2&3 in x1-y1 plane)..."
+        # For ABB, joints 2&3 work in x1-y1 plane (not x1-z1)
+        # Simplified geometric projection
+        s1, c1 = sp.sin(theta1), sp.cos(theta1)
+        
+        # Position in frame 1
+        x1_approx = c1*pwcx + s1*pwcy - self.a1
+        y1_approx = -s1*pwcx + c1*pwcy
+        
+        #"  x1 ≈ cos(θ1)*pwcx + sin(θ1)*pwcy - a1")
+        #"  y1 ≈ -sin(θ1)*pwcx + cos(θ1)*pwcy")
+        #"[4/6] Solving for θ3 (elbow)...")
+        L2 = self.a2
+        L3 = sp.sqrt(self.a3**2 + self.d4**2)
+        gamma = sp.atan2(self.d4, self.a3)
+        
+        D = (x1_approx**2 + y1_approx**2 - L2**2 - L3**2) / (2*L2*L3)
+        
+        theta3p_sol1 = sp.acos(D)
+        theta3p_sol2 = -sp.acos(D)
+        
+        theta3_sol1 = theta3p_sol1 - gamma
+        theta3_sol2 = theta3p_sol2 - gamma
+        
+        #"  L3 = sqrt(a3² + d4²), γ = atan2(d4, a3)")
+        #"  θ3' = ±acos(D), D = (x1² + y1² - L2² - L3²)/(2*L2*L3)")
+        #"  θ3 = θ3' - γ")
+        
+        theta3p = theta3p_sol1
+        theta3 = theta3_sol1
+        
+        #"\n[5/6] Solving for θ2...")
+        theta2 = sp.atan2(y1_approx, x1_approx) - sp.atan2(L3*sp.sin(theta3p), L2 + L3*sp.cos(theta3p))
+        
+        #"  θ2 = atan2(y1, x1) - atan2(L3*sin(θ3'), L2 + L3*cos(θ3'))")
+        
+        #"\n[6/6] Solving for wrist angles...")
+        # R36 = R03^T @ R06
+        
+        # θ5 from spherical wrist
+        r36_20 = sp.Symbol('R36_20', real=True)
+        r36_21 = sp.Symbol('R36_21', real=True)
+        r36_22 = sp.Symbol('R36_22', real=True)
+        
+        theta5 = sp.atan2(sp.sqrt(r36_20**2 + r36_21**2), r36_22)
+        theta5_sol1 = theta5
+        theta5_sol2 = -theta5
+        
+        s5 = sp.sin(theta5)
+        
+        # For IRB1600, there's a +π offset on θ4
+        r36_02 = sp.Symbol('R36_02', real=True)
+        r36_12 = sp.Symbol('R36_12', real=True)
+        
+        theta4_raw = sp.atan2(r36_12, r36_02)
+        theta4 = theta4_raw + pi  # DH frame convention offset
+        
+        theta6 = sp.atan2(-r36_21, r36_20)
+        
+        #"  θ5 = ±atan2(sqrt(R36[2,0]² + R36[2,1]²), R36[2,2])"
+        #"  θ4 = atan2(R36[1,2], R36[0,2]) + π  [DH convention]"
+        #"  θ6 = atan2(-R36[2,1], R36[2,0]"
+        
+        
+        result = {
+            'theta1': [theta1_sol1, theta1_sol2],
+            'theta2': theta2,
+            'theta3': [theta3_sol1, theta3_sol2],
+            'theta4': theta4,
+            'theta5': [theta5_sol1, theta5_sol2],
+            'theta6': theta6,
+            'wrist_center': (pwcx, pwcy, pwcz),
+            'L2': L2,
+            'L3': L3,
+            'gamma': gamma,
+            'R06': R06
+        }
+        return result, T
    
 
 
@@ -898,6 +993,126 @@ class KUKA_KR16(RoboticManipulator):
         
         return unique_solutions
 
+    def do_ik_symbolic(self):
+        #  Convention: R = Rz(γ) * Ry(β) * Rx(α)
+        self.x = sp.Symbol('x', real=True)
+        self.y = sp.Symbol('y', real=True)
+        self.z = sp.Symbol('z', real=True)
+        self.alpha = sp.Symbol('α', real=True)
+        self.beta = sp.Symbol('β', real=True)
+        self.gamma = sp.Symbol('γ', real=True)
+        
+        #DERIVING SYMBOLIC IK SOLUTION
+        R = rpy_to_R(self.alpha, self.beta, self.gamma, sym=True)
+        
+        T = sp.Matrix([[R[0,0],R[0,1],R[0,2],self.x],
+                       [R[1,0],R[1,1],R[1,2],self.y],
+                       [R[2,0],R[2,1],R[2,2],self.z],
+                       [0,0,0,1]])
+        R06 = T
+        
+        #"\n[1/6] Computing wrist center..."
+        r13, r23, r33 = R06[0, 2], R06[1, 2], R06[2, 2]
+        
+        pwcx = self.x - self.d6 * r13
+        pwcy = self.y - self.d6 * r23
+        pwcz = self.z - self.d6 * r33
+        
+        #"  Wrist center = p06 - d6 * R06[:, 2]"
+        
+        #"[2/6] Solving for θ1 (accounting for shoulder offset a1)..."
+        r_xy = sp.sqrt(pwcx**2 + pwcy**2)
+        phi = sp.atan2(pwcy, pwcx)
+        s = sp.sqrt(r_xy**2 - self.a1**2)
+        
+        theta1_sol1 = phi - sp.atan2(self.a1, s)
+        theta1_sol2 = phi - sp.atan2(self.a1, -s)
+        
+        #"  θ1 = atan2(pwcy, pwcx) - atan2(a1, ±sqrt(r_xy² - a1²))"
+        
+        theta1 = theta1_sol1
+        
+        #"[3/6] Transform wrist center to frame 1..."
+        # Simplified transformation (avoiding full matrix inverse symbolically)
+        # Using geometric relationships
+        s1, c1 = sp.sin(theta1), sp.cos(theta1)
+        
+        # For KUKA, after frame 1, we work in x1-z1 plane
+        x1_approx = c1*pwcx + s1*pwcy - self.a1
+        z1_approx = pwcz - self.d1
+        
+        #"  x1 ≈ cos(θ1)*pwcx + sin(θ1)*pwcy - a1"
+        #"  z1 ≈ pwcz - d1")
+        
+        #"\n[4/6] Solving for θ3 (elbow angle)..."
+        L2 = self.a2  # Assuming positive
+        L3 = sp.sqrt(self.a3**2 + self.d4**2)
+        gamma = sp.atan2(self.d4, self.a3)
+        
+        r = sp.sqrt(x1_approx**2 + z1_approx**2)
+        
+        cos_theta3p = (r**2 - L2**2 - L3**2) / (2*L2*L3)
+        theta3p_sol1 = sp.acos(cos_theta3p)
+        theta3p_sol2 = -sp.acos(cos_theta3p)
+        
+        theta3_sol1 = theta3p_sol1 - gamma
+        theta3_sol2 = theta3p_sol2 - gamma
+        
+        #"  L3 = sqrt(a3² + d4²), γ = atan2(d4, a3)")
+        #"  θ3' = ±acos((r² - L2² - L3²)/(2*L2*L3))")
+        #"  θ3 = θ3' - γ")
+        
+        theta3p = theta3p_sol1
+        theta3 = theta3_sol1
+        
+        #"\n[5/6] Solving for θ2...")
+        phi_angle = sp.atan2(z1_approx, x1_approx)
+        psi_angle = sp.atan2(L3*sp.sin(theta3p), L2 + L3*sp.cos(theta3p))
+        theta2 = phi_angle - psi_angle
+        
+        #"  θ2 = atan2(z1, x1) - atan2(L3*sin(θ3'), L2 + L3*cos(θ3'))")
+        
+        #"\n[6/6] Solving for wrist angles (θ4, θ5, θ6)...")
+        # R36 = R03^T @ R06
+        # For symbolic form, we note the structure
+        
+        # θ5 from R36[2,2]
+        r36_22 = sp.Symbol('R36_22', real=True)  # Would be computed from R03^T @ R06
+        
+        theta5_sol1 = sp.acos(r36_22)
+        theta5_sol2 = -sp.acos(r36_22)
+        
+        theta5 = theta5_sol1
+        s5 = sp.sin(theta5)
+        
+        # θ4 and θ6 from other elements
+        r36_02 = sp.Symbol('R36_02', real=True)
+        r36_12 = sp.Symbol('R36_12', real=True)
+        r36_21 = sp.Symbol('R36_21', real=True)
+        r36_20 = sp.Symbol('R36_20', real=True)
+        
+        theta4 = sp.atan2(r36_12 / s5, r36_02 / s5)
+        theta6 = sp.atan2(r36_21 / s5, -r36_20 / s5)
+        
+        #"  θ5 = ±acos(R36[2,2])"
+        #"  θ4 = atan2(R36[1,2]/sin(θ5), R36[0,2]/sin(θ5))"
+        #"  θ6 = atan2(R36[2,1]/sin(θ5), -R36[2,0]/sin(θ5))"
+        
+        
+        result = {
+            'theta1': [theta1_sol1, theta1_sol2],
+            'theta2': theta2,
+            'theta3': [theta3_sol1, theta3_sol2],
+            'theta4': theta4,
+            'theta5': [theta5_sol1, theta5_sol2],
+            'theta6': theta6,
+            'wrist_center': (pwcx, pwcy, pwcz),
+            'L2': L2,
+            'L3': L3,
+            'gamma': gamma,
+            'R06': R06
+        }
+        return result, T
 
     # def do_ik_symbolic(self):
     #     """Enhanced symbolic IK for KUKA KR16"""
