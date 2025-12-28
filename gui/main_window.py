@@ -1213,12 +1213,14 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         """Execute inverse kinematics"""
         comp_mode = self.sym_num_widget.currentRow()
 
-        if comp_mode == 0: 
-            eq_list , T_symbolic = self.current_manipulator.do_ik_symbolic()
-            display_ik_symbolic_results(self, T_symbolic, eq_list)
+
+        if comp_mode == 0:  # Symbolic mode
+            ik_result = self.current_manipulator.do_ik_symbolic()
+            T_symbolic = self.current_manipulator.do_ik_symbolic()  # Get the T matrix
+            # Use the new detailed display function
+            display_ik_symbolic_detailed(self, ik_result, T_symbolic)
             self.tabs.setCurrentIndex(1)
             return
-
         # Get target matrix based on input mode
         if self.ik_pose_radio.isChecked():
             try:

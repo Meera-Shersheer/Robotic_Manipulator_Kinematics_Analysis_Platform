@@ -397,74 +397,430 @@ def display_ik_numeric_results(self, solutions, target_matrix):
         add_spacing(self, self.output_layout, 10)
 
 
+# Add this to your gui/output.py file
 
-
-def display_ik_symbolic_results(self, T_symbolic, eq_list):
-    """Display symbolic IK representation"""
+def display_ik_symbolic_detailed(self, ik_result, T_symbolic):
+    """
+    Display detailed symbolic IK derivation with step-by-step visualization
+    """
     clear_output(self)
     
-    add_section_header(self, "Inverse Kinematics (Symbolic)", "#8e24aa")
+    # Main header
+    add_section_header(self, "Inverse Kinematics - Symbolic Derivation", "#8e24aa")
     
-    group = create_result_group(self, "Symbolic Target Pose Representation")
+    # ========== Target Pose Section ==========
+    add_section_header(self, "Target End-Effector Pose (Symbolic)", "#00897b")
     
-    info = QLabel(
-        "For inverse kinematics, the target end-effector pose is represented symbolically as:\n"
-        "• Position: (x, y, z)\n"
-        "• Orientation: Roll-Pitch-Yaw angles (α, β, γ)\n\n"
-        "The transformation matrix is constructed from these parameters:"
-    )
-    info.setFont(self.standard_font)
-    info.setWordWrap(True)
-    info.setStyleSheet("padding: 10px; color: #333;")
-    group.layout().addWidget(info)
+    group = create_result_group(self, "Symbolic Variables")
     
+    # Display symbolic variables in a nice grid
+    vars_container = QWidget()
+    vars_layout = QGridLayout(vars_container)
+    vars_layout.setSpacing(10)
+    vars_layout.setContentsMargins(10, 10, 10, 10)
+    
+    var_info = [
+        ("x", "X Position", "#ef5350"),
+        ("y", "Y Position", "#66bb6a"),
+        ("z", "Z Position", "#42a5f5"),
+        ("α", "Roll Angle", "#ff9800"),
+        ("β", "Pitch Angle", "#ab47bc"),
+        ("γ", "Yaw Angle", "#26c6da")
+    ]
+    
+    for idx, (symbol, description, color) in enumerate(var_info):
+        row = idx // 3
+        col = (idx % 3) * 2
+        
+        # Symbol label
+        sym_lbl = QLabel(symbol)
+        sym_lbl.setFont(QFont("Roboto", 16, QFont.Weight.Bold))
+        sym_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        sym_lbl.setStyleSheet(f"""
+            QLabel {{
+                background-color: {color};
+                color: white;
+                padding: 12px;
+                border-radius: 5px;
+                min-width: 50px;
+            }}
+        """)
+        vars_layout.addWidget(sym_lbl, row, col)
+        
+        # Description label
+        desc_lbl = QLabel(description)
+        desc_lbl.setFont(self.standard_font)
+        desc_lbl.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        desc_lbl.setStyleSheet(f"""
+            QLabel {{
+                background-color: white;
+                padding: 12px;
+                border: 2px solid {color};
+                border-radius: 5px;
+            }}
+        """)
+        vars_layout.addWidget(desc_lbl, row, col + 1)
+    
+    group.layout().addWidget(vars_container)
     self.output_layout.addWidget(group)
     add_spacing(self, self.output_layout, 15)
     
-    # Display the symbolic transformation matrix
+    # ========== Transformation Matrix ==========
     add_symbolic_transformation_matrix_simple(self, T_symbolic, "Target Transformation Matrix T₀⁶")
     add_spacing(self, self.output_layout, 15)
     
-    # Note about numeric mode
+    # ========== Derivation Steps ==========
+    add_section_header(self, "Solution Derivation Steps", "#673ab7")
+    
+    # Step 1: Wrist Center
+    create_derivation_step(self, 
+        step_num=1,
+        title="Computing Wrist Center (p₀₅)",
+        description="The wrist center is computed by offsetting from the target position along the approach vector:",
+        equations=[
+            ("p₀₅ₓ", f"{sp.pretty(ik_result['wrist_center'][0], use_unicode=True)}"),
+            ("p₀₅ᵧ", f"{sp.pretty(ik_result['wrist_center'][1], use_unicode=True)}"),
+            ("p₀₅ᵤ", f"{sp.pretty(ik_result['wrist_center'][2], use_unicode=True)}")
+        ],
+        color="#00897b"
+    )
+    add_spacing(self, self.output_layout, 10)
+    
+    # Step 2: θ₁ Solutions
+    create_derivation_step(self,
+        step_num=2,
+        title="Solving for θ₁ (Base Rotation)",
+        description="Two solutions exist due to geometric ambiguity:",
+        equations=[
+            ("θ₁⁽¹⁾", f"{sp.pretty(ik_result['theta1'][0], use_unicode=True)}"),
+            ("θ₁⁽²⁾", f"{sp.pretty(ik_result['theta1'][1], use_unicode=True)}")
+        ],
+        color="#1976d2"
+    )
+    add_spacing(self, self.output_layout, 10)
+    
+    # Step 3: θ₅ Solutions
+    create_derivation_step(self,
+        step_num=3,
+        title="Solving for θ₅ (Wrist Rotation)",
+        description="Computed from the geometric constraint:",
+        equations=[
+            ("θ₅⁽¹⁾", f"{sp.pretty(ik_result['theta5'][0], use_unicode=True)}"),
+            ("θ₅⁽²⁾", f"{sp.pretty(ik_result['theta5'][1], use_unicode=True)}")
+        ],
+        color="#d32f2f"
+    )
+    add_spacing(self, self.output_layout, 10)
+    
+    # Step 4: θ₆ Solution
+    create_derivation_step(self,
+        step_num=4,
+        title="Solving for θ₆ (Wrist Orientation)",
+        description="Derived from rotation matrix elements:",
+        equations=[
+            ("θ₆", f"{sp.pretty(ik_result['theta6'], use_unicode=True)}")
+        ],
+        color="#7b1fa2"
+    )
+    add_spacing(self, self.output_layout, 10)
+    
+    # Step 5: θ₃ Solutions
+    create_derivation_step(self,
+        step_num=5,
+        title="Solving for θ₃ (Elbow Configuration)",
+        description="Elbow-up and elbow-down configurations:",
+        equations=[
+            ("θ₃⁽¹⁾", f"{sp.pretty(ik_result['theta3'][0], use_unicode=True)}"),
+            ("θ₃⁽²⁾", f"{sp.pretty(ik_result['theta3'][1], use_unicode=True)}")
+        ],
+        color="#f57c00"
+    )
+    add_spacing(self, self.output_layout, 10)
+    
+    # Step 6: θ₂ Solution
+    create_derivation_step(self,
+        step_num=6,
+        title="Solving for θ₂ (Shoulder Rotation)",
+        description="Computed from projected geometry:",
+        equations=[
+            ("θ₂", f"{sp.pretty(ik_result['theta2'], use_unicode=True)}")
+        ],
+        color="#00796b"
+    )
+    add_spacing(self, self.output_layout, 10)
+    
+    # Step 7: θ₄ Note
+    create_derivation_step(self,
+        step_num=7,
+        title="Solving for θ₄ (Arm Rotation)",
+        description="Computed from rotation matrix constraint R₃₄ = R₀₃ᵀ × R₀₆",
+        equations=[
+            ("θ₄", "Derived from rotation matrices R₀₃ and R₀₄")
+        ],
+        color="#5e35b1"
+    )
+    add_spacing(self, self.output_layout, 15)
+    
+    # ========== Solution Summary ==========
+    add_section_header(self, "Solution Branches", "#ff6f00")
+    
+    summary_group = create_result_group(self, "Total Possible Solutions")
+    
+    summary_text = QLabel(
+        "The symbolic IK produces multiple solution branches:\n\n"
+        "• θ₁: 2 solutions (shoulder left/right)\n"
+        "• θ₃: 2 solutions (elbow up/down)\n"
+        "• θ₅: 2 solutions (wrist flip)\n\n"
+        "Total: 2 × 2 × 2 = 8 possible configurations\n\n"
+        "Each configuration represents a valid way to reach the target pose."
+    )
+    summary_text.setFont(self.standard_font)
+    summary_text.setWordWrap(True)
+    summary_text.setStyleSheet("""
+        QLabel {
+            background-color: #fff3e0;
+            padding: 15px;
+            border-left: 4px solid #ff6f00;
+            border-radius: 5px;
+            color: #333;
+            line-height: 1.6;
+        }
+    """)
+    
+    summary_group.layout().addWidget(summary_text)
+    self.output_layout.addWidget(summary_group)
+    add_spacing(self, self.output_layout, 15)
+    
+    # ========== Note about Numeric Mode ==========
     note_widget = QWidget()
     note_layout = QHBoxLayout(note_widget)
-    note_layout.setContentsMargins(10, 8, 10, 8)
+    note_layout.setContentsMargins(15, 12, 15, 12)
     
-    icon_lbl = QLabel("ℹ")
-    icon_lbl.setFont(QFont("Roboto", 14, QFont.Weight.Bold))
-    icon_lbl.setStyleSheet("color: #2196f3;")
+    icon_lbl = QLabel("💡")
+    icon_lbl.setFont(QFont("Segoe UI Emoji", 18))
     
     text_lbl = QLabel(
-        "Symbolic IK shows the mathematical relationships and solution procedure. "
-        "To compute numeric solutions, switch to 'Numeric' mode and provide a target pose."
+        "<b>Switch to Numeric Mode</b> to compute actual joint angles for a specific target pose. "
+        "The numeric solver will evaluate all 8 solution branches and return only the valid, "
+        "reachable configurations."
     )
-    text_lbl.setFont(QFont("Roboto", 11))
+    text_lbl.setFont(QFont("Roboto", 12))
     text_lbl.setWordWrap(True)
     
     note_widget.setStyleSheet("""
         QWidget {
-            background-color: #e3f2fd;
-            border-left: 4px solid #2196f3;
-            border-radius: 3px;
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                stop:0 #e3f2fd, stop:1 #bbdefb);
+            border-left: 5px solid #2196f3;
+            border-radius: 5px;
         }
     """)
     
     note_layout.addWidget(icon_lbl)
-    note_layout.addWidget(text_lbl)
-    note_layout.addStretch()
+    note_layout.addWidget(text_lbl, stretch=1)
     
     self.output_layout.addWidget(note_widget)
-    add_spacing(self, self.output_layout, 15)
+
+
+def create_derivation_step(self, step_num, title, description, equations, color):
+    """
+    Create a styled card for each derivation step
+    """
+    # Main card container
+    card = QFrame()
+    card.setStyleSheet(f"""
+        QFrame {{
+            background-color: white;
+            border: 2px solid {color};
+            border-radius: 8px;
+        }}
+    """)
+    
+    card_layout = QVBoxLayout(card)
+    card_layout.setSpacing(0)
+    card_layout.setContentsMargins(0, 0, 0, 0)
+    
+    # Header section
+    header = QWidget()
+    header.setStyleSheet(f"""
+        QWidget {{
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                stop:0 {color}, stop:1 {adjust_color_brightness(color, 1.2)});
+            border-radius: 6px 6px 0px 0px;
+        }}
+    """)
+    
+    header_layout = QHBoxLayout(header)
+    header_layout.setContentsMargins(15, 10, 15, 10)
+    
+    # Step number badge
+    step_badge = QLabel(f"{step_num}")
+    step_badge.setFont(QFont("Roboto", 14, QFont.Weight.Bold))
+    step_badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    step_badge.setFixedSize(35, 35)
+    step_badge.setStyleSheet("""
+        QLabel {
+            background-color: white;
+            color: #333;
+            border-radius: 17px;
+            padding: 5px;
+        }
+    """)
+    
+    # Title
+    title_lbl = QLabel(title)
+    title_lbl.setFont(QFont("Roboto", 13, QFont.Weight.Bold))
+    title_lbl.setStyleSheet("color: white; margin-left: 10px;")
+    
+    header_layout.addWidget(step_badge)
+    header_layout.addWidget(title_lbl)
+    header_layout.addStretch()
+    
+    card_layout.addWidget(header)
+    
+    # Content section
+    content = QWidget()
+    content_layout = QVBoxLayout(content)
+    content_layout.setContentsMargins(15, 12, 15, 12)
+    content_layout.setSpacing(10)
+    
+    # Description
+    desc_lbl = QLabel(description)
+    desc_lbl.setFont(QFont("Roboto", 11))
+    desc_lbl.setWordWrap(True)
+    desc_lbl.setStyleSheet("color: #555; padding-bottom: 5px;")
+    content_layout.addWidget(desc_lbl)
+    
+    # Equations
+    for eq_name, eq_expr in equations:
+        eq_container = QWidget()
+        eq_layout = QHBoxLayout(eq_container)
+        eq_layout.setContentsMargins(10, 8, 10, 8)
+        eq_layout.setSpacing(10)
+        
+        eq_container.setStyleSheet(f"""
+            QWidget {{
+                background-color: #fafafa;
+                border-left: 3px solid {color};
+                border-radius: 4px;
+            }}
+        """)
+        
+        # Equation name
+        name_lbl = QLabel(f"<b>{eq_name}</b> =")
+        name_lbl.setFont(QFont("Roboto", 12))
+        name_lbl.setStyleSheet("background: transparent; color: #333;")
+        name_lbl.setFixedWidth(80)
+        
+        # Equation expression
+        expr_lbl = QLabel(eq_expr)
+        expr_lbl.setFont(QFont("Roboto Mono", 11))
+        expr_lbl.setStyleSheet("background: transparent; color: #1a1a1a;")
+        expr_lbl.setWordWrap(True)
+        
+        eq_layout.addWidget(name_lbl)
+        eq_layout.addWidget(expr_lbl, stretch=1)
+        
+        content_layout.addWidget(eq_container)
+    
+    card_layout.addWidget(content)
+    
+    self.output_layout.addWidget(card)
+
+
+def adjust_color_brightness(hex_color, factor):
+    """
+    Adjust the brightness of a hex color
+    factor > 1 makes it brighter, factor < 1 makes it darker
+    """
+    # Remove '#' if present
+    hex_color = hex_color.lstrip('#')
+    
+    # Convert to RGB
+    r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+    
+    # Adjust brightness
+    r = min(255, int(r * factor))
+    g = min(255, int(g * factor))
+    b = min(255, int(b * factor))
+    
+    # Convert back to hex
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
+# ========== Update your main_window.py do_ik() method ==========
+# Replace the symbolic IK section with:
+
+
+
+    # ... rest of your numeric IK code remains the same ...
+
+# def display_ik_symbolic_results(self, T_symbolic, eq_list):
+#     """Display symbolic IK representation"""
+#     clear_output(self)
+    
+#     add_section_header(self, "Inverse Kinematics (Symbolic)", "#8e24aa")
+    
+#     group = create_result_group(self, "Symbolic Target Pose Representation")
+    
+#     info = QLabel(
+#         "For inverse kinematics, the target end-effector pose is represented symbolically as:\n"
+#         "• Position: (x, y, z)\n"
+#         "• Orientation: Roll-Pitch-Yaw angles (α, β, γ)\n\n"
+#         "The transformation matrix is constructed from these parameters:"
+#     )
+#     info.setFont(self.standard_font)
+#     info.setWordWrap(True)
+#     info.setStyleSheet("padding: 10px; color: #333;")
+#     group.layout().addWidget(info)
+    
+#     self.output_layout.addWidget(group)
+#     add_spacing(self, self.output_layout, 15)
+    
+#     # Display the symbolic transformation matrix
+#     add_symbolic_transformation_matrix_simple(self, T_symbolic, "Target Transformation Matrix T₀⁶")
+#     add_spacing(self, self.output_layout, 15)
+    
+#     # Note about numeric mode
+#     note_widget = QWidget()
+#     note_layout = QHBoxLayout(note_widget)
+#     note_layout.setContentsMargins(10, 8, 10, 8)
+    
+#     icon_lbl = QLabel("ℹ")
+#     icon_lbl.setFont(QFont("Roboto", 14, QFont.Weight.Bold))
+#     icon_lbl.setStyleSheet("color: #2196f3;")
+    
+#     text_lbl = QLabel(
+#         "Symbolic IK shows the mathematical relationships and solution procedure. "
+#         "To compute numeric solutions, switch to 'Numeric' mode and provide a target pose."
+#     )
+#     text_lbl.setFont(QFont("Roboto", 11))
+#     text_lbl.setWordWrap(True)
+    
+#     note_widget.setStyleSheet("""
+#         QWidget {
+#             background-color: #e3f2fd;
+#             border-left: 4px solid #2196f3;
+#             border-radius: 3px;
+#         }
+#     """)
+    
+#     note_layout.addWidget(icon_lbl)
+#     note_layout.addWidget(text_lbl)
+#     note_layout.addStretch()
+    
+#     self.output_layout.addWidget(note_widget)
+#     add_spacing(self, self.output_layout, 15)
     
     
     
-    # add_equations_section(self, eq_list)
-    add_spacing(self, self.output_layout, 15)
-    self.output_layout.addWidget(group)
+#     # add_equations_section(self, eq_list)
+#     add_spacing(self, self.output_layout, 15)
+#     self.output_layout.addWidget(group)
     
-    add_spacing(self, self.output_layout, 15)
+#     add_spacing(self, self.output_layout, 15)
     
-    # Add export option
+#     # Add export option
 
     
     

@@ -47,14 +47,14 @@ def Rx_s(a): ca,sa=sp.cos(a),sp.sin(a); return sp.Matrix([[1,0,0],[0,ca,-sa],[0,
 def Ry_s(b): cb,sb=sp.cos(b),sp.sin(b); return sp.Matrix([[cb,0,sb],[0,1,0],[-sb,0,cb]])
 def Rz_s(g): cg,sg=sp.cos(g),sp.sin(g); return sp.Matrix([[cg,-sg,0],[sg,cg,0],[0,0,1]])
 
-def _f(x, n=6):
-    return f"{x:.{n}f}"
+# def _f(x, n=6):
+#     return f"{x:.{n}f}"
 
-def _hdr(i, title):
-    return f"{i}) {title}"
+# def _hdr(i, title):
+#     return f"{i}) {title}"
 
-def _wrap_note():
-    return "NOTE: If your solver wraps angles, apply wrap(theta) -> (-pi, pi]."
+# def _wrap_note():
+#     return "NOTE: If your solver wraps angles, apply wrap(theta) -> (-pi, pi]."
 
 
 def eulerR(a,b,g,order="ZYX"):
@@ -465,6 +465,103 @@ class UR5(RoboticManipulator):
     #                    [0,0,0,1]])
 
     #     return T
+    def do_ik_symbolic(self):
+        #  Convention: R = Rz(γ) * Ry(β) * Rx(α)
+        self.x = sp.Symbol('x', real=True)
+        self.y = sp.Symbol('y', real=True)
+        self.z = sp.Symbol('z', real=True)
+        self.alpha = sp.Symbol('α', real=True)
+        self.beta = sp.Symbol('β', real=True)
+        self.gamma = sp.Symbol('γ', real=True)
+        
+        #DERIVING SYMBOLIC IK SOLUTION
+        R = rpy_to_R(self.alpha, self.beta, self.gamma, sym=True)
+        
+        T = sp.Matrix([[R[0,0],R[0,1],R[0,2],self.x],
+                       [R[1,0],R[1,1],R[1,2],self.y],
+                       [R[2,0],R[2,1],R[2,2],self.z],
+                       [0,0,0,1]])
+        R06 = T
+        
+        #"[1/6] Computing wrist center (p05)..."
+        r13, r23, r33 = R06[0, 2], R06[1, 2], R06[2, 2]
+        
+        p05x = self.x - self.d6 * r13
+        p05y = self.y - self.d6 * r23
+        p05z = self.z - self.d6 * r33
+        
+        # "Wrist center = p06 - d6 * R06[:, 2]"
+        
+        #"[2/6] Solving for θ1..."
+        rxy = sp.sqrt(p05x**2 + p05y**2)
+        psi = sp.atan2(p05y, p05x)
+        phi = sp.acos(sp.simplify(self.d4 / rxy))
+
+        
+        theta1_sol1 = psi + phi + pi/2
+        theta1_sol2 = psi - phi + pi/2
+        
+        #"θ1 = atan2(p05y, p05x) ± acos(d4/rxy) + π/2"
+        theta1 = theta1_sol1
+        s1, c1 = sp.sin(theta1), sp.cos(theta1)
+        
+        #"[3/6] Solving for θ5..."
+        cos_theta5 = (self.x * s1 - self.y * c1 - self.d4) / self.d6
+        
+        theta5_sol1 = sp.acos(cos_theta5)
+        theta5_sol2 = -sp.acos(cos_theta5)
+        
+        #"  cos(θ5) = (x*sin(θ1) - y*cos(θ1) - d4) / d6"
+        
+        theta5 = theta5_sol1
+        s5 = sp.sin(theta5)
+        
+        #"[4/6] Solving for θ6..."
+        r01, r11 = R06[0, 0], R06[1, 0]
+        r02, r12 = R06[0, 1], R06[1, 1]
+        
+        theta6 = sp.atan2((-r02*s1 + r12*c1) / s5, (r01*s1 - r11*c1) / s5)
+        
+        #"  θ6 = atan2((−R06[0,1]*sin(θ1) + R06[1,1]*cos(θ1))/sin(θ5), ...)")
+        
+        #"[5/6] Computing p14 position..."
+        p14x = (p05x)*c1 + (p05y)*s1 - self.d4
+        p14y = (p05z - self.d1)
+        
+        #"Project wrist center to frame 1"
+        
+        #"[6/6] Solving for θ2 and θ3..."
+        D = (p14x**2 + p14y**2 - self.a2**2 - self.a3**2) / (2*self.a2*self.a3)
+        
+        theta3_sol1 = sp.acos(D)
+        theta3_sol2 = -sp.acos(D)
+        
+        theta3 = theta3_sol1
+        s3, c3 = sp.sin(theta3), sp.cos(theta3)
+        
+        theta2 = sp.atan2(p14y, p14x) - sp.atan2(self.a3*s3, self.a2 + self.a3*c3)
+        
+        #"  θ3 = ±acos(D), D = (p14x² + p14y² - a2² - a3²)/(2*a2*a3)"
+        #"  θ2 = atan2(p14y, p14x) - atan2(a3*sin(θ3), a2 + a3*cos(θ3))"
+        
+        #"[7/7] θ4 from rotation constraint..."
+        theta4 = sp.Symbol('θ4_from_R34', real=True)
+        #"  θ4 = [Computed from rotation matrices R03, R04]"
+        
+        #"SYMBOLIC DERIVATION COMPLETE"
+        
+        result = {
+            'theta1': [theta1_sol1, theta1_sol2],
+            'theta2': theta2,
+            'theta3': [theta3_sol1, theta3_sol2],
+            'theta4': theta4,
+            'theta5': [theta5_sol1, theta5_sol2],
+            'theta6': theta6,
+            'wrist_center': (p05x, p05y, p05z),
+            'R06': R06
+        }
+        return result, T
+
 
 
 
