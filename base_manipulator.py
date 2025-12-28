@@ -422,12 +422,12 @@ class UR5(RoboticManipulator):
         self.x = sp.Symbol('x', real=True)
         self.y = sp.Symbol('y', real=True)
         self.z = sp.Symbol('z', real=True)
-        self.alpha = sp.Symbol('α', real=True)
+        self.alph = sp.Symbol('α', real=True)
         self.beta = sp.Symbol('β', real=True)
         self.gamma = sp.Symbol('γ', real=True)
         
         #DERIVING SYMBOLIC IK SOLUTION
-        R = rpy_to_R(self.alpha, self.beta, self.gamma, sym=True)
+        R = rpy_to_R(self.alph, self.beta, self.gamma, sym=True)
         
         T = sp.Matrix([[R[0,0],R[0,1],R[0,2],self.x],
                        [R[1,0],R[1,1],R[1,2],self.y],
@@ -650,12 +650,12 @@ class ABB_IRB_1600(RoboticManipulator):
         self.x = sp.Symbol('x', real=True)
         self.y = sp.Symbol('y', real=True)
         self.z = sp.Symbol('z', real=True)
-        self.alpha = sp.Symbol('α', real=True)
+        self.alph = sp.Symbol('α', real=True)
         self.beta = sp.Symbol('β', real=True)
         self.gamma = sp.Symbol('γ', real=True)
         
         #DERIVING SYMBOLIC IK SOLUTION
-        R = rpy_to_R(self.alpha, self.beta, self.gamma, sym=True)
+        R = rpy_to_R(self.alph, self.beta, self.gamma, sym=True)
         
         T = sp.Matrix([[R[0,0],R[0,1],R[0,2],self.x],
                        [R[1,0],R[1,1],R[1,2],self.y],
@@ -876,7 +876,7 @@ class KUKA_KR16(RoboticManipulator):
 
                 # Wrist orientation
                 qtemp = [th1, th2, th3, 0.0, 0.0, 0.0]
-                _, cumulative_Ts, _ = self.fk_all(qtmp, sym=False)
+                _, cumulative_Ts, _ = self.fk_all(qtemp, sym=False)
                 R03 = cumulative_Ts[2][:3, :3]
                 R36 = R03.T @ R06
 
@@ -923,12 +923,12 @@ class KUKA_KR16(RoboticManipulator):
         self.x = sp.Symbol('x', real=True)
         self.y = sp.Symbol('y', real=True)
         self.z = sp.Symbol('z', real=True)
-        self.alpha = sp.Symbol('α', real=True)
+        self.alph = sp.Symbol('α', real=True)
         self.beta = sp.Symbol('β', real=True)
         self.gamma = sp.Symbol('γ', real=True)
         
         #DERIVING SYMBOLIC IK SOLUTION
-        R = rpy_to_R(self.alpha, self.beta, self.gamma, sym=True)
+        R = rpy_to_R(self.alph, self.beta, self.gamma, sym=True)
         
         T = sp.Matrix([[R[0,0],R[0,1],R[0,2],self.x],
                        [R[1,0],R[1,1],R[1,2],self.y],
