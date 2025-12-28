@@ -1,3 +1,9 @@
+import os
+os.environ['PYOPENGL_PLATFORM'] = 'egl'  # or 'glx' on Linux
+os.environ['__NV_PRIME_RENDER_OFFLOAD'] = '1'
+os.environ['__GLX_VENDOR_LIBRARY_NAME'] = 'nvidia'
+# For PyQt to prefer discrete GPU
+os.environ['QT_OPENGL'] = 'desktop'
 
 from imports import *
 from gui.main_window import MainWindow

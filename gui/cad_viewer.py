@@ -61,6 +61,17 @@ class OpenGLViewer(QOpenGLWidget):
         
     def initializeGL(self):
         """Initialize OpenGL settings"""
+        from OpenGL.GL import glGetString, GL_VENDOR, GL_RENDERER
+
+        vendor = glGetString(GL_VENDOR).decode('utf-8')
+        renderer = glGetString(GL_RENDERER).decode('utf-8')
+
+        print(f"\n{'='*60}")
+        print(f"GPU Vendor:   {vendor}")
+        print(f"GPU Renderer: {renderer}")
+        print(f"{'='*60}\n")
+
+        """Initialize OpenGL settings"""
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_LIGHTING)
         glEnable(GL_LIGHT0)
@@ -111,44 +122,50 @@ class OpenGLViewer(QOpenGLWidget):
         else:
             glEnable(GL_LIGHTING)
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
-        
+
         # Draw faces
         glBegin(GL_TRIANGLES)
-        for i, face in enumerate(self.faces):
+        for i in range(len(self.faces)):  # Changed from 'for i, face in enumerate(self.faces)'
+            face = self.faces[i]
+
             # Set color for this face
             if self.colors is not None and i < len(self.colors):
                 color = self.colors[i]
-                glColor3f(color[0], color[1], color[2])
+                glColor3f(float(color[0]), float(color[1]), float(color[2]))
             else:
                 glColor3f(0.7, 0.7, 0.7)
-            
+
             # Draw triangle with normals
-            for j, vertex_idx in enumerate(face):
+            for j in range(len(face)):  # Changed from 'for j, vertex_idx in enumerate(face)'
+                vertex_idx = face[j]
+
                 if self.normals is not None and i < len(self.normals):
                     normal = self.normals[i]
-                    glNormal3f(normal[0], normal[1], normal[2])
-                
+                    glNormal3f(float(normal[0]), float(normal[1]), float(normal[2]))
+
                 vertex = self.vertices[vertex_idx]
-                glVertex3f(vertex[0], vertex[1], vertex[2])
+                glVertex3f(float(vertex[0]), float(vertex[1]), float(vertex[2]))
         glEnd()
-        
-        # Draw edges if enabled
+
+    # Draw edges if enabled
         if self.show_edges and not self.wireframe_mode:
             glDisable(GL_LIGHTING)
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
             glColor3f(0.3, 0.3, 0.3)
             glLineWidth(1.0)
-            
+
             glBegin(GL_TRIANGLES)
-            for face in self.faces:
-                for vertex_idx in face:
+            for i in range(len(self.faces)):  # Changed iteration
+                face = self.faces[i]
+                for j in range(len(face)):  # Changed iteration
+                    vertex_idx = face[j]
                     vertex = self.vertices[vertex_idx]
-                    glVertex3f(vertex[0], vertex[1], vertex[2])
+                    glVertex3f(float(vertex[0]), float(vertex[1]), float(vertex[2]))
             glEnd()
-            
+
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
             glEnable(GL_LIGHTING)
-    
+
     def load_model(self, filepath):
         """Load 3D model from file"""
         try:
@@ -208,14 +225,12 @@ class OpenGLViewer(QOpenGLWidget):
     
     def prepare_mesh_data(self):
         """Extract and prepare mesh data for rendering"""
-        self.vertices = self.mesh.vertices
-        self.faces = self.mesh.faces
-        
-        # Extract colors
+        self.vertices = np.array(self.mesh.vertices, dtype=np.float32)
+        self.faces = np.array(self.mesh.faces, dtype=np.int32)
+    # Extract colors
         self.colors = self.get_face_colors()
-        
-        # Calculate face normals for lighting
-        self.normals = self.mesh.face_normals
+    # Calculate face normals for lighting
+        self.normals = np.array(self.mesh.face_normals, dtype=np.float32)
         
     def get_face_colors(self):
         """Extract face colors from mesh"""
