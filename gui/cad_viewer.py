@@ -16,6 +16,7 @@ from OpenGL.GLU import *
 import numpy as np
 import trimesh
 import sys
+import math
 
 
 class OpenGLViewer(QOpenGLWidget):
@@ -30,6 +31,10 @@ class OpenGLViewer(QOpenGLWidget):
         self.last_pos = None
         self.show_edges = True
         self.wireframe_mode = False
+        
+        self.smooth_shading = True
+        self.lighting_enabled = True
+        self.show_axes = False
         
         # Vertex and color data
         self.vertices = None
@@ -360,6 +365,299 @@ class OpenGLViewer(QOpenGLWidget):
         self.wireframe_mode = wireframe
         self.update()
 
+    def draw_axes(self):
+        """Draw a small axis indicator in the bottom-left corner"""
+        if not self.show_axes:
+            return
+
+        # Save current matrices
+        glMatrixMode(GL_PROJECTION)
+        glPushMatrix()
+        glMatrixMode(GL_MODELVIEW)
+        glPushMatrix()
+
+        # Disable lighting for axes
+        lighting_was_enabled = glIsEnabled(GL_LIGHTING)
+        glDisable(GL_LIGHTING)
+
+        # Set up a small viewport in the corner
+        viewport = glGetIntegerv(GL_VIEWPORT)
+        width = viewport[2]
+        height = viewport[3]
+
+        # Create small viewport in bottom-left corner (100x100 pixels)
+        axis_size = 100
+        glViewport(10, 10, axis_size, axis_size)
+
+        # Set up orthographic projection for the axis indicator
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        glOrtho(-1.5, 1.5, -1.5, 1.5, -10, 10)
+
+        # Set up modelview with same rotation as main view
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+        glRotatef(self.rotation_x, 1, 0, 0)
+        glRotatef(self.rotation_y, 0, 1, 0)
+
+        # Draw the axes
+        glLineWidth(3.0)
+        glBegin(GL_LINES)
+
+        # X-axis (Red)
+        glColor3f(0.9, 0.2, 0.2)
+        glVertex3f(0, 0, 0)
+        glVertex3f(1.0, 0, 0)
+
+        # Y-axis (Green)
+        glColor3f(0.2, 0.8, 0.2)
+        glVertex3f(0, 0, 0)
+        glVertex3f(0, 1.0, 0)
+
+        # Z-axis (Blue)
+        glColor3f(0.2, 0.2, 0.9)
+        glVertex3f(0, 0, 0)
+        glVertex3f(0, 0, 1.0)
+
+        glEnd()
+
+        # Draw arrow heads for each axis
+        self.draw_arrow_head(1.0, 0, 0, 0.9, 0.2, 0.2)  # X
+        self.draw_arrow_head(0, 1.0, 0, 0.2, 0.8, 0.2)  # Y
+        self.draw_arrow_head(0, 0, 1.0, 0.2, 0.2, 0.9)  # Z
+
+        # Draw axis labels using simple geometry
+        glLineWidth(2.0)
+        self.draw_axis_label_X(1.2, 0, 0, 0.9, 0.2, 0.2)
+        self.draw_axis_label_Y(0, 1.2, 0, 0.2, 0.8, 0.2)
+        self.draw_axis_label_Z(0, 0, 1.2, 0.2, 0.2, 0.9)
+
+        glLineWidth(1.0)
+
+        # Restore viewport and matrices
+        glViewport(0, 0, width, height)
+
+        glMatrixMode(GL_PROJECTION)
+        glPopMatrix()
+        glMatrixMode(GL_MODELVIEW)
+        glPopMatrix()
+
+        # Restore lighting state
+        if lighting_was_enabled:
+            glEnable(GL_LIGHTING)
+
+    def draw_arrow_head(self, x, y, z, r, g, b):
+        """Draw a small arrow head at the end of an axis"""
+        glColor3f(r, g, b)
+
+        # Determine which axis this is
+        cone_base = 0.85
+        cone_height = 0.15
+        cone_radius = 0.06
+
+        if x > 0.5:  # X-axis
+            # Cone pointing in +X direction
+            self.draw_cone(cone_base, 0, 0, 1, 0, 0, cone_radius, cone_height)
+        elif y > 0.5:  # Y-axis
+            # Cone pointing in +Y direction
+            self.draw_cone(0, cone_base, 0, 0, 1, 0, cone_radius, cone_height)
+        elif z > 0.5:  # Z-axis
+            # Cone pointing in +Z direction
+            self.draw_cone(0, 0, cone_base, 0, 0, 1, cone_radius, cone_height)
+
+    def draw_cone(self, base_x, base_y, base_z, dir_x, dir_y, dir_z, radius, height):
+        """Draw a simple cone for arrow head"""
+        segments = 8
+        glBegin(GL_TRIANGLE_FAN)
+
+        # Tip of cone
+        glVertex3f(base_x + dir_x * height, 
+                   base_y + dir_y * height, 
+                   base_z + dir_z * height)
+
+        # Base circle
+
+        for i in range(segments + 1):
+            angle = 2.0 * math.pi * i / segments
+
+            # Calculate perpendicular vectors for the base circle
+            if abs(dir_x) < 0.9:
+                perp1_x, perp1_y, perp1_z = 1, 0, 0
+            else:
+                perp1_x, perp1_y, perp1_z = 0, 1, 0
+
+            # Cross product to get second perpendicular
+            perp2_x = dir_y * perp1_z - dir_z * perp1_y
+            perp2_y = dir_z * perp1_x - dir_x * perp1_z
+            perp2_z = dir_x * perp1_y - dir_y * perp1_x
+
+            # Normalize
+            length = math.sqrt(perp2_x**2 + perp2_y**2 + perp2_z**2)
+            if length > 0:
+                perp2_x /= length
+                perp2_y /= length
+                perp2_z /= length
+
+            # Calculate point on base circle
+            px = base_x + radius * (math.cos(angle) * perp1_x + math.sin(angle) * perp2_x)
+            py = base_y + radius * (math.cos(angle) * perp1_y + math.sin(angle) * perp2_y)
+            pz = base_z + radius * (math.cos(angle) * perp1_z + math.sin(angle) * perp2_z)
+
+            glVertex3f(px, py, pz)
+
+        glEnd()
+
+    def draw_axis_label_X(self, x, y, z, r, g, b):
+        """Draw 'X' label using lines"""
+        glColor3f(r, g, b)
+        glBegin(GL_LINES)
+        size = 0.08
+        # X as two crossing lines
+        glVertex3f(x - size, y - size, z)
+        glVertex3f(x + size, y + size, z)
+        glVertex3f(x - size, y + size, z)
+        glVertex3f(x + size, y - size, z)
+        glEnd()
+
+    def draw_axis_label_Y(self, x, y, z, r, g, b):
+        """Draw 'Y' label using lines"""
+        glColor3f(r, g, b)
+        glBegin(GL_LINES)
+        size = 0.08
+        # Y as two lines meeting at center, plus stem
+        glVertex3f(x - size, y + size, z)
+        glVertex3f(x, y, z)
+        glVertex3f(x + size, y + size, z)
+        glVertex3f(x, y, z)
+        glVertex3f(x, y, z)
+        glVertex3f(x, y - size, z)
+        glEnd()
+
+    def draw_axis_label_Z(self, x, y, z, r, g, b):
+        """Draw 'Z' label using lines"""
+        glColor3f(r, g, b)
+        glBegin(GL_LINES)
+        size = 0.08
+        # Z as horizontal line, diagonal, horizontal line
+        glVertex3f(x - size, y + size, z)
+        glVertex3f(x + size, y + size, z)
+        glVertex3f(x + size, y + size, z)
+        glVertex3f(x - size, y - size, z)
+        glVertex3f(x - size, y - size, z)
+        glVertex3f(x + size, y - size, z)
+        glEnd()
+
+
+    # Optional: Add a background circle/square behind the axes for better visibility
+    def draw_axis_background(self):
+        """Draw a subtle background behind the axis indicator"""
+        glDisable(GL_DEPTH_TEST)
+
+        # Draw a semi-transparent circle
+        glColor4f(0.95, 0.95, 0.95, 0.8)
+        glBegin(GL_TRIANGLE_FAN)
+        glVertex3f(0, 0, -0.1)
+
+        segments = 32
+        radius = 1.3
+        for i in range(segments + 1):
+            angle = 2.0 * math.pi * i / segments
+            glVertex3f(radius * math.cos(angle), radius * math.sin(angle), -0.1)
+
+        glEnd()
+
+        glEnable(GL_DEPTH_TEST)
+
+
+    # Update the draw_axes method to include background (optional):
+    def draw_axes(self):
+        """Draw a small axis indicator in the bottom-left corner"""
+        if not self.show_axes:
+            return
+
+        # Save current matrices
+        glMatrixMode(GL_PROJECTION)
+        glPushMatrix()
+        glMatrixMode(GL_MODELVIEW)
+        glPushMatrix()
+
+        # Disable lighting for axes
+        lighting_was_enabled = glIsEnabled(GL_LIGHTING)
+        glDisable(GL_LIGHTING)
+
+        # Enable blending for semi-transparent background
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+        # Set up a small viewport in the corner
+        viewport = glGetIntegerv(GL_VIEWPORT)
+        width = viewport[2]
+        height = viewport[3]
+
+        # Create small viewport in bottom-left corner (100x100 pixels)
+        axis_size = 100
+        glViewport(10, 10, axis_size, axis_size)
+
+        # Set up orthographic projection for the axis indicator
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        glOrtho(-1.5, 1.5, -1.5, 1.5, -10, 10)
+
+        # Set up modelview with same rotation as main view
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+        glRotatef(self.rotation_x, 1, 0, 0)
+        glRotatef(self.rotation_y, 0, 1, 0)
+
+        # Draw background (optional - makes it easier to see)
+        self.draw_axis_background()
+
+        # Draw the axes
+        glLineWidth(3.0)
+        glBegin(GL_LINES)
+
+        # X-axis (Red)
+        glColor3f(0.9, 0.2, 0.2)
+        glVertex3f(0, 0, 0)
+        glVertex3f(1.0, 0, 0)
+
+        # Y-axis (Green)
+        glColor3f(0.2, 0.8, 0.2)
+        glVertex3f(0, 0, 0)
+        glVertex3f(0, 1.0, 0)
+
+        # Z-axis (Blue)
+        glColor3f(0.2, 0.2, 0.9)
+        glVertex3f(0, 0, 0)
+        glVertex3f(0, 0, 1.0)
+
+        glEnd()
+
+        # Draw arrow heads for each axis
+        self.draw_arrow_head(1.0, 0, 0, 0.9, 0.2, 0.2)  # X
+        self.draw_arrow_head(0, 1.0, 0, 0.2, 0.8, 0.2)  # Y
+        self.draw_arrow_head(0, 0, 1.0, 0.2, 0.2, 0.9)  # Z
+
+        # Draw axis labels using simple geometry
+        glLineWidth(2.0)
+        self.draw_axis_label_X(1.2, 0, 0, 0.9, 0.2, 0.2)
+        self.draw_axis_label_Y(0, 1.2, 0, 0.2, 0.8, 0.2)
+        self.draw_axis_label_Z(0, 0, 1.2, 0.2, 0.2, 0.9)
+
+        glLineWidth(1.0)
+
+        # Restore viewport and matrices
+        glViewport(0, 0, width, height)
+
+        glMatrixMode(GL_PROJECTION)
+        glPopMatrix()
+        glMatrixMode(GL_MODELVIEW)
+        glPopMatrix()
+
+        # Restore states
+        glDisable(GL_BLEND)
+        if lighting_was_enabled:
+            glEnable(GL_LIGHTING)
 
 class ManipulatorViewer(QWidget):
     """Main viewer widget"""
@@ -368,7 +666,7 @@ class ManipulatorViewer(QWidget):
         super().__init__()
         self.viewer = None
         self.init_ui()
-        
+    
     def init_ui(self):
         layout = QVBoxLayout()
         

@@ -1368,7 +1368,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                     font-weight: 600;
                 }
                 QPushButton:hover {
-                    background-color: #f3e5f5;
+                    background-color: #b2dfdb;
                 }
                 QPushButton:pressed {
                     background-color: #8e24aa;
@@ -1384,7 +1384,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
         # ============ Custom View Group ============
         custom_group = self.create_cad_control_group("Custom View")
-        custom_layout = QVBoxLayout()
+        custom_layout = QHBoxLayout()
         custom_layout.setSpacing(10)
 
         # Elevation control
@@ -1394,7 +1394,10 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         elev_label.setStyleSheet("border: none; background: transparent; color: #333;")
         elev_label.setFixedWidth(80)
 
+        controls_layout = QVBoxLayout()
         self.elev_spin = QSpinBox()
+        self.elev_spin.setFixedWidth(80)
+        self.elev_spin.setFixedHeight(45) 
         self.elev_spin.setFont(self.standard_font)
         self.elev_spin.setRange(-180, 180)
         self.elev_spin.setValue(35)
@@ -1411,10 +1414,45 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                 border: 2px solid #00695c;
             }
         """)
+        plus = QPushButton("+")
+        minus = QPushButton("–")
+
+
+        for btn in (plus, minus):
+            btn.setFixedSize(25, 30)
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn.setStyleSheet("""
+                QPushButton {
+                    background-color: white;
+                    border-radius: 4px;
+                    border: 2px solid #00897b;
+                    font-weight: bold;
+                }
+                QPushButton:hover {
+                    background-color: #b2dfdb;
+                }
+                QPushButton:pressed {
+                    background-color: #8e24aa;
+                    color: white;
+                }
+                QPushButton:disabled {
+                    background-color: #f0f0f0;
+                    color: #999999;
+                }
+            """)
+
+        plus.clicked.connect(self.elev_spin.stepUp)
+        minus.clicked.connect(self.elev_spin.stepDown)
+        
 
         elev_layout.addWidget(elev_label)
         elev_layout.addWidget(self.elev_spin)
+        controls_layout.addWidget(plus)
+        controls_layout.addWidget(minus)
+        elev_layout.addLayout(controls_layout)
+        elev_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         custom_layout.addLayout(elev_layout)
+        custom_layout.addSpacing(20)
 
         # Azimuth control
         azim_layout = QHBoxLayout()
@@ -1423,7 +1461,10 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         azim_label.setStyleSheet("border: none; background: transparent; color: #333;")
         azim_label.setFixedWidth(80)
 
+        controls_layout_2 = QVBoxLayout()
         self.azim_spin = QSpinBox()
+        self.azim_spin.setFixedWidth(80)
+        self.azim_spin.setFixedHeight(45)
         self.azim_spin.setFont(self.standard_font)
         self.azim_spin.setRange(-180, 180)
         self.azim_spin.setValue(45)
@@ -1440,16 +1481,50 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                 border: 2px solid #00695c;
             }
         """)
+        
+        plus_2 = QPushButton("+")
+        minus_2 = QPushButton("–")
+
+
+        for btn_2 in (plus_2, minus_2):
+            btn_2.setFixedSize(25, 30)
+            btn_2.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn_2.setStyleSheet("""
+                QPushButton {
+                    background-color: white;
+                    border-radius: 4px;
+                    border: 2px solid #00897b;
+                    font-weight: bold;
+                }
+                QPushButton:hover {
+                    background-color: #ffcdd2;
+                }
+                QPushButton:pressed {
+                    background-color: #8e24aa;
+                    color: white;
+                }
+                QPushButton:disabled {
+                    background-color: #f0f0f0;
+                    color: #999999;
+                }
+            """)
+
+        plus_2.clicked.connect(self.azim_spin.stepUp)
+        minus_2.clicked.connect(self.azim_spin.stepDown)
 
         azim_layout.addWidget(azim_label)
         azim_layout.addWidget(self.azim_spin)
+        controls_layout_2.addWidget(plus_2)
+        controls_layout_2.addWidget(minus_2)
+        azim_layout.addLayout(controls_layout_2)
+        azim_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         custom_layout.addLayout(azim_layout)
-
+        custom_layout.addSpacing(20)
         # Set View button
         set_view_btn = QPushButton("Set View")
         set_view_btn.setFont(self.standard_font)
         set_view_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        set_view_btn.setFixedHeight(40)
+        set_view_btn.setFixedHeight(45)
         set_view_btn.setStyleSheet("""
             QPushButton {
                 background-color: #00897b;
@@ -1560,8 +1635,14 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.cad_wireframe_check.setStyleSheet(self.cad_edges_check.styleSheet())
         self.cad_wireframe_check.toggled.connect(self.view3d_widget.toggle_wireframe)
 
+
+
+       
+        
+        
         display_layout.addWidget(self.cad_edges_check)
         display_layout.addWidget(self.cad_wireframe_check)
+
 
         display_group.layout().addLayout(display_layout)
         main_layout.addWidget(display_group)
@@ -1647,6 +1728,17 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             self.manipulator_list_widget.blockSignals(False)
             # Also update DH table
             self.update_dh_table(index)
+    def toggle_smooth_shading(self, enabled):
+        """Toggle between smooth and flat shading"""
+        self.view3d_widget.toggle_smooth_shading(enabled)
+
+    def toggle_lighting(self, enabled):
+        """Toggle lighting on/off"""
+        self.view3d_widget.toggle_lighting(enabled)
+
+    def toggle_axes(self, enabled):
+        """Toggle coordinate axes display"""
+        self.view3d_widget.toggle_axes(enabled)
 
 
 
