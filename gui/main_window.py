@@ -1343,7 +1343,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
         # ============ View Presets Group ============
         presets_group = self.create_cad_control_group("View Presets")
-        presets_layout = QVBoxLayout()
+        presets_layout = QGridLayout()
         presets_layout.setSpacing(8)
 
         preset_buttons = [
@@ -1353,7 +1353,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             ("Side", 0, 90, -3)
         ]
 
-        for name, elev, azim, zoom in preset_buttons:
+        for idx, (name, elev, azim, zoom) in enumerate(preset_buttons):
             btn = QPushButton(name)
             btn.setFont(self.standard_font)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -1368,7 +1368,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                     font-weight: 600;
                 }
                 QPushButton:hover {
-                    background-color: #b2dfdb;
+                    background-color: #f3e5f5;
                 }
                 QPushButton:pressed {
                     background-color: #8e24aa;
@@ -1377,7 +1377,9 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             """)
             btn.clicked.connect(lambda checked, e=elev, a=azim, z=zoom: 
                               self.view3d_widget.set_view(e, a, z))
-            presets_layout.addWidget(btn)
+            row = idx // 2
+            col = idx % 2
+            presets_layout.addWidget(btn, row, col)
 
         presets_group.layout().addLayout(presets_layout)
         main_layout.addWidget(presets_group)
@@ -1403,6 +1405,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.elev_spin.setValue(35)
         self.elev_spin.setSuffix("°")
         self.elev_spin.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.elev_spin.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)  # Hide built-in buttons
         self.elev_spin.setStyleSheet("""
             QSpinBox {
                 padding: 6px;
@@ -1470,6 +1473,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.azim_spin.setValue(45)
         self.azim_spin.setSuffix("°")
         self.azim_spin.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.azim_spin.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)  # Hide built-in buttons
         self.azim_spin.setStyleSheet("""
             QSpinBox {
                 padding: 6px;
