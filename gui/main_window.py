@@ -170,7 +170,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         
         #Color("#1cccec", "3D VIEW") 
        
-        cad_layout.addWidget(left_widget, 3)      # 25%
+        cad_layout.addWidget(left_widget, 2)      # 25%
         cad_layout.addWidget(self.view3d_widget, 5) 
 
         self.tabs.addTab(cad_tab, "3D CAD Model")
@@ -1301,8 +1301,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         """Create control panel for CAD viewer with custom view controls"""
         container = QWidget()
         main_layout = QVBoxLayout(container)
-        main_layout.setSpacing(10)
-        main_layout.setContentsMargins(10, 10, 10, 10)
+        main_layout.setSpacing(5)
+        main_layout.setContentsMargins(5, 5, 5, 5)
 
         container.setStyleSheet("""
             QWidget {
@@ -1352,7 +1352,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         # ============ View Presets Group ============
         presets_group = self.create_cad_control_group("View Presets")
         presets_layout = QGridLayout()
-        presets_layout.setSpacing(8)
+        presets_layout.setSpacing(5)
 
         preset_buttons = [
             ("Isometric", 35, 45, -3),
@@ -1365,14 +1365,14 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             btn = QPushButton(name)
             btn.setFont(self.standard_font)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            btn.setFixedHeight(40)
+            btn.setFixedHeight(32)
             btn.setStyleSheet("""
                 QPushButton {
                     background-color: white;
                     color: #8e24aa;
                     border: 2px solid #8e24aa;
                     border-radius: 5px;
-                    padding: 8px;
+                    padding: 5px;
                     font-weight: 600;
                 }
                 QPushButton:hover {
@@ -1384,7 +1384,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                 }
             """)
             btn.clicked.connect(lambda checked, e=elev, a=azim, z=zoom: 
-                              self.view3d_widget.set_view(e, a, z))
+                              self.set_preset_view(e, a, z))
             row = idx // 2
             col = idx % 2
             presets_layout.addWidget(btn, row, col)
@@ -1395,19 +1395,19 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         # ============ Custom View Group ============
         custom_group = self.create_cad_control_group("Custom View")
         custom_layout = QHBoxLayout()
-        custom_layout.setSpacing(10)
+        custom_layout.setSpacing(5)
 
         # Elevation control
         elev_layout = QHBoxLayout()
         elev_label = QLabel("Elevation:")
         elev_label.setFont(self.standard_font)
         elev_label.setStyleSheet("border: none; background: transparent; color: #333;")
-        elev_label.setFixedWidth(80)
+        elev_label.setFixedWidth(70)
 
         controls_layout = QVBoxLayout()
         self.elev_spin = QSpinBox()
-        self.elev_spin.setFixedWidth(80)
-        self.elev_spin.setFixedHeight(45) 
+        self.elev_spin.setFixedWidth(70)
+        self.elev_spin.setFixedHeight(35) 
         self.elev_spin.setFont(self.standard_font)
         self.elev_spin.setRange(-180, 180)
         self.elev_spin.setValue(35)
@@ -1416,7 +1416,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.elev_spin.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)  # Hide built-in buttons
         self.elev_spin.setStyleSheet("""
             QSpinBox {
-                padding: 6px;
+                padding: 4px;
                 border: 2px solid #00897b;
                 border-radius: 4px;
                 background-color: white;
@@ -1463,19 +1463,19 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         elev_layout.addLayout(controls_layout)
         elev_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         custom_layout.addLayout(elev_layout)
-        custom_layout.addSpacing(20)
+        custom_layout.addSpacing(15)
 
         # Azimuth control
         azim_layout = QHBoxLayout()
         azim_label = QLabel("Azimuth:")
         azim_label.setFont(self.standard_font)
         azim_label.setStyleSheet("border: none; background: transparent; color: #333;")
-        azim_label.setFixedWidth(80)
+        azim_label.setFixedWidth(70)
 
         controls_layout_2 = QVBoxLayout()
         self.azim_spin = QSpinBox()
-        self.azim_spin.setFixedWidth(80)
-        self.azim_spin.setFixedHeight(45)
+        self.azim_spin.setFixedWidth(70)
+        self.azim_spin.setFixedHeight(35)
         self.azim_spin.setFont(self.standard_font)
         self.azim_spin.setRange(-180, 180)
         self.azim_spin.setValue(45)
@@ -1484,7 +1484,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.azim_spin.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)  # Hide built-in buttons
         self.azim_spin.setStyleSheet("""
             QSpinBox {
-                padding: 6px;
+                padding: 4px;
                 border: 2px solid #00897b;
                 border-radius: 4px;
                 background-color: white;
@@ -1531,19 +1531,19 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         azim_layout.addLayout(controls_layout_2)
         azim_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         custom_layout.addLayout(azim_layout)
-        custom_layout.addSpacing(20)
+        #custom_layout.addSpacing(20)
         # Set View button
         set_view_btn = QPushButton("Set View")
         set_view_btn.setFont(self.standard_font)
         set_view_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        set_view_btn.setFixedHeight(45)
+        set_view_btn.setFixedHeight(35)
         set_view_btn.setStyleSheet("""
             QPushButton {
                 background-color: #00897b;
                 color: white;
                 border: 2px solid #00897b;
                 border-radius: 5px;
-                padding: 8px;
+                padding: 5px;
                 font-weight: 600;
             }
             QPushButton:hover {
@@ -1563,10 +1563,10 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         # ============ Zoom Controls Group ============
         zoom_group = self.create_cad_control_group("Zoom Controls")
         zoom_layout = QVBoxLayout()
-        zoom_layout.setSpacing(8)
+        zoom_layout.setSpacing(5)
 
         zoom_buttons_layout = QHBoxLayout()
-        zoom_buttons_layout.setSpacing(8)
+        zoom_buttons_layout.setSpacing(5)
 
         zoom_in_btn = QPushButton("Zoom In (+)")
         zoom_out_btn = QPushButton("Zoom Out (−)")
@@ -1575,14 +1575,14 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         for btn in [zoom_in_btn, zoom_out_btn, zoom_reset_btn]:
             btn.setFont(self.standard_font)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            btn.setFixedHeight(40)
+            btn.setFixedHeight(30)
             btn.setStyleSheet("""
                 QPushButton {
                     background-color: white;
                     color: #8e24aa;
                     border: 2px solid #8e24aa;
                     border-radius: 5px;
-                    padding: 8px;
+                    padding: 5px;
                     font-weight: 600;
                 }
                 QPushButton:hover {
@@ -1612,7 +1612,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         # ============ Display Options Group ============
         display_group = self.create_cad_control_group("Display Options")
         display_layout = QVBoxLayout()
-        display_layout.setSpacing(8)
+        display_layout.setSpacing(5)
 
         self.cad_edges_check = QCheckBox("Show Edges")
         self.cad_edges_check.setChecked(True)
@@ -1620,7 +1620,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.cad_edges_check.setCursor(Qt.CursorShape.PointingHandCursor)
         self.cad_edges_check.setStyleSheet("""
             QCheckBox {
-                spacing: 6px;
+                spacing: 5px;
                 color: #333;
             }
             QCheckBox::indicator {
@@ -1644,7 +1644,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
          #NEW: Show Coordinate Axes
         self.cad_axes_check = QCheckBox("Show Coordinate Axes")
-        self.cad_axes_check.setChecked(False)
+        self.cad_axes_check.setChecked(True)
         self.cad_axes_check.setFont(self.standard_font)
         self.cad_axes_check.setCursor(Qt.CursorShape.PointingHandCursor)
         self.cad_axes_check.setStyleSheet(self.cad_edges_check.styleSheet())
@@ -1669,7 +1669,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             QLabel {
                 background-color: #e1f5fe;
                 color: #01579b;
-                padding: 10px;
+                padding: 8px;
                 border-radius: 5px;
                 border: 1px solid #81d4fa;
             }
@@ -1682,6 +1682,12 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.load_cad_model(0)
 
         return container
+    
+    def set_preset_view(self, elev, azim, zoom):
+        """Set preset view and update spinboxes"""
+        self.elev_spin.setValue(elev)
+        self.azim_spin.setValue(azim)
+        self.view3d_widget.set_view(elev, azim, zoom)
 
     def load_cad_model(self, index):
         """Load CAD model into viewer"""
@@ -1745,8 +1751,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             self.manipulator_list_widget.blockSignals(False)
             # Also update DH table
             self.update_dh_table(index)
-            self.update_2d_section(index)
-            self.update_model_dh(index)
+            # self.update_2d_section(index)
+            # self.update_model_dh(index)
             # self.update_model_dh(index)
     # def toggle_smooth_shading(self, enabled):
     #     """Toggle between smooth and flat shading"""
@@ -1761,19 +1767,18 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.view3d_widget.toggle_axes(enabled)
         
     def model_dh(self):
-        
         # Image label
-        self.image_label = QLabel()
-        self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        # self.image_label.setFixedSize(400, 300)
-        self.image_label.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-
+        self.dh_image_label = QLabel()
+        self.dh_image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.dh_image_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.dh_image_label.setScaledContents(False)  # Don't scale contents
 
         # Connect selector to updater
-        self.cad_model_list.currentRowChanged.connect(self.update_model_dh)
+        self.cad_model_combo.currentIndexChanged.connect(self.update_model_dh)
         # Initial image
         self.update_model_dh(0)
-        return self.image_label
+        return self.dh_image_label
+
 
     def update_model_dh(self, index):
         models = [
@@ -1791,34 +1796,32 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             self.section_label.setText("The image requested is not available")
             return
 
-        self.image_label.setPixmap(
-            pixmap.scaled(
-                self.image_label.size(),
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation
-            )
+        scaled_pixmap = pixmap.scaled(
+        self.dh_image_label.size(),
+        Qt.AspectRatioMode.KeepAspectRatio,
+        Qt.TransformationMode.SmoothTransformation
         )
+        self.dh_image_label.setPixmap(scaled_pixmap)
         
     def create_2d_sections_widget(self):
-        
+        """Create widget for 2D section images"""
         # Image label
-        self.image_label = QLabel()
-        self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        # self.image_label.setFixedSize(400, 300)
-        self.image_label.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-
+        self.section_image_label = QLabel()
+        self.section_image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.section_image_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.section_image_label.setScaledContents(False)
 
         # Connect selector to updater
-        self.cad_model_list.currentRowChanged.connect(self.update_2d_section)
+        self.cad_model_combo.currentIndexChanged.connect(self.update_2d_section)
         # Initial image
         self.update_2d_section(0)
-        return self.image_label
+        return self.section_image_label
 
     def update_2d_section(self, index):
         models = [
-            'cad_models/UR5_DH.jpeg',
-            'cad_models/ABB_IRB_1600_DH.jpeg',
-            'cad_models/KUKA_DH.jpeg'
+            'cad_models/UR5_2D.png',
+            'cad_models/ABB_2D.png',
+            'cad_models/KUKA_2D.png'
         ]
         
         if index < 0 or index >= len(models):
@@ -1830,14 +1833,27 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             self.section_label.setText("2D sections requested are not available")
             return
         
-        self.image_label.setPixmap(
-            pixmap.scaled(
-                self.image_label.size(),
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation
-            )
+        scaled_pixmap = pixmap.scaled(
+        self.section_image_label.size(),
+        Qt.AspectRatioMode.KeepAspectRatio,
+        Qt.TransformationMode.SmoothTransformation
         )
-
+        self.section_image_label.setPixmap(scaled_pixmap)
+    
+    def resizeEvent(self, event):
+        """Handle window resize to update images"""
+        super().resizeEvent(event)
+        
+        # Update DH diagram if it exists
+        if hasattr(self, 'dh_image_label') and hasattr(self, 'cad_model_combo'):
+            current_index = self.cad_model_combo.currentIndex()
+            self.update_model_dh(current_index)
+        
+        # Update 2D section if it exists
+        if hasattr(self, 'section_image_label') and hasattr(self, 'cad_model_combo'):
+            current_index = self.cad_model_combo.currentIndex()
+            self.update_2d_section(current_index)
+    
 
 
 
