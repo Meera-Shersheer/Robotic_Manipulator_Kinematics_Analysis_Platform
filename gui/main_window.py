@@ -178,6 +178,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.toggle_value_column()
         self.hide_matrix()
         self.hide_frame_selector()
+        self.manipulator_list_widget.currentRowChanged.connect(self.sync_model_selection)
+        self.cad_model_list.currentRowChanged.connect(self.sync_model_selection)
 
 
     def manipulator_list(self):
@@ -1588,6 +1590,9 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
 
     def load_cad_model(self, index):
         """Load CAD model into viewer"""
+        if hasattr(self, '_loading_model') and self._loading_model:
+            return
+    
         models = [
             'cad_models/ur5.obj',
             'cad_models/irb_1600_10kg_1.45m.obj',
@@ -1595,6 +1600,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         ]
 
         filepath = models[index]
+        self._loading_model = True
         success = self.view3d_widget.load_model(filepath)
 
         if success and self.view3d_widget.mesh:
@@ -1607,6 +1613,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             self.cad_info_label.setText(f"Failed to load {filepath}")
             QMessageBox.warning(self, "Load Error", 
                               f"Could not load model: {filepath}")
+        self._loading_model = False
 
     def set_custom_view(self):
         """Set custom view from spinbox values"""
@@ -1615,13 +1622,31 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.view3d_widget.set_view(elev, azim)
 
     def zoom_cad_view(self, delta):
-        """Zoom in or out by specified amount"""
-        self.view3d_widget.target_zoom += delta
-        self.view3d_widget.target_zoom = max(-20.0, min(-1.0, self.view3d_widget.target_zoom))  
+        """Apply a single zoom step"""
+        current_zoom = self.view3d_widget.zoom
+        new_zoom = current_zoom + delta
+        new_zoom = max(-20.0, min(-1.0, new_zoom))
 
+        self.view3d_widget.target_zoom = new_zoom
+        self.view3d_widget.zoom = new_zoom  # Set both to avoid animation
 
-
-
+    def sync_model_selection(self, index):
+        """Synchronize model selection between Input tab and CAD tab"""
+        # Update the other selector without triggering its signal
+        if self.sender() == self.manipulator_list_widget:
+            # Input tab changed, update CAD tab
+            self.cad_model_list.blockSignals(True)
+            self.cad_model_list.setCurrentRow(index)
+            self.cad_model_list.blockSignals(False)
+            # Also load the CAD model
+            self.load_cad_model(index)
+        elif self.sender() == self.cad_model_list:
+            # CAD tab changed, update Input tab
+            self.manipulator_list_widget.blockSignals(True)
+            self.manipulator_list_widget.setCurrentRow(index)
+            self.manipulator_list_widget.blockSignals(False)
+            # Also update DH table
+            self.update_dh_table(index)
 
 
 
