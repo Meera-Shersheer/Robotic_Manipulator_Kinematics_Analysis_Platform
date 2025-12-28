@@ -400,10 +400,10 @@ class OpenGLViewer(QOpenGLWidget):
         height = viewport[3]
 
         # Create small viewport in bottom-left corner (100x100 pixels)
-        axis_size = 150          # Change from 100 to 150 (50% larger)
-        axis_line_length = 1.2   # How long the axis lines are (increase for longer)
-        axis_line_width = 4.0    # Thickness of axis lines (increase for thicker)
-        label_size = 0.10
+        axis_size = 600         
+        axis_line_length = 5   # How long the axis lines are (increase for longer)
+        axis_line_width = 3.0    # Thickness of axis lines (increase for thicker)
+        label_size = 0.3
         glViewport(10, 10, axis_size, axis_size)
 
         # Set up orthographic projection for the axis indicator
@@ -447,7 +447,7 @@ class OpenGLViewer(QOpenGLWidget):
 
         # Draw axis labels using simple geometry
         glLineWidth(2.5)
-        label_offset = axis_line_length + 0.15
+        label_offset = axis_line_length + 0.3
         self.draw_axis_label_X(label_offset, 0, 0, 0.9, 0.2, 0.2, label_size)
         self.draw_axis_label_Y(0, label_offset, 0, 0.2, 0.8, 0.2, label_size)
         self.draw_axis_label_Z(0, 0, label_offset, 0.2, 0.2, 0.9, label_size)
