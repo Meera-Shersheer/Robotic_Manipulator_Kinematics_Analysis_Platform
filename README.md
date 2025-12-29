@@ -431,7 +431,7 @@ set QT_AUTO_SCREEN_SCALE_FACTOR=1     # Windows
 
 ---
 
-## 🎓 Educational Value
+## 🎓 Educational Valuek
 
 This application is ideal for:
 - **Robotics Students**: Understanding FK/IK concepts with visualization
