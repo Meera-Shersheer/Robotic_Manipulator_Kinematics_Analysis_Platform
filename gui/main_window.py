@@ -1117,7 +1117,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                 solutions = self.current_manipulator.ik_irb1600_closed_form(self.current_T)
             elif robot_name == "KUKA_KR16":
                 solutions = self.current_manipulator.ik_kuka_kr16_closed_form(self.current_T)
-                return
             else:
                 QMessageBox.warning(self, "IK Not Implemented", 
                                   f"IK not yet implemented for {robot_name}")
