@@ -728,6 +728,7 @@ def add_symbolic_transformation_matrix_simple(self, T_sym, title):
     """
     Display symbolic matrix with beautiful styled text (no matplotlib)
     """
+    T_clean = clean_symbolic_expr(T_sym, threshold=1e-10)
     group = create_result_group(self, title)
     
     container = QWidget()
@@ -751,7 +752,7 @@ def add_symbolic_transformation_matrix_simple(self, T_sym, title):
     # Display 4x4 matrix with color coding
     for i in range(4):
         for j in range(4):
-            element = T_sym[i, j]
+            element = T_clean[i, j]
             element_str = sp.pretty(element, use_unicode=True)
             
             if element == 0:
@@ -964,3 +965,20 @@ def add_ik_solution_display(self, solution, sol_idx, target_matrix, angle_unit):
     
     group.layout().addLayout(angles_layout)
     self.output_layout.addWidget(group)
+    
+def clean_symbolic_expr(expr, threshold=1e-10):
+    """Remove numerical noise from symbolic expressions for display"""
+    if isinstance(expr, sp.Matrix):
+        return sp.Matrix(expr.rows, expr.cols, 
+                        lambda i, j: clean_symbolic_expr(expr[i,j], threshold))
+    # For scalar expressions
+    if expr.is_Number:
+        # If it's a pure number close to zero, return 0
+        if abs(float(expr)) < threshold:
+            return sp.Integer(0)
+    # For more complex expressions, substitute small floats with 0
+    expr = expr.replace(
+        lambda x: x.is_Float and abs(x) < threshold,
+        lambda x: sp.Integer(0)
+    )
+    return expr
