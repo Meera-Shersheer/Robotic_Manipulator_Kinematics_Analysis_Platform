@@ -275,38 +275,26 @@ class RoboticManipulator:
         T[:3, 3] = [x, y, z]
         return T
     
-    
+        
     def fk_all(self, q, sym=False):
         individual_Ts = []  # Individual: 1→2, 2→3, etc.
         cumulative_Ts = []  # Cumulative: 0→1, 0→2, 0→3, etc.
         T = sp.eye(4) if sym else np.eye(4)
-
+        
         q_symbols = None
         if sym:
             q_symbols = [sp.Symbol(f'θ{i+1}', real=True) for i in range(6)]
             q = q_symbols  # Use symbols instead of numeric values
+    
+        for i in range(6):
+            A = dhA(q[i], self.d[i], self.a[i], self.alpha[i], sym=sym)
+            individual_Ts.append(A)  # Store individual transformation
+            T = T @ A
+            cumulative_Ts.append(T) 
 
-            # Convert numeric DH parameters to rational symbolic form
-            d_sym = [sp.nsimplify(d_val, rational=True, tolerance=1e-10) for d_val in self.d]
-            a_sym = [sp.nsimplify(a_val, rational=True, tolerance=1e-10) for a_val in self.a]
-            alpha_sym = [sp.nsimplify(alpha_val, rational=True, tolerance=1e-10) for alpha_val in self.alpha]   
-
-            for i in range(6):
-                A = dhA(q[i], d_sym[i], a_sym[i], alpha_sym[i], sym=True)
-
-                individual_Ts.append(A)
-                T = T @ A
-                T = sp.simplify(T)  # Simplify cumulative transformation
-                cumulative_Ts.append(T)
-
-            return individual_Ts, cumulative_Ts, T, q_symbols
+        if sym:
+            return  individual_Ts, cumulative_Ts, T, q_symbols
         else:
-            for i in range(6):
-                A = dhA(q[i], self.d[i], self.a[i], self.alpha[i], sym=False)
-                individual_Ts.append(A)
-                T = T @ A
-                cumulative_Ts.append(T)
-
             return individual_Ts, cumulative_Ts, T
     
 
