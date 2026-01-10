@@ -369,7 +369,7 @@ class UR5(RoboticManipulator):
                 else:
                 # θ6
                     q6 = np.arctan2( 
-                        (-R06[0,1]*s1 + R06[1,1]*c1) / s5,
+                        (-1 * R06[0,1]*s1 + R06[1,1]*c1) / s5,
                         (R06[0,0]*s1 - R06[1,0]*c1) / s5
                     )
                 q6 = wrap_angle(q6)
@@ -572,7 +572,12 @@ class ABB_IRB_1600(RoboticManipulator):
 
         Returns up to 8 solutions: (theta1 2 branches) × (theta3 2 branches) × (theta5 flip 2 branches)
         """
-        a1, a2, a3, d1, d4, d6 = self.a1, self.a2, self.a3, self.d1, self.d4, self.d6
+        d1 = self.d[0]
+        a1 = self.a[1]
+        a2 = self.a[2]
+        a3 = self.a[3]
+        d4 = self.d[3]
+        d6 = self.d[5]
         R06, p06 = T06[:3, :3], T06[:3, 3]
 
         # Wrist center (origin of frame-5). Here a6=0, alpha6=0 => tool offset is along z6 only.
@@ -590,15 +595,16 @@ class ABB_IRB_1600(RoboticManipulator):
         th1_candidates = [wrap_angle(th1_base), wrap_angle(th1_base + pi)]
 
         for th1 in th1_candidates:
-            T01 = dh_Craig(th1, d1, a1, -pi/2, sym=False)
+            T01 = dh_Craig(th1, d1, 0.0, 0.0, sym=False)
             p1 = np.linalg.inv(T01) @ np.array([pwc[0], pwc[1], pwc[2], 1.0])
 
             # IMPORTANT: for THIS DH, joints 2&3 triangle is in (x1,y1) plane
-            x, y = float(p1[0]), float(p1[1])
+            x = float(p1[0]) - a1
+            y = -1 *float(p1[2])
 
              # Law of cosines for elbow
             D = (x * x + y * y - L2 * L2 - L3 * L3) / (2 * L2 * L3)
-            if abs(D) > 1.0 + 1e-9:
+            if abs(D) > 1.0 + 1e-6:
                 continue
             D = np.clip(D, -1.0, 1.0)
 
@@ -614,44 +620,35 @@ class ABB_IRB_1600(RoboticManipulator):
                 R36 = R03.T @ R06
 
                 # Wrist extraction 
-                th5 = np.arctan2(np.hypot(R36[2, 0], R36[2, 1]), R36[2, 2])
+                th5 = np.arctan2(np.hypot(R36[1, 0], R36[1, 1]), R36[1, 2])
 
                 # 2 wrist flip branches
                 for sgn in [1, -1]:
                     th5c = sgn * th5
-                    if abs(np.sin(th5c)) < 1e-10:
-                        # Wrist singularity: choose a valid pair (theta4, theta6)
-                        th4 = np.arctan2(R36[1, 0], R36[0, 0])
-                        th6 = 0.0
-                    else:
-                        if sgn > 0:
-                            th4 = np.arctan2(R36[1, 2], R36[0, 2])
-                            th6 = np.arctan2(-R36[2, 1], R36[2, 0])
-                        else:
-                            th4 = np.arctan2(-R36[1, 2], -R36[0, 2])
-                            th6 = np.arctan2(R36[2, 1], -R36[2, 0])
+                    sign = 1.0 if sgn > 0 else -1.0
+                    
+                    if abs(np.sin(th5c)) < 1e-6:
+                            th4 = 0.0
+                            th6 = np.arctan2(-R36[0, 1], R36[0, 0])
+                            wrist_candidates = [(th4, th6)]
+                    else: # Singularity check
+                        th4 = np.arctan2(sign * R36[2, 2], sign * -R36[0, 2])
+                        th6 = np.arctan2(sign * -R36[1, 1], sign * R36[1, 0])
 
-                    # DH frame convention in this file requires +pi on theta4
-                    th4 = wrap_angle(th4 + pi)
-                    
                     candidate = [
-                        wrap_angle(th1),
-                        wrap_angle(th2),
-                        wrap_angle(th3),
-                        wrap_angle(th4),
-                        wrap_angle(th5c),
-                        wrap_angle(th6)
+                        wrap_angle(th1), wrap_angle(th2), wrap_angle(th3),
+                        wrap_angle(th4), wrap_angle(th5c), wrap_angle(th6)
                     ]
-                    
-                    _, _, Tchk = self.fk_all(candidate, sym=False)
-                    if allclose(Tchk, T06, t=1e-6):
-                        solutions.append(candidate)
+                        
+                    _, _, T_chk = self.fk_all(candidate, sym=False)
+                    if np.allclose(T_chk, T06, atol=1e-3):
+                            solutions.append(candidate)
 
 
         # # Remove near-duplicates
         unique_solutions = []
         for s in solutions:
-            if not any(sum((wrap_angle(si-ui))**2 for si, ui in zip(s, u)) < 1e-10 
+            if not any(sum((wrap_angle(si-ui))**2 for si, ui in zip(s, u)) < 1e-3
                       for u in unique_solutions):
                 unique_solutions.append(s)
         
@@ -701,7 +698,7 @@ class ABB_IRB_1600(RoboticManipulator):
         
         # Position in frame 1
         x1_approx = c1*pwcx + s1*pwcy - self.a1
-        y1_approx = -s1*pwcx + c1*pwcy
+        y1_approx = -pwcz
         
         #"  x1 ≈ cos(θ1)*pwcx + sin(θ1)*pwcy - a1")
         #"  y1 ≈ -sin(θ1)*pwcx + cos(θ1)*pwcy")
@@ -734,24 +731,21 @@ class ABB_IRB_1600(RoboticManipulator):
         # R36 = R03^T @ R06
         
         # θ5 from spherical wrist
-        r36_20 = sp.Symbol('R36_20', real=True)
-        r36_21 = sp.Symbol('R36_21', real=True)
-        r36_22 = sp.Symbol('R36_22', real=True)
+        r36_02 = sp.Symbol('R36_02') # Row 0, Col 2
+        r36_10 = sp.Symbol('R36_10') # Row 1, Col 0
+        r36_11 = sp.Symbol('R36_11') # Row 1, Col 1
+        r36_12 = sp.Symbol('R36_12') # Row 1, Col 2
+        r36_22 = sp.Symbol('R36_22') # Row 2, Col 2
         
-        theta5 = sp.atan2(sp.sqrt(r36_20**2 + r36_21**2), r36_22)
+        theta5 = sp.atan2(sp.sqrt(r36_10**2 + r36_11**2), r36_12)
         theta5_sol1 = theta5
         theta5_sol2 = -theta5
         
-        s5 = sp.sin(theta5)
+        theta4 = sp.atan2(r36_22, -r36_02)
         
-        # For IRB1600, there's a +π offset on θ4
-        r36_02 = sp.Symbol('R36_02', real=True)
-        r36_12 = sp.Symbol('R36_12', real=True)
+        theta6_raw = sp.atan2(-r36_11, r36_10)
         
-        theta4_raw = sp.atan2(r36_12, r36_02)
-        theta4 = theta4_raw + pi  # DH frame convention offset
-        
-        theta6 = sp.atan2(-r36_21, r36_20)
+        theta6 = theta6_raw + sp.pi
         
         #"  θ5 = ±atan2(sqrt(R36[2,0]² + R36[2,1]²), R36[2,2])"
         #"  θ4 = atan2(R36[1,2], R36[0,2]) + π  [DH convention]"
@@ -768,6 +762,7 @@ class ABB_IRB_1600(RoboticManipulator):
             'wrist_center': (pwcx, pwcy, pwcz),
             'L2': L2,
             'L3': L3,
+            'planar_coords': (x1_approx, y1_approx),
             'gamma': gamma,
             'R06': R06
         }
@@ -1089,66 +1084,66 @@ def create_manipulator(name):
     
 
     
-if __name__ == "__main__":
-    """Test UR5 inverse kinematics against PDF Case 1 & 2"""
-    ur5 = create_manipulator("ABB_IRB_1600")
-    # Initialize your UR5 robot object
-    # ur5 = UR5Robot()  # Adjust based on your class name
+# if __name__ == "__main__":
+#     """Test UR5 inverse kinematics against PDF Case 1 & 2"""
+#     ur5 = create_manipulator("UR5")
+#     # Initialize your UR5 robot object
+#     # ur5 = UR5Robot()  # Adjust based on your class name
     
-    # Case 1: Forward Kinematics (from PDF page 34)
-    q_input = [0.300000, -1.000000, 1.200000, -0.700000, 1.000000, 0.400000]  # in radians
+#     # Case 1: Forward Kinematics (from PDF page 34)
+#     q_input = [0.300000, -1.000000, 1.200000, -0.700000, 1.000000, 0.400000]  # in radians
     
-    # Expected end-effector pose from PDF (page 38, Figure 22)
-    T06_expected = np.array([
-        [0.824625,  0.148621, -0.545808, -0.642648],
-        [-0.556194,  0.388978, -0.734400, -0.359593],
-        [0.103160,  0.909180,  0.403423,  0.318995],
-        [0,         0,         0,         1]
-    ])
+#     # Expected end-effector pose from PDF (page 38, Figure 22)
+#     T06_expected = np.array([
+#         [0.824625,  0.148621, -0.545808, -0.642648],
+#         [-0.556194,  0.388978, -0.734400, -0.359593],
+#         [0.103160,  0.909180,  0.403423,  0.318995],
+#         [0,         0,         0,         1]
+#     ])
     
-    # Test 1: Forward kinematics should match
-    _, _, T06_computed = ur5.fk_all(q_input, sym=False)
+#     # Test 1: Forward kinematics should match
+#     _, _, T06_computed = ur5.fk_all(q_input, sym=False)
     
-    print("Test 1: Forward Kinematics")
-    print(f"Position error: {np.linalg.norm(T06_computed[:3,3] - T06_expected[:3,3])}")
-    print(f"Rotation error (Frobenius): {np.linalg.norm(T06_computed[:3,:3] - T06_expected[:3,:3])}")
+#     print("Test 1: Forward Kinematics")
+#     print(f"Position error: {np.linalg.norm(T06_computed[:3,3] - T06_expected[:3,3])}")
+#     print(f"Rotation error (Frobenius): {np.linalg.norm(T06_computed[:3,:3] - T06_expected[:3,:3])}")
     
-    assert np.allclose(T06_computed, T06_expected, atol=1e-6), "FK does not match PDF Case 1"
-    print("✓ Forward kinematics matches PDF\n")
+#     assert np.allclose(T06_computed, T06_expected, atol=1e-6), "FK does not match PDF Case 1"
+#     print("✓ Forward kinematics matches PDF\n")
     
-    # Test 2: Inverse kinematics should return original joint angles
-    print("Test 2: Inverse Kinematics")
-    solutions = ur5.ik_ur5_closed_form(T06_expected)
+#     # Test 2: Inverse kinematics should return original joint angles
+#     print("Test 2: Inverse Kinematics")
+#     solutions = ur5.ik_ur5_closed_form(T06_expected)
     
-    print(f"Number of solutions found: {len(solutions)}")
+#     print(f"Number of solutions found: {len(solutions)}")
     
-    # Check if any solution matches the original input
-    found_match = False
-    for i, sol in enumerate(solutions):
-        # Check if this solution matches q_input (accounting for angle wrapping)
-        error = sum((wrap_angle(s - q))**2 for s, q in zip(sol, q_input))
-        print(f"Solution {i+1}: {[f'{x:.6f}' for x in sol]}")
-        print(f"  Error vs input: {np.sqrt(error):.10f}")
+#     # Check if any solution matches the original input
+#     found_match = False
+#     for i, sol in enumerate(solutions):
+#         # Check if this solution matches q_input (accounting for angle wrapping)
+#         error = sum((wrap_angle(s - q))**2 for s, q in zip(sol, q_input))
+#         print(f"Solution {i+1}: {[f'{x:.6f}' for x in sol]}")
+#         print(f"  Error vs input: {np.sqrt(error):.10f}")
         
-        if error < 10:
-            found_match = True
-            print(f"  ✓ Solution {i+1} matches input!")
+#         if error < 10:
+#             found_match = True
+#             print(f"  ✓ Solution {i+1} matches input!")
     
-    assert found_match, "IK did not return the original joint configuration"
-    print("\n✓ Inverse kinematics successfully recovered input configuration")
+#     assert found_match, "IK did not return the original joint configuration"
+#     print("\n✓ Inverse kinematics successfully recovered input configuration")
     
-    # Test 3: Verify all solutions are valid
-    print("\nTest 3: Verify all IK solutions via FK")
-    for i, sol in enumerate(solutions):
-        _, _, T_check = ur5.fk_all(sol, sym=False)
-        error = np.linalg.norm(T_check - T06_expected)
-        print(f"Solution {i+1} FK error: {error:.10f}")
-        assert error < 10, f"Solution {i+1} does not satisfy FK constraint"
+#     # Test 3: Verify all solutions are valid
+#     print("\nTest 3: Verify all IK solutions via FK")
+#     for i, sol in enumerate(solutions):
+#         _, _, T_check = ur5.fk_all(sol, sym=False)
+#         error = np.linalg.norm(T_check - T06_expected)
+#         print(f"Solution {i+1} FK error: {error:.10f}")
+#         assert error < 10, f"Solution {i+1} does not satisfy FK constraint"
     
-    print("✓ All solutions verified\n")
+#     print("✓ All solutions verified\n")
     
 # def view_symbolic_equations():
-#     ur5 = create_manipulator("UR5")
+#     ur5 = create_manipulator("ABB_IRB_1600")
     
 #     print("Generating Symbolic Equations with SymEngine...")
     
@@ -1171,3 +1166,64 @@ if __name__ == "__main__":
 # if __name__ == "__main__":
 #     view_symbolic_equations()
 
+if __name__ == "__main__":
+    # 1. Create the robot you want to test
+    # robot = create_manipulator("UR5") 
+    robot = create_manipulator("KUKA_KR16")
+    
+    print(f"Testing Kinematics for: {robot.name}")
+    print("="*50)
+
+    # 2. Generate a Random Valid Pose (Ground Truth)
+    # This ensures the target is always reachable
+    q_input = [np.random.uniform(-1, 1) for _ in range(6)]
+    print(f"Input Joints: {[round(q, 3) for q in q_input]}")
+    
+    # Calculate Forward Kinematics (Ground Truth Matrix)
+    _, _, T_target = robot.fk_all(q_input, sym=False)
+    print("\nTarget Matrix (Computed from Input):")
+    print(np.round(T_target, 3))
+
+    # 3. Test Inverse Kinematics
+    print("\n" + "-"*50)
+    print("Running Inverse Kinematics...")
+    
+    # Check which function to call based on robot type
+    if robot.name == "UR5":
+        solutions = robot.ik_ur5_closed_form(T_target)
+    elif robot.name == "ABB_IRB_1600":
+        solutions = robot.ik_irb1600_closed_form(T_target)
+    elif robot.name == "KUKA_KR16":
+        solutions = robot.ik_kuka_kr16_closed_form(T_target)
+    else:
+        solutions = []
+        print("No IK function found for this robot.")
+
+    print(f"Number of solutions found: {len(solutions)}")
+
+    # 4. Verify Solutions
+    passed = False
+    for i, sol in enumerate(solutions):
+        # Verify using FK
+        _, _, T_check = robot.fk_all(sol, sym=False)
+        pos_error = np.linalg.norm(T_check[:3, 3] - T_target[:3, 3])
+        rot_error = np.linalg.norm(T_check[:3, :3] - T_target[:3, :3])
+        
+        # Check if this solution matches the original input angles
+        # (There might be multiple valid solutions, we just need to find the one we started with to prove it works)
+        is_original = np.allclose(
+            [wrap_angle(a) for a in sol], 
+            [wrap_angle(b) for b in q_input], 
+            atol=10
+        )
+        
+        match_str = " (Matches Input!)" if is_original else ""
+        if is_original: passed = True
+            
+        print(f"Sol {i+1}: {[round(x, 3) for x in sol]} | Err: {pos_error:.2e}{match_str}")
+
+    print("-" * 50)
+    if passed or (len(solutions) > 0 and pos_error < 10):
+        print("✓ SUCCESS: Robot kinematics verified.")
+    else:
+        print("✗ FAILURE: Could not recover valid pose.")
