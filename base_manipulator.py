@@ -9,17 +9,6 @@ def wrap_angle(angle):
     Computes transform from frame {i-1} to {i}
     Modified DH (Craig): Rot_x(alpha) -> Trans_x(a) -> Rot_z(theta) -> Trans_z(d)
 """
-def fast_inverse(T):
-    R = T[:3, :3]
-    p = T[:3, 3]
-    R_T = R.T
-    new_p = -R_T @ p
-    return sp.Matrix([
-        [R_T[0,0], R_T[0,1], R_T[0,2], new_p[0]],
-        [R_T[1,0], R_T[1,1], R_T[1,2], new_p[1]],
-        [R_T[2,0], R_T[2,1], R_T[2,2], new_p[2]],
-        [0,        0,        0,        1]
-    ])
                
 def dh_Craig(theta, d, a, alpha, sym=False):
     if sym:
@@ -1100,85 +1089,85 @@ def create_manipulator(name):
     
 
     
-# if __name__ == "__main__":
-#     """Test UR5 inverse kinematics against PDF Case 1 & 2"""
-#     ur5 = create_manipulator("UR5")
-#     # Initialize your UR5 robot object
-#     # ur5 = UR5Robot()  # Adjust based on your class name
-    
-#     # Case 1: Forward Kinematics (from PDF page 34)
-#     q_input = [0.300000, -1.000000, 1.200000, -0.700000, 1.000000, 0.400000]  # in radians
-    
-#     # Expected end-effector pose from PDF (page 38, Figure 22)
-#     T06_expected = np.array([
-#         [0.824625,  0.148621, -0.545808, -0.642648],
-#         [-0.556194,  0.388978, -0.734400, -0.359593],
-#         [0.103160,  0.909180,  0.403423,  0.318995],
-#         [0,         0,         0,         1]
-#     ])
-    
-#     # Test 1: Forward kinematics should match
-#     _, _, T06_computed = ur5.fk_all(q_input, sym=False)
-    
-#     print("Test 1: Forward Kinematics")
-#     print(f"Position error: {np.linalg.norm(T06_computed[:3,3] - T06_expected[:3,3])}")
-#     print(f"Rotation error (Frobenius): {np.linalg.norm(T06_computed[:3,:3] - T06_expected[:3,:3])}")
-    
-#     assert np.allclose(T06_computed, T06_expected, atol=1e-6), "FK does not match PDF Case 1"
-#     print("✓ Forward kinematics matches PDF\n")
-    
-#     # Test 2: Inverse kinematics should return original joint angles
-#     print("Test 2: Inverse Kinematics")
-#     solutions = ur5.ik_ur5_closed_form(T06_expected)
-    
-#     print(f"Number of solutions found: {len(solutions)}")
-    
-#     # Check if any solution matches the original input
-#     found_match = False
-#     for i, sol in enumerate(solutions):
-#         # Check if this solution matches q_input (accounting for angle wrapping)
-#         error = sum((wrap_angle(s - q))**2 for s, q in zip(sol, q_input))
-#         print(f"Solution {i+1}: {[f'{x:.6f}' for x in sol]}")
-#         print(f"  Error vs input: {np.sqrt(error):.10f}")
-        
-#         if error < 10:
-#             found_match = True
-#             print(f"  ✓ Solution {i+1} matches input!")
-    
-#     assert found_match, "IK did not return the original joint configuration"
-#     print("\n✓ Inverse kinematics successfully recovered input configuration")
-    
-#     # Test 3: Verify all solutions are valid
-#     print("\nTest 3: Verify all IK solutions via FK")
-#     for i, sol in enumerate(solutions):
-#         _, _, T_check = ur5.fk_all(sol, sym=False)
-#         error = np.linalg.norm(T_check - T06_expected)
-#         print(f"Solution {i+1} FK error: {error:.10f}")
-#         assert error < 10, f"Solution {i+1} does not satisfy FK constraint"
-    
-#     print("✓ All solutions verified\n")
-    
-def view_symbolic_equations():
-    ur5 = create_manipulator("UR5")
-    
-    print("Generating Symbolic Equations with SymEngine...")
-    
-    # 1. Generate (returns tuple: dict, matrix)
-    equations, _ = ur5.do_ik_symbolic()
-    
-    print("\n" + "="*60)
-    print("   UR5 ANALYTICAL INVERSE KINEMATICS EXPRESSIONS")
-    print("="*60)
-    
-    for name, expr in equations.items():
-        print(f"\n--- {name.upper()} ---")
-        print(f"Expression in terms of x, y, z, α, β, γ:\n")
-        
-        # FIX: SymEngine cannot use pprint. Use standard print.
-        print(expr) 
-        
-        print("-" * 60)
-        
 if __name__ == "__main__":
-    view_symbolic_equations()
+    """Test UR5 inverse kinematics against PDF Case 1 & 2"""
+    ur5 = create_manipulator("ABB_IRB_1600")
+    # Initialize your UR5 robot object
+    # ur5 = UR5Robot()  # Adjust based on your class name
+    
+    # Case 1: Forward Kinematics (from PDF page 34)
+    q_input = [0.300000, -1.000000, 1.200000, -0.700000, 1.000000, 0.400000]  # in radians
+    
+    # Expected end-effector pose from PDF (page 38, Figure 22)
+    T06_expected = np.array([
+        [0.824625,  0.148621, -0.545808, -0.642648],
+        [-0.556194,  0.388978, -0.734400, -0.359593],
+        [0.103160,  0.909180,  0.403423,  0.318995],
+        [0,         0,         0,         1]
+    ])
+    
+    # Test 1: Forward kinematics should match
+    _, _, T06_computed = ur5.fk_all(q_input, sym=False)
+    
+    print("Test 1: Forward Kinematics")
+    print(f"Position error: {np.linalg.norm(T06_computed[:3,3] - T06_expected[:3,3])}")
+    print(f"Rotation error (Frobenius): {np.linalg.norm(T06_computed[:3,:3] - T06_expected[:3,:3])}")
+    
+    assert np.allclose(T06_computed, T06_expected, atol=1e-6), "FK does not match PDF Case 1"
+    print("✓ Forward kinematics matches PDF\n")
+    
+    # Test 2: Inverse kinematics should return original joint angles
+    print("Test 2: Inverse Kinematics")
+    solutions = ur5.ik_ur5_closed_form(T06_expected)
+    
+    print(f"Number of solutions found: {len(solutions)}")
+    
+    # Check if any solution matches the original input
+    found_match = False
+    for i, sol in enumerate(solutions):
+        # Check if this solution matches q_input (accounting for angle wrapping)
+        error = sum((wrap_angle(s - q))**2 for s, q in zip(sol, q_input))
+        print(f"Solution {i+1}: {[f'{x:.6f}' for x in sol]}")
+        print(f"  Error vs input: {np.sqrt(error):.10f}")
+        
+        if error < 10:
+            found_match = True
+            print(f"  ✓ Solution {i+1} matches input!")
+    
+    assert found_match, "IK did not return the original joint configuration"
+    print("\n✓ Inverse kinematics successfully recovered input configuration")
+    
+    # Test 3: Verify all solutions are valid
+    print("\nTest 3: Verify all IK solutions via FK")
+    for i, sol in enumerate(solutions):
+        _, _, T_check = ur5.fk_all(sol, sym=False)
+        error = np.linalg.norm(T_check - T06_expected)
+        print(f"Solution {i+1} FK error: {error:.10f}")
+        assert error < 10, f"Solution {i+1} does not satisfy FK constraint"
+    
+    print("✓ All solutions verified\n")
+    
+# def view_symbolic_equations():
+#     ur5 = create_manipulator("UR5")
+    
+#     print("Generating Symbolic Equations with SymEngine...")
+    
+#     # 1. Generate (returns tuple: dict, matrix)
+#     equations, _ = ur5.do_ik_symbolic()
+    
+#     print("\n" + "="*60)
+#     print("   UR5 ANALYTICAL INVERSE KINEMATICS EXPRESSIONS")
+#     print("="*60)
+    
+#     for name, expr in equations.items():
+#         print(f"\n--- {name.upper()} ---")
+#         print(f"Expression in terms of x, y, z, α, β, γ:\n")
+        
+#         # FIX: SymEngine cannot use pprint. Use standard print.
+#         print(expr) 
+        
+#         print("-" * 60)
+        
+# if __name__ == "__main__":
+#     view_symbolic_equations()
 
