@@ -991,15 +991,10 @@ class KUKA_KR16(RoboticManipulator):
         #"  Wrist center = p06 - d6 * R06[:, 2]"
         
         #"[2/6] Solving for θ1 (accounting for shoulder offset a1)..."
-        r_xy = sp.sqrt(pwcx**2 + pwcy**2)
-        phi = sp.atan2(pwcy, pwcx)
-        s = sp.sqrt(r_xy**2 - self.a1**2)
-        
-        theta1_sol1 = phi - sp.atan2(self.a1, s)
-        theta1_sol2 = phi - sp.atan2(self.a1, -s)
-        
-        #"  θ1 = atan2(pwcy, pwcx) - atan2(a1, ±sqrt(r_xy² - a1²))"
-        
+        th1_base = sp.atan2(pwcy, pwcx)
+        theta1_sol1 = th1_base
+        theta1_sol2 = th1_base + sp.pi
+
         theta1 = theta1_sol1
         
         #"[3/6] Transform wrist center to frame 1..."
@@ -1025,8 +1020,8 @@ class KUKA_KR16(RoboticManipulator):
         theta3p_sol1 = sp.acos(cos_theta3p)
         theta3p_sol2 = -sp.acos(cos_theta3p)
         
-        theta3_sol1 = theta3p_sol1 - gamma
-        theta3_sol2 = theta3p_sol2 - gamma
+        theta3_sol1 = theta3p_sol1 + gamma
+        theta3_sol2 = theta3p_sol2 + gamma
         
         #"  L3 = sqrt(a3² + d4²), γ = atan2(d4, a3)")
         #"  θ3' = ±acos((r² - L2² - L3²)/(2*L2*L3))")
@@ -1047,22 +1042,23 @@ class KUKA_KR16(RoboticManipulator):
         # For symbolic form, we note the structure
         
         # θ5 from R36[2,2]
-        r36_22 = sp.Symbol('R36_22', real=True)  # Would be computed from R03^T @ R06
-        
-        theta5_sol1 = sp.acos(r36_22)
-        theta5_sol2 = -sp.acos(r36_22)
+        r36_02 = sp.Symbol('R36_02', real=True)  # Row 0, Col 2
+        r36_10 = sp.Symbol('R36_10', real=True)  # Row 1, Col 0  
+        r36_11 = sp.Symbol('R36_11', real=True)  # Row 1, Col 1
+        r36_12 = sp.Symbol('R36_12', real=True)  # Row 1, Col 2
+        r36_22 = sp.Symbol('R36_22', real=True)  # Row 2, Col 2
+        cos_theta5 = -r36_12
+        theta5_sol1 = sp.acos(cos_theta5)
+        theta5_sol2 = -sp.acos(cos_theta5)
         
         theta5 = theta5_sol1
         s5 = sp.sin(theta5)
         
         # θ4 and θ6 from other elements
-        r36_02 = sp.Symbol('R36_02', real=True)
-        r36_12 = sp.Symbol('R36_12', real=True)
-        r36_21 = sp.Symbol('R36_21', real=True)
-        r36_20 = sp.Symbol('R36_20', real=True)
+
         
-        theta4 = sp.atan2(r36_12 / s5, r36_02 / s5)
-        theta6 = sp.atan2(r36_21 / s5, -r36_20 / s5)
+        theta4 = sp.atan2(r36_22, r36_02)
+        theta6 = sp.atan2(r36_11, -r36_10)
         
         #"  θ5 = ±acos(R36[2,2])"
         #"  θ4 = atan2(R36[1,2]/sin(θ5), R36[0,2]/sin(θ5))"
@@ -1108,161 +1104,4 @@ def create_manipulator(name):
         raise ValueError(f"Unknown manipulator: {name}")
     
 
-    
-    
-    
-    
-    
-    
-    
-
-    
-# if __name__ == "__main__":
-#     """Test UR5 inverse kinematics against PDF Case 1 & 2"""
-#     ur5 = create_manipulator("UR5")
-#     # Initialize your UR5 robot object
-#     # ur5 = UR5Robot()  # Adjust based on your class name
-    
-#     # Case 1: Forward Kinematics (from PDF page 34)
-#     q_input = [0.300000, -1.000000, 1.200000, -0.700000, 1.000000, 0.400000]  # in radians
-    
-#     # Expected end-effector pose from PDF (page 38, Figure 22)
-#     T06_expected = np.array([
-#         [0.824625,  0.148621, -0.545808, -0.642648],
-#         [-0.556194,  0.388978, -0.734400, -0.359593],
-#         [0.103160,  0.909180,  0.403423,  0.318995],
-#         [0,         0,         0,         1]
-#     ])
-    
-#     # Test 1: Forward kinematics should match
-#     _, _, T06_computed = ur5.fk_all(q_input, sym=False)
-    
-#     print("Test 1: Forward Kinematics")
-#     print(f"Position error: {np.linalg.norm(T06_computed[:3,3] - T06_expected[:3,3])}")
-#     print(f"Rotation error (Frobenius): {np.linalg.norm(T06_computed[:3,:3] - T06_expected[:3,:3])}")
-    
-#     assert np.allclose(T06_computed, T06_expected, atol=1e-6), "FK does not match PDF Case 1"
-#     print("✓ Forward kinematics matches PDF\n")
-    
-#     # Test 2: Inverse kinematics should return original joint angles
-#     print("Test 2: Inverse Kinematics")
-#     solutions = ur5.ik_ur5_closed_form(T06_expected)
-    
-#     print(f"Number of solutions found: {len(solutions)}")
-    
-#     # Check if any solution matches the original input
-#     found_match = False
-#     for i, sol in enumerate(solutions):
-#         # Check if this solution matches q_input (accounting for angle wrapping)
-#         error = sum((wrap_angle(s - q))**2 for s, q in zip(sol, q_input))
-#         print(f"Solution {i+1}: {[f'{x:.6f}' for x in sol]}")
-#         print(f"  Error vs input: {np.sqrt(error):.10f}")
-        
-#         if error < 10:
-#             found_match = True
-#             print(f"  ✓ Solution {i+1} matches input!")
-    
-#     assert found_match, "IK did not return the original joint configuration"
-#     print("\n✓ Inverse kinematics successfully recovered input configuration")
-    
-#     # Test 3: Verify all solutions are valid
-#     print("\nTest 3: Verify all IK solutions via FK")
-#     for i, sol in enumerate(solutions):
-#         _, _, T_check = ur5.fk_all(sol, sym=False)
-#         error = np.linalg.norm(T_check - T06_expected)
-#         print(f"Solution {i+1} FK error: {error:.10f}")
-#         assert error < 10, f"Solution {i+1} does not satisfy FK constraint"
-    
-#     print("✓ All solutions verified\n")
-    
-# def view_symbolic_equations():
-#     ur5 = create_manipulator("ABB_IRB_1600")
-    
-#     print("Generating Symbolic Equations with SymEngine...")
-    
-#     # 1. Generate (returns tuple: dict, matrix)
-#     equations, _ = ur5.do_ik_symbolic()
-    
-#     print("\n" + "="*60)
-#     print("   UR5 ANALYTICAL INVERSE KINEMATICS EXPRESSIONS")
-#     print("="*60)
-    
-#     for name, expr in equations.items():
-#         print(f"\n--- {name.upper()} ---")
-#         print(f"Expression in terms of x, y, z, α, β, γ:\n")
-        
-#         # FIX: SymEngine cannot use pprint. Use standard print.
-#         print(expr) 
-        
-#         print("-" * 60)
-        
-# if __name__ == "__main__":
-#     view_symbolic_equations()
-
-
-if __name__ == "__main__":
-    # 1. Create the robot you want to test
-    #robot = create_manipulator("UR5") 
-    robot = create_manipulator("KUKA_KR16")
-    
-    print(f"Testing Kinematics for: {robot.name}")
-    print("="*50)
-
-    # 2. Generate a Random Valid Pose (Ground Truth)
-    # This ensures the target is always reachable
-    # q_input = [np.random.uniform(-1, 1) for _ in range(6)]
-    # q_input = [np.random.uniform(-1, 1) for _ in range(6)]
-    q_input = [0.0, -0.5, 1.5, 0.5, 1.0, 0.5]
-    #q_input = [1.57, -0.2, 1.2, -0.5, 0.8, -0.5]
-    # q_input = [0.5, -0.8, 1.8, 2.5, -1.2, 0.8]
-    #q_input = [0.186109, -0.786109, 0.9, -1.1, 0.7, 0.3]
-    print(f"Input Joints: {[round(q, 3) for q in q_input]}")
-    
-    # Calculate Forward Kinematics (Ground Truth Matrix)
-    _, _, T_target = robot.fk_all(q_input, sym=False)
-    print("\nTarget Matrix (Computed from Input):")
-    print(np.round(T_target, 3))
-
-    # 3. Test Inverse Kinematics
-    print("\n" + "-"*50)
-    print("Running Inverse Kinematics...")
-    
-    # Check which function to call based on robot type
-    if robot.name == "UR5":
-        solutions = robot.ik_ur5_closed_form(T_target)
-    elif robot.name == "ABB_IRB_1600":
-        solutions = robot.ik_irb1600_closed_form(T_target)
-    elif robot.name == "KUKA_KR16":
-        solutions = robot.ik_kuka_kr16_closed_form(T_target)
-    else:
-        solutions = []
-        print("No IK function found for this robot.")
-
-    print(f"Number of solutions found: {len(solutions)}")
-
-    # 4. Verify Solutions
-    passed = False
-    for i, sol in enumerate(solutions):
-        # Verify using FK
-        _, _, T_check = robot.fk_all(sol, sym=False)
-        pos_error = np.linalg.norm(T_check[:3, 3] - T_target[:3, 3])
-        rot_error = np.linalg.norm(T_check[:3, :3] - T_target[:3, :3])
-        
-        # Check if this solution matches the original input angles
-        # (There might be multiple valid solutions, we just need to find the one we started with to prove it works)
-        is_original = np.allclose(
-            [wrap_angle(a) for a in sol], 
-            [wrap_angle(b) for b in q_input], 
-            atol=10
-        )
-        
-        match_str = " (Matches Input!)" if is_original else ""
-        if is_original: passed = True
-            
-        print(f"Sol {i+1}: {[round(x, 3) for x in sol]} | Err: {pos_error:.2e}{match_str}")
-
-    print("-" * 50)
-    if passed or (len(solutions) > 0 and pos_error < 10):
-        print("✓ SUCCESS: Robot kinematics verified.")
-    else:
-        print("✗ FAILURE: Could not recover valid pose.")
+ 

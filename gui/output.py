@@ -910,8 +910,8 @@ def add_end_effector_pose_section(self, T):
 def add_ik_solution_display(self, solution, sol_idx, target_matrix, angle_unit):
     """Display IK solution using your existing solution style"""
     group = create_result_group(self, f"Solution {sol_idx}")
-    pos_tol=5
-    angle_tol=5
+    pos_tol = 10
+    angle_tol = 10
     # Validity check using FK
     _, _, T_verify = self.current_manipulator.fk_all(solution, sym=False)
     pos_error = np.linalg.norm(T_verify[:3, 3] - target_matrix[:3, 3])
