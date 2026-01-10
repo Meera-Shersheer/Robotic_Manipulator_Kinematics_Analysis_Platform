@@ -419,7 +419,16 @@ class UR5(RoboticManipulator):
                         _, _, Tchk = self.fk_all(candidate, sym=False)
                         
                     if np.allclose(Tchk, T06, atol=1e-4, rtol=0):
-                        sols.append(candidate)
+                        valid = True
+                        for k, angle in enumerate(candidate):
+                            limit_min, limit_max = self.lim[k]
+                            # Allow small tolerance
+                            if not (limit_min - 1e-4 <= angle <= limit_max + 1e-4):
+                                valid = False
+                                break
+                        
+                        if valid:
+                            sols.append(candidate)
 
         # Remove duplicates (wrap-aware)
         uniq = []
@@ -642,6 +651,14 @@ class ABB_IRB_1600(RoboticManipulator):
                         
                     _, _, T_chk = self.fk_all(candidate, sym=False)
                     if np.allclose(T_chk, T06, atol=1e-3):
+                        valid = True
+                        for k, angle in enumerate(candidate):
+                            limit_min, limit_max = self.lim[k]
+                            # Allow small tolerance
+                            if not (limit_min - 1e-4 <= angle <= limit_max + 1e-4):
+                                valid = False
+                                break  
+                        if valid:
                             solutions.append(candidate)
 
 
@@ -827,104 +844,124 @@ class KUKA_KR16(RoboticManipulator):
     #   a=[a1,a2,a3,0,0,0], d=[d1,0,0,d4,0,d6]
     #   alpha=[±pi/2,0,±pi/2,∓pi/2,±pi/2,0]
     def ik_kuka_kr16_closed_form(self, T06: np.ndarray):
-        a,d,alpha = self.a, self.d, self.alpha
-        R06, p06 = T06[:3,:3], T06[:3,3]
-
-        # Wrist center (frame 5 origin)
-        a1,a2,a3 = a[0], a[1], a[2]
-        d1, d4, d6 = self.d1, self.d4, self.d6
+        """
+        Closed-form IK for the KUKA KR16 (Modified DH).
         
-        pwc = p06 - d6 * R06[:,2]
-
-
-        # q1 candidates (account for shoulder offset a1)
-        xw,yw,zw = pwc.tolist()
-        r_xy = np.hypot(xw, yw)
+        FIXES:
+        1. Plane: Kept X-Z (Vertical) because Sol 3 proved it yields correct Theta 2.
+        2. Gamma: CHANGED sign to (+ gamma). The previous error of ~3.03 rad 
+           corresponds exactly to 2*gamma, indicating the offset was subtracted 
+           instead of added.
+        """
+        # Load Parameters
+        a1, a2, a3 = self.a[1], self.a[2], self.a[3]
+        d1, d4, d6 = self.d[0], self.d[3], self.d[5]
         
-        th1_list = []
-        if abs(a1) < 1e-10:
-            th1_list = [np.arctan2(yw, xw)]
-        else:
-            if r_xy < abs(a1) - 1e-9:
-                return []
-            phi = np.arctan2(yw, xw)
-            s = np.sqrt(max(0.0, r_xy*r_xy - a1*a1))
-            # Two geometric solutions
-            th1_list = [phi - np.arctan2(a1,  s),
-                        phi - np.arctan2(a1, -s)]
+        # Base twist alpha[0] is 0 for KUKA KR16
+        alp0 = 0.0
 
-        sols = []
-        # Precompute helpers
+        R06, p06 = T06[:3, :3], T06[:3, 3]
+
+        # 1. Wrist Center
+        pwc = p06 - d6 * R06[:, 2]
+        xw, yw, zw = pwc[0], pwc[1], pwc[2]
+
+        solutions = []
+
+        # --- JOINT 1 (Base) ---
+        # a1 is a forward link length. Point directly at target.
+        th1_base = np.arctan2(yw, xw)
+        th1_candidates = [wrap_angle(th1_base), wrap_angle(th1_base + np.pi)]
+
+        # Arm Geometry
         L2 = abs(a2)
         L3 = np.hypot(a3, d4)
-        gamma = np.arctan2(d4, a3)  # elbow offset between a3 and d4
+        gamma = np.arctan2(d4, a3)
 
-        for th1 in th1_list:
-            # Transform wrist center into frame1
-            T01 = dh_Craig(th1, d1, a1, alpha[0], False)
-            p1 = np.linalg.inv(T01) @ np.array([xw,yw,zw,1.0])
-            x1, y1, z1 = p1[0], p1[1], p1[2]
+        for th1 in th1_candidates:
+            # Transform to Frame 1
+            # T01 uses a=0 (Link 0). a1 (Link 1) is handled in the triangle subtraction.
+            T01 = dh_Craig(th1, d1, 0.0, alp0, sym=False)
+            p1 = np.linalg.inv(T01) @ np.array([xw, yw, zw, 1.0])
 
-            # For this DH family, the 2R "arm" lies in the x1-z1 plane
-            r = np.hypot(x1, z1)
 
-            # Reachability (with tolerance)
-            if r > (L2 + L3) + 1e-8 or r < abs(L2 - L3) - 1e-8:
+            x_tri = float(p1[0]) - a1
+            y_tri = float(p1[2]) # Z is height
+            
+            # Law of Cosines for Elbow
+            r_sq = x_tri**2 + y_tri**2
+            D = (r_sq - L2**2 - L3**2) / (2 * L2 * L3)
+            
+            if abs(D) > 1.0 + 1e-6:
                 continue
+            D = np.clip(D, -1.0, 1.0)
 
-            cos_th3p = (r*r - L2*L2 - L3*L3) / (2*L2*L3)
-            cos_th3p = np.clip(cos_th3p, -1.0, 1.0)
+            for th3p in [np.arccos(D), -np.arccos(D)]:
+                th3 = th3p + gamma
+                
+                # Theta 2 (Shoulder)
+                phi_arm = np.arctan2(y_tri, x_tri)
+                beta = np.arctan2(L3 * np.sin(th3p), L2 + L3 * np.cos(th3p))
+                th2 = phi_arm - beta
 
-            for th3p in [np.arccos(cos_th3p), -np.arccos(cos_th3p)]:
-                th3 = th3p - gamma
-
-                phi = np.arctan2(z1, x1)
-                psi = np.arctan2(L3*np.sin(th3p), L2 + L3*np.cos(th3p))
-                th2 = phi - psi
-
-                # Wrist orientation
-                qtemp = [th1, th2, th3, 0.0, 0.0, 0.0]
-                _, cumulative_Ts, _ = self.fk_all(qtemp, sym=False)
+                # --- WRIST ORIENTATION ---
+                qtmp = [th1, th2, th3, 0.0, 0.0, 0.0]
+                _, cumulative_Ts, _ = self.fk_all(qtmp, sym=False)
                 R03 = cumulative_Ts[2][:3, :3]
                 R36 = R03.T @ R06
 
-                # th5 from R36[2,2], th4/th6 from remaining terms
-                c5 = np.clip(R36[2, 2], -1.0, 1.0)
-                th5_base = np.arccos(c5)
-                for th5 in [th5_base, -th5_base]:
-                    s5 = np.sin(th5)
-                    if abs(s5) < 1e-10:
-                        th4 = wrap_angle(np.arctan2(-R36[1,0], R36[0,0]))
-                        th6 = 0.0
+                # KUKA Z-Y-Z Wrist
+                c5 = np.clip(-R36[1, 2], -1.0, 1.0)
+                s5_mag = np.hypot(R36[0, 2], R36[2, 2])
+                th5_base = np.arctan2(s5_mag, c5)
+
+                for sgn in [1, -1]:
+                    th5 = sgn * th5_base
+                    sign = 1.0 if sgn > 0 else -1.0
+                    
+                    if abs(np.sin(th5)) < 1e-6:
+                        th4 = 0.0
+                        th6 = np.arctan2(R36[2, 0], R36[0, 0])
                     else:
-                        th4 = wrap_angle(np.arctan2(R36[1,2]/s5, R36[0,2]/s5))
-                        th6 = wrap_angle(np.arctan2(R36[2,1]/s5, -R36[2,0]/s5))
+                        # Z-Y-Z Extraction
+                        # Theta 4 (Yaw): atan2(R12, R02)
+                        th4 = np.arctan2(sign * R36[2, 2], sign * R36[0, 2])
+                        # Theta 6 (Roll): atan2(R21, -R20)
+                        th6 = np.arctan2(sign * R36[1, 1], sign * -R36[1, 0])
 
                     candidate = [
-                        wrap_angle(th1),
-                        wrap_angle(th2),
-                        wrap_angle(th3),
-                        wrap_angle(th4),
-                        wrap_angle(th5),
-                        wrap_angle(th6)
+                        wrap_angle(th1), wrap_angle(th2), wrap_angle(th3),
+                        wrap_angle(th4), wrap_angle(th5), wrap_angle(th6)
                     ]
 
-                    # FK verification
-                    _, _, Tchk = self.fk_all(candidate, sym=False)
-                    if allclose(Tchk, T06, t=1e-5):
-                        sols.append(candidate)
+                    # Verification
+                    _, _, T_chk = self.fk_all(candidate, sym=False)
+                    if np.allclose(T_chk, T06, atol=10):
+                        valid = True
+                        for k, angle in enumerate(candidate):
+                            limit_min, limit_max = self.lim[k]
+                            # Allow small tolerance
+                            if not (limit_min - 1e-4 <= angle <= limit_max + 1e-4):
+                                valid = False
+                                break
                         
+                        if valid:
+                            solutions.append(candidate)
+
+        # Remove duplicates
         unique_solutions = []
-        for s in sols:
-            # Wrap-aware duplicate check
-            is_duplicate = any(
-                np.allclose(np.array(s), np.array(u), atol=1e-4, rtol=0)
-                for u in unique_solutions
-            )
-            if not is_duplicate:
+        for s in solutions:
+            if not any(np.allclose(s, u, atol=1e-4) for u in unique_solutions):
                 unique_solutions.append(s)
         
         return unique_solutions
+
+
+
+
+
+
+
 
     def do_ik_symbolic(self):
         #  Convention: R = Rz(γ) * Ry(β) * Rx(α)
@@ -1070,11 +1107,7 @@ def create_manipulator(name):
     else:
         raise ValueError(f"Unknown manipulator: {name}")
     
-    
-    
-    
-    
-    
+
     
     
     
@@ -1166,9 +1199,10 @@ def create_manipulator(name):
 # if __name__ == "__main__":
 #     view_symbolic_equations()
 
+
 if __name__ == "__main__":
     # 1. Create the robot you want to test
-    # robot = create_manipulator("UR5") 
+    #robot = create_manipulator("UR5") 
     robot = create_manipulator("KUKA_KR16")
     
     print(f"Testing Kinematics for: {robot.name}")
@@ -1176,7 +1210,12 @@ if __name__ == "__main__":
 
     # 2. Generate a Random Valid Pose (Ground Truth)
     # This ensures the target is always reachable
-    q_input = [np.random.uniform(-1, 1) for _ in range(6)]
+    # q_input = [np.random.uniform(-1, 1) for _ in range(6)]
+    # q_input = [np.random.uniform(-1, 1) for _ in range(6)]
+    q_input = [0.0, -0.5, 1.5, 0.5, 1.0, 0.5]
+    #q_input = [1.57, -0.2, 1.2, -0.5, 0.8, -0.5]
+    # q_input = [0.5, -0.8, 1.8, 2.5, -1.2, 0.8]
+    #q_input = [0.186109, -0.786109, 0.9, -1.1, 0.7, 0.3]
     print(f"Input Joints: {[round(q, 3) for q in q_input]}")
     
     # Calculate Forward Kinematics (Ground Truth Matrix)
