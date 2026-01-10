@@ -4,7 +4,7 @@ import numpy as np
 from numpy import sin, cos, tan, arctan2 as atan2, arccos, arcsin, sqrt, pi
 import sympy as sp
 import math
-from sympy import Symbol, Matrix, simplify, latex, sympify
+from sympy import symbols, cos, sin, sqrt, atan2, acos, Matrix, pi, simplify, trigsimp, cse
 from scipy.spatial.transform import Rotation as R
 import PyQt6
 from PyQt6.QtWidgets import *

@@ -393,9 +393,9 @@ def display_ik_symbolic_detailed(self, ik_result, T_symbolic):
     create_derivation_step(self,
         step_num=7,
         title="Solving for θ₄ (Arm Rotation)",
-        description="Computed from rotation matrix constraint R₃₄ = R₀₃ᵀ × R₀₆",
+        description="Computed from rotation matrix constraint T₁₄",
         equations=[
-            ("θ₄", "Derived from rotation matrices R₀₃ and R₀₄")
+            ("θ₄", f"{ik_result['theta4']}")
         ],
         color="#5e35b1"
     )
