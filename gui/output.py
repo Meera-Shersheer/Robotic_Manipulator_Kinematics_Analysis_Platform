@@ -1,40 +1,5 @@
 from imports import *
 
-# def run_output_test(self):
-#     """Display comprehensive test of all output capabilities"""
-#     # Clear existing content
-#     clear_output(self)
-    
-#     # 1. Section Header with styled background
-#     add_section_header(self,"Forward Kinematics Results", "#0078d4")
-    
-#     # 2. Joint Values Display (Grid Layout)
-#     add_joint_values_section(self)
-#     # add_spacing(self, self.output_layout, 15) 
-#     # 3. Transformation Matrix Display
-#     add_matrix_section(self)
-#     # add_spacing(self, self.output_layout, 15) 
-#     # 4. Position & Orientation Results
-#     add_pose_section(self)
-#     # add_spacing(self, self.output_layout, 15)  
-#     # 5. Symbolic Equations Display
-#     add_equations_section(self)
-#     # add_spacing(self, self.output_layout, 15) 
-#     # 6. Multiple Solutions (for IK)
-#     add_solutions_section(self)
-#     # add_spacing(self, self.output_layout, 15) 
-#     # 7. Error/Warning Messages
-#     add_status_messages(self)
-#     # add_spacing(self, self.output_layout, 15) 
-#     # 8. Collapsible Advanced Section
-#     add_collapsible_section(self)
-#     # add_spacing(self, self.output_layout, 15) 
-#     # 9. Export Options
-#     add_export_section(self)
-    
-#     # spacer = QWidget()
-#     # spacer.setFixedHeight(20)  # Fixed height instead of stretch
-#     # self.output_layout.addWidget(spacer)
 
 def clear_output(self):
     """Remove all widgets from output layout"""
@@ -238,7 +203,6 @@ def display_ik_numeric_results(self, solutions, target_matrix):
         add_spacing(self, self.output_layout, 10)
 
 
-# Add this to your gui/output.py file
 
 def display_ik_symbolic_detailed(self, ik_result, T_symbolic):
     """
@@ -259,8 +223,8 @@ def display_ik_symbolic_detailed(self, ik_result, T_symbolic):
     vars_layout = QGridLayout(vars_container)
     vars_layout.setSpacing(10)
     vars_layout.setContentsMargins(10, 10, 10, 10)
-  
-  
+
+
     var_info = [
         ("x", "X Position", "#e0f2f1"),
         ("y", "Y Position", "#f3e5f5"),
@@ -460,7 +424,7 @@ def display_ik_symbolic_detailed(self, ik_result, T_symbolic):
 
 def create_derivation_step(self, step_num, title, description, equations, color):
     """
-    Create a styled card for each derivation step
+    Creating a styled card for each derivation step
     """
     # Main card container
     card = QFrame()
@@ -471,11 +435,11 @@ def create_derivation_step(self, step_num, title, description, equations, color)
             border-radius: 8px;
         }}
     """)
-    
+
     card_layout = QVBoxLayout(card)
     card_layout.setSpacing(0)
     card_layout.setContentsMargins(0, 0, 0, 0)
-    
+
     # Header section
     header = QWidget()
     header.setStyleSheet(f"""
@@ -580,8 +544,8 @@ def display_ik_no_solution(self, target_matrix):
     
     add_end_effector_pose_section(self, target_matrix)
     add_spacing(self, self.output_layout, 10)
-   
-   
+
+
     add_section_header(self, " ✗ Inverse Kinematics - No Solution", "#c02c2c")
     
     # Error message
@@ -737,7 +701,7 @@ def add_symbolic_transformation_matrix_simple(self, T_sym, title):
     container.setStyleSheet("""
         QWidget {
             background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                                       stop:0 #f6f8fa, stop:1 #e9ecef);
+                                    stop:0 #f6f8fa, stop:1 #e9ecef);
             border: 2px solid #673ab7;
             border-radius: 8px;
         }
@@ -839,8 +803,8 @@ def add_end_effector_pose_section(self, T):
     
     pos_layout = QHBoxLayout()
     for axis, value, color in [("X", position[0], "#ef5350"),
-                                 ("Y", position[1], "#66bb6a"),
-                                 ("Z", position[2], "#42a5f5")]:
+                                ("Y", position[1], "#66bb6a"),
+                                ("Z", position[2], "#42a5f5")]:
         axis_widget = QWidget()
         axis_layout = QVBoxLayout(axis_widget)
         axis_layout.setContentsMargins(5, 5, 5, 5)
@@ -888,8 +852,8 @@ def add_end_effector_pose_section(self, T):
     
     ori_layout = QHBoxLayout()
     for angle_name, value, color in [("Roll (φ)", roll , "#ef5350"),
-                               ("Pitch (θ)", pitch, "#66bb6a"),
-                               ("Yaw (ψ)", yaw, "#42a5f5")]:
+                            ("Pitch (θ)", pitch, "#66bb6a"),
+                            ("Yaw (ψ)", yaw, "#42a5f5")]:
         lbl = QLabel(f"{angle_name}\n{value:.4f}{unit_str}")
         lbl.setFont(self.standard_font)
         lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)

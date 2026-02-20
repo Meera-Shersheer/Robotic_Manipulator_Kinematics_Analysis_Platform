@@ -17,7 +17,7 @@ from gui.cad_viewer import *
 #             label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 #             label.setStyleSheet("font-weight: bold; color: white;")
 #             self.layout.addWidget(label)
-       
+
 #         # Set border to clearly see divisions
 #         self.setStyleSheet(f"""
 #             background-color: {color};
@@ -31,7 +31,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.current_T = None
         self.setWindowTitle("  ")   # giving a title to the window 
         self.resize(1800, 1300) # resizing the window
-       
+
         central = QWidget()  # Create a central widget (required in QMainWindow)
         self.setCentralWidget(central)
         self.standard_font = QFont("Roboto", 13)  
@@ -92,7 +92,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         controls_widget.setSpacing(5)
         controls_widget.setContentsMargins(0, 0, 0, 0) 
         inputs_section.addLayout(controls_widget, 2)
-       
+
         minpulator_chose_box, self.manipulator_list_widget = self.manipulator_list()
         ik_fk, self.ik_fk_widget = self.ik_fk_selector()
         sym_num, self.sym_num_widget = self.sym_num_selector()
@@ -144,7 +144,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         
         left_layout.addWidget(self.control_cad, 1)  # top: control
         left_layout.addWidget(view2d_widget, 1)  # bottom: DH view
-       
+
         cad_layout.addWidget(left_widget, 2)      # 25%
         cad_layout.addWidget(self.view3d_widget, 5) 
 
@@ -192,8 +192,8 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                 padding: 3px;
                 border-radius: 5px;
                 background-color: #f9f9f9;
-             }
-         """)
+            }
+        """)
         
 
         label = QLabel(label_text)
@@ -283,7 +283,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.numeric_delegate = NumericDelegate(self.dh_table)
         self.dh_table.setItemDelegateForColumn(6, self.numeric_delegate)
         self.dh_table.setFont(self.standard_font) 
-         
+        
         # Set initial headers (will be updated based on angle unit selection)
         headers = ["Joint", "θ", "d", "a", "α", "Variable", "Value"]
         self.dh_table.setHorizontalHeaderLabels(headers)
@@ -768,13 +768,13 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                 border: 2px solid #8e24aa;
             }
             QSpinBox {
-                 padding: 4px;
-                 min-height: 20px;
-                 border: 1px solid #00897b;
-                 border-radius: 4px;
-             }
+                padding: 4px;
+                min-height: 20px;
+                border: 1px solid #00897b;
+                border-radius: 4px;
+            }
                 """)
-                              
+
         fk_layout.addLayout(radio_layout)
         fk_layout.addLayout(spin_layout)
         
@@ -926,7 +926,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         for btn in self.fk_to_buttons:
             btn.setEnabled(is_range)
         if is_range:
-             self.validate_frame_range()
+            self.validate_frame_range()
 
     def create_spin_with_buttons(self, min_v, max_v, value):
         container = QWidget()
@@ -1011,18 +1011,18 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
     def execute_calculation(self):
         if self.current_manipulator is None:
             QMessageBox.warning(self, "No Robot Selected", 
-                              "Please select a manipulator first.")
+                            "Please select a manipulator first.")
             return
 
         calc_mode = self.ik_fk_widget.currentRow()  # 0=FK, 1=IK
         try:
             if calc_mode == 0:  # Forward Kinematics
-               self.do_fk()
+                self.do_fk()
             else:  # Inverse Kinematics
                 self.do_ik()
         except Exception as e:
             QMessageBox.critical(self, "Calculation Error", 
-                               f"An error occurred:\n{str(e)}")
+                            f"An error occurred:\n{str(e)}")
     
     
     def do_fk(self):
@@ -1054,7 +1054,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             end = self.fk_to_spin.value()
             if start >= end:
                 QMessageBox.warning(self, "Invalid Range", 
-                                  "Start frame must be less than end frame.")
+                                "Start frame must be less than end frame.")
                 return
             frame_range = (start, end)
 
@@ -1119,13 +1119,13 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                 solutions = self.current_manipulator.ik_kuka_kr16_closed_form(self.current_T)
             else:
                 QMessageBox.warning(self, "IK Not Implemented", 
-                                  f"IK not yet implemented for {robot_name}")
+                                f"IK not yet implemented for {robot_name}")
                 return
 
         except Exception as e:
             QMessageBox.critical(self, "IK Error", f"Error computing IK: {str(e)}")
             return
-           
+    
         if not solutions:
             display_ik_no_solution(self, self.current_T)
         else:
@@ -1218,7 +1218,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
                 }
             """)
             btn.clicked.connect(lambda checked, e=elev, a=azim, z=zoom: 
-                              self.set_preset_view(e, a, z))
+                            self.set_preset_view(e, a, z))
             row = idx // 2
             col = idx % 2
             presets_layout.addWidget(btn, row, col)
@@ -1471,7 +1471,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         self.cad_wireframe_check.setStyleSheet(self.cad_edges_check.styleSheet())
         self.cad_wireframe_check.toggled.connect(self.view3d_widget.toggle_wireframe)
 
-         # Show Coordinate Axes
+        # Show Coordinate Axes
         self.cad_axes_check = QCheckBox("Show Coordinate Axes")
         self.cad_axes_check.setChecked(True)
         self.cad_axes_check.setFont(self.standard_font)
@@ -1536,7 +1536,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
         else:
             self.cad_info_label.setText(f"Failed to load {filepath}")
             QMessageBox.warning(self, "Load Error", 
-                              f"Could not load model: {filepath}")
+                            f"Could not load model: {filepath}")
         self._loading_model = False
 
     def set_custom_view(self):
@@ -1573,7 +1573,7 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             self.manipulator_list_widget.blockSignals(False)
             # Also update DH table
             self.update_dh_table(index)
-           
+        
     def toggle_axes(self, enabled):
         """Toggle coordinate axes display"""
         self.view3d_widget.toggle_axes(enabled)
@@ -1663,68 +1663,6 @@ class MainWindow(QMainWindow): #defining our class (inheriting from QMainWindow)
             self.update_2d_section(current_index)
 
 
-
-
-
-
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-     
-    
-    
-    
-    
-    
-    
-    
-    
 
 
 

@@ -4,7 +4,7 @@ Copyright (c) 2025 Meera Qasem Shersheer, Rama Fathi Haddad, Own Mathhar Al-Maza
 
 All Rights Reserved.
 
-This software and associated documentation files (the "Software") are the 
+This software and associated documentation files are the 
 proprietary property of the copyright holders listed above.
 
 No part of this Software may be reproduced, distributed, or transmitted in 
@@ -13,7 +13,9 @@ electronic or mechanical methods, without the prior written permission of
 the copyright holders.
 
 This Software was developed as part of academic coursework for the Robotic 
-Systems course taught by Professor Zaer Abu Hammour at the mechatronics engineering department at the University of Jordan during the First  First Semester of the 2025/2026 academic year.
+Systems course taught by Professor Zaer Abu Hammour at the mechatronics 
+engineering department at the University of Jordan during the 
+First Semester of the 2025/2026 academic year.
 
 For permission requests, please contact the copyright holders via email.
 

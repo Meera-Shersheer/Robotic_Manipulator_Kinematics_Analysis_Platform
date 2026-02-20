@@ -43,34 +43,10 @@ def rpy_to_R(alpha, beta, gamma, sym=False):
     # ZYX: Rz(gamma)*Ry(beta)*Rx(alpha)
     return rot_z(gamma, sym) @ rot_y(beta, sym) @ rot_x(alpha, sym)
 
-def Rx_s(a): ca,sa=sp.cos(a),sp.sin(a); return sp.Matrix([[1,0,0],[0,ca,-sa],[0,sa,ca]])
-def Ry_s(b): cb,sb=sp.cos(b),sp.sin(b); return sp.Matrix([[cb,0,sb],[0,1,0],[-sb,0,cb]])
-def Rz_s(g): cg,sg=sp.cos(g),sp.sin(g); return sp.Matrix([[cg,-sg,0],[sg,cg,0],[0,0,1]])
-
-
-def eulerR(a,b,g,order="ZYX"):
-    order=order.upper()
-    if order=="ZYX": return Rz(g)@Ry(b)@Rx(a)
-    if order=="XYZ": return Rx(a)@Ry(b)@Rz(g)
-    raise ValueError("Use ZYX or XYZ")
-
-def eulerR_s(a,b,g,order="ZYX"):
-    order=order.upper()
-    if order=="ZYX": return sp.simplify(Rz_s(g)*Ry_s(b)*Rx_s(a))
-    if order=="XYZ": return sp.simplify(Rx_s(a)*Ry_s(b)*Rz_s(g))
-    raise ValueError("Use ZYX or XYZ")
-
-def in_limits(self, q):
-    msgs = []
-    ok = True
-    for i,(lo,hi) in enumerate(self.lim):
-        if q[i] < lo-1e-9 or q[i] > hi+1e-9:
-            ok = False
-            msgs.append(f"θ{i+1} out of limits [{lo:.3f}, {hi:.3f}]")
-    return ok, msgs
 
 def allclose(A,B,t=1e-6):
     return np.allclose(A,B,atol=t,rtol=0)
+
 # Base class for robotic manipulators.
 # Focuses on DH parameter management and interaction with GUI controls.
 class RoboticManipulator:
@@ -162,8 +138,8 @@ class RoboticManipulator:
             elif param['variable'] == 'd':
                 # Store d in meters
                 param['d'] = value
- 
- 
+
+
     # Get the current value of a joint variable.
     
     # Args:
@@ -259,7 +235,7 @@ class RoboticManipulator:
         from scipy.spatial.transform import Rotation as Rot
         r = Rot.from_euler(order, [roll, pitch, yaw], degrees=False)
         return r.as_matrix()
-   
+
     
         # Convert pose (position + orientation) to transformation matrix
         # Args:
@@ -325,7 +301,7 @@ class UR5(RoboticManipulator):
             {"a": 0, "alpha": -pi / 2, "d": self.d5, "theta": 0.0, "variable": "theta"},
             {"a": 0, "alpha": 0,   "d": self.d6, "theta": 0.0, "variable": "theta"},
         ]  
-         
+
 
     def ik_ur5_closed_form(self, T06: np.ndarray):
         d1, a2, a3, d4, d5, d6 = self.d1, self.a2, self.a3, self.d4, self.d5, self.d6
@@ -430,9 +406,9 @@ class UR5(RoboticManipulator):
         R = rpy_to_R(self.alph, self.beta, self.gamma, sym=True)
         
         T = sp.Matrix([[R[0,0],R[0,1],R[0,2],self.x],
-                       [R[1,0],R[1,1],R[1,2],self.y],
-                       [R[2,0],R[2,1],R[2,2],self.z],
-                       [0,0,0,1]])
+                    [R[1,0],R[1,1],R[1,2],self.y],
+                    [R[2,0],R[2,1],R[2,2],self.z],
+                    [0,0,0,1]])
         R06 = T
         
         #"[1/6] Computing wrist center (p05)..."
@@ -583,7 +559,7 @@ class ABB_IRB_1600(RoboticManipulator):
             # IMPORTANT: for THIS DH, joints 2&3 triangle is in (x1,y1) plane
             x, y = float(p1[0]), float(p1[1])
 
-             # Law of cosines for elbow
+            # Law of cosines for elbow
             D = (x * x + y * y - L2 * L2 - L3 * L3) / (2 * L2 * L3)
             if abs(D) > 1.0 + 1e-9:
                 continue
@@ -639,7 +615,7 @@ class ABB_IRB_1600(RoboticManipulator):
         unique_solutions = []
         for s in solutions:
             if not any(sum((wrap_angle(si-ui))**2 for si, ui in zip(s, u)) < 1e-10 
-                      for u in unique_solutions):
+                    for u in unique_solutions):
                 unique_solutions.append(s)
         
         return unique_solutions
@@ -658,9 +634,9 @@ class ABB_IRB_1600(RoboticManipulator):
         R = rpy_to_R(self.alph, self.beta, self.gamma, sym=True)
         
         T = sp.Matrix([[R[0,0],R[0,1],R[0,2],self.x],
-                       [R[1,0],R[1,1],R[1,2],self.y],
-                       [R[2,0],R[2,1],R[2,2],self.z],
-                       [0,0,0,1]])
+                    [R[1,0],R[1,1],R[1,2],self.y],
+                    [R[2,0],R[2,1],R[2,2],self.z],
+                    [0,0,0,1]])
         R06 = T
         
         #"[1/6] Computing wrist center ..."
@@ -759,7 +735,7 @@ class ABB_IRB_1600(RoboticManipulator):
             'R06': R06
         }
         return result, T
-   
+
 
 
 
