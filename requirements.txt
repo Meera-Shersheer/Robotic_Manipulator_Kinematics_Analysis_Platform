@@ -1,6 +1,5 @@
 numpy<2
 sympy
-scipy
 PyQt6
 PyQt6-WebEngine
 PyOpenGL
