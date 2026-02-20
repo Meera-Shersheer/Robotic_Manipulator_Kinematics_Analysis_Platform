@@ -393,9 +393,9 @@ def display_ik_symbolic_detailed(self, ik_result, T_symbolic):
     create_derivation_step(self,
         step_num=7,
         title="Solving for θ₄ (Arm Rotation)",
-        description="Computed from rotation matrix constraint T₁₄",
+        description="Computed from rotation matrix constraint R₃₄ = R₀₃ᵀ × R₀₆",
         equations=[
-            ("θ₄", f"{ik_result['theta4']}")
+            ("θ₄", "Derived from rotation matrices R₀₃ and R₀₄")
         ],
         color="#5e35b1"
     )
@@ -910,21 +910,11 @@ def add_end_effector_pose_section(self, T):
 def add_ik_solution_display(self, solution, sol_idx, target_matrix, angle_unit):
     """Display IK solution using your existing solution style"""
     group = create_result_group(self, f"Solution {sol_idx}")
-    pos_tol = 10
-    angle_tol = 10
+    
     # Validity check using FK
     _, _, T_verify = self.current_manipulator.fk_all(solution, sym=False)
-    pos_error = np.linalg.norm(T_verify[:3, 3] - target_matrix[:3, 3])
-    # Rotation error (geodesic distance)
-    R_rel = T_verify[:3, :3].T @ target_matrix[:3, :3]  
-    # Angle from trace
-    # trace(R) = 1 + 2*cos(angle)
-    trace = np.trace(R_rel)
-    # Clamp to avoid numerical issues with arccos
-    cos_angle = (trace - 1.0) / 2.0
-    cos_angle = np.clip(cos_angle, -1.0, 1.0)
-    angle_error =  np.arccos(cos_angle)
-    is_valid = (pos_error < pos_tol) and (angle_error < angle_tol)
+    error = np.linalg.norm(T_verify - target_matrix)
+    is_valid = error < 1e-5
     
     # Validity indicator 
     valid_widget = QWidget()
@@ -935,11 +925,11 @@ def add_ik_solution_display(self, solution, sol_idx, target_matrix, angle_unit):
     status_icon.setFont(QFont("Roboto", 14, QFont.Weight.Bold))
     
     if is_valid:
-        status_text = QLabel(f"Valid Solution (error: {pos_error:.2e})")
+        status_text = QLabel(f"Valid Solution (error: {error:.2e})")
         status_icon.setStyleSheet("color: #4caf50;")
         status_text.setStyleSheet("color: #4caf50;")
     else:
-        status_text = QLabel(f"Solution found (verification error: {pos_error:.2e})")
+        status_text = QLabel(f"Solution found (verification error: {error:.2e})")
         status_icon.setStyleSheet("color: #ff9800;")
         status_text.setStyleSheet("color: #ff9800;")
     

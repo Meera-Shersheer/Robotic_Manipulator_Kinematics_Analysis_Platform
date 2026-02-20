@@ -4,30 +4,24 @@ def wrap_angle(angle):
     """Wrap angle to [-pi, pi]"""
     return (angle + np.pi) % (2*np.pi) - np.pi
 
-"""
-    Modified DH Transformation Matrix (Craig Convention)
-    Computes transform from frame {i-1} to {i}
-    Modified DH (Craig): Rot_x(alpha) -> Trans_x(a) -> Rot_z(theta) -> Trans_z(d)
-"""
-               
-def dh_Craig(theta, d, a, alpha, sym=False):
+def dhA(theta, d, a, alpha, sym=False):
     if sym:
         ct, st = sp.cos(theta), sp.sin(theta)
         ca, sa = sp.cos(alpha), sp.sin(alpha)
         return sp.Matrix([
-            [ct,        -st,        0,      a],
-            [st*ca,     ct*ca,    -sa,    -sa*d],
-            [st*sa,     ct*sa,     ca,     ca*d ],
+            [ct, -st*ca,  st*sa, a*ct],
+            [st,  ct*ca, -ct*sa, a*st],
+            [0,      sa,     ca,    d],
             [0,       0,      0,    1]
         ])
     else:
         ct, st = np.cos(theta), np.sin(theta)
         ca, sa = np.cos(alpha), np.sin(alpha)
         return np.array([
-            [ct,        -st,       0,      a],
-            [st*ca,     ct*ca,    -sa,    -sa*d],
-            [st*sa,     ct*sa,     ca,     ca*d],
-            [0,         0,         0,      1]
+            [ct, -st*ca,  st*sa, a*ct],
+            [st,  ct*ca, -ct*sa, a*st],
+            [0,      sa,     ca,    d],
+            [0,       0,      0,    1]
         ], dtype=float)
         
 def rot_x(a, sym=False):
@@ -49,31 +43,31 @@ def rpy_to_R(alpha, beta, gamma, sym=False):
     # ZYX: Rz(gamma)*Ry(beta)*Rx(alpha)
     return rot_z(gamma, sym) @ rot_y(beta, sym) @ rot_x(alpha, sym)
 
-# def Rx_s(a): ca,sa=sp.cos(a),sp.sin(a); return sp.Matrix([[1,0,0],[0,ca,-sa],[0,sa,ca]])
-# def Ry_s(b): cb,sb=sp.cos(b),sp.sin(b); return sp.Matrix([[cb,0,sb],[0,1,0],[-sb,0,cb]])
-# def Rz_s(g): cg,sg=sp.cos(g),sp.sin(g); return sp.Matrix([[cg,-sg,0],[sg,cg,0],[0,0,1]])
+def Rx_s(a): ca,sa=sp.cos(a),sp.sin(a); return sp.Matrix([[1,0,0],[0,ca,-sa],[0,sa,ca]])
+def Ry_s(b): cb,sb=sp.cos(b),sp.sin(b); return sp.Matrix([[cb,0,sb],[0,1,0],[-sb,0,cb]])
+def Rz_s(g): cg,sg=sp.cos(g),sp.sin(g); return sp.Matrix([[cg,-sg,0],[sg,cg,0],[0,0,1]])
 
 
-# def eulerR(a,b,g,order="ZYX"):
-#     order=order.upper()
-#     if order=="ZYX": return Rz(g)@Ry(b)@Rx(a)
-#     if order=="XYZ": return Rx(a)@Ry(b)@Rz(g)
-#     raise ValueError("Use ZYX or XYZ")
+def eulerR(a,b,g,order="ZYX"):
+    order=order.upper()
+    if order=="ZYX": return Rz(g)@Ry(b)@Rx(a)
+    if order=="XYZ": return Rx(a)@Ry(b)@Rz(g)
+    raise ValueError("Use ZYX or XYZ")
 
-# def eulerR_s(a,b,g,order="ZYX"):
-#     order=order.upper()
-#     if order=="ZYX": return sp.simplify(Rz_s(g)*Ry_s(b)*Rx_s(a))
-#     if order=="XYZ": return sp.simplify(Rx_s(a)*Ry_s(b)*Rz_s(g))
-#     raise ValueError("Use ZYX or XYZ")
+def eulerR_s(a,b,g,order="ZYX"):
+    order=order.upper()
+    if order=="ZYX": return sp.simplify(Rz_s(g)*Ry_s(b)*Rx_s(a))
+    if order=="XYZ": return sp.simplify(Rx_s(a)*Ry_s(b)*Rz_s(g))
+    raise ValueError("Use ZYX or XYZ")
 
-# def in_limits(self, q):
-#     msgs = []
-#     ok = True
-#     for i,(lo,hi) in enumerate(self.lim):
-#         if q[i] < lo-1e-9 or q[i] > hi+1e-9:
-#             ok = False
-#             msgs.append(f"θ{i+1} out of limits [{lo:.3f}, {hi:.3f}]")
-#     return ok, msgs
+def in_limits(self, q):
+    msgs = []
+    ok = True
+    for i,(lo,hi) in enumerate(self.lim):
+        if q[i] < lo-1e-9 or q[i] > hi+1e-9:
+            ok = False
+            msgs.append(f"θ{i+1} out of limits [{lo:.3f}, {hi:.3f}]")
+    return ok, msgs
 
 def allclose(A,B,t=1e-6):
     return np.allclose(A,B,atol=t,rtol=0)
@@ -203,17 +197,34 @@ class RoboticManipulator:
     
 
 
-        """
-        Compute Modified DH transformation matrix (numeric) - Craig Convention
-        """
     def _T_matrix(self, theta, d, a, alpha):
-        return dh_Craig(theta, d, a, alpha, sym=False)
+        """
+        Compute DH transformation matrix (numeric)
+        Standard DH convention
+        """
+        ct, st = np.cos(theta), np.sin(theta)
+        ca, sa = np.cos(alpha), np.sin(alpha)
+        
+        return np.array([
+            [ct, -st*ca,  st*sa, a*ct],
+            [st,  ct*ca, -ct*sa, a*st],
+            [0,      sa,     ca,    d],
+            [0,       0,      0,    1]
+        ], dtype=float)
     
-        """
-        Compute Modified DH transformation matrix (symbolic) - Craig Convention
-        """
     def _T_matrix_symbolic(self, theta, d, a, alpha):
-        return dh_Craig(theta, d, a, alpha, sym=True)
+        """
+        Compute DH transformation matrix (symbolic)
+        """
+        ct, st = sp.cos(theta), sp.sin(theta)
+        ca, sa = sp.cos(alpha), sp.sin(alpha)
+        
+        return sp.Matrix([
+            [ct, -st*ca,  st*sa, a*ct],
+            [st,  ct*ca, -ct*sa, a*st],
+            [0,      sa,     ca,    d],
+            [0,       0,      0,    1]
+        ])
         
     
     def extract_position(self, T):
@@ -264,17 +275,7 @@ class RoboticManipulator:
         T[:3, 3] = [x, y, z]
         return T
     
-      
-      
-    """
-        Forward Kinematics using equation (13) from PDF:
-        T_0^6 = T_0^1 * T_1^2 * T_2^3 * T_3^4 * T_4^5 * T_5^6
         
-        Returns:
-            individual_Ts: Individual link transformations T_{i-1}^i
-            cumulative_Ts: Cumulative transformations T_0^i
-            T: Final transformation T_0^6
-    """   
     def fk_all(self, q, sym=False):
         individual_Ts = []  # Individual: 1→2, 2→3, etc.
         cumulative_Ts = []  # Cumulative: 0→1, 0→2, 0→3, etc.
@@ -286,9 +287,9 @@ class RoboticManipulator:
             q = q_symbols  # Use symbols instead of numeric values
     
         for i in range(6):
-            Ti = dh_Craig(q[i], self.d[i], self.a[i], self.alpha[i], sym=sym)
-            individual_Ts.append(Ti)  # Store individual transformation
-            T = T @ Ti
+            A = dhA(q[i], self.d[i], self.a[i], self.alpha[i], sym=sym)
+            individual_Ts.append(A)  # Store individual transformation
+            T = T @ A
             cumulative_Ts.append(T) 
 
         if sym:
@@ -312,27 +313,26 @@ class UR5(RoboticManipulator):
         self.d5 = 0.09465
         self.d6 = 0.0823
         self.lim = [(-2*pi, 2*pi)]*6
-        # In Modified DH, 'a' and 'alpha' are a_{i-1} and alpha_{i-1}
-        self.a = [0.0, 0.0, self.a2, self.a3, 0.0, 0.0]
-        self.alpha = [ 0.0, pi/2, 0.0, 0.0, pi/2, -pi/2]
+        self.a = [0.0, self.a2, self.a3, 0.0, 0.0, 0.0]
+        self.alpha = [ pi/2, 0.0, 0.0, pi/2, -pi/2, 0.0]
         self.d = [self.d1, 0.0, 0.0, self.d4, self.d5, self.d6]
-        return [
-            {"a": self.a[0], "alpha": self.alpha[0], "d": self.d[0], "theta": 0.0, "variable": "theta"},
-            {"a": self.a[1], "alpha": self.alpha[1], "d": self.d[1], "theta": 0.0, "variable": "theta"},
-            {"a": self.a[2], "alpha": self.alpha[2], "d": self.d[2], "theta": 0.0, "variable": "theta"},
-            {"a": self.a[3], "alpha": self.alpha[3], "d": self.d[3], "theta": 0.0, "variable": "theta"},
-            {"a": self.a[4], "alpha": self.alpha[4], "d": self.d[4], "theta": 0.0, "variable": "theta"},
-            {"a": self.a[5], "alpha": self.alpha[5], "d": self.d[5], "theta": 0.0, "variable": "theta"},
-        ] 
-        
 
-    # using Paul's Closed-Form Method
+        return [
+            {"a": 0, "alpha": pi / 2,  "d": self.d1, "theta": 0.0, "variable": "theta"},
+            {"a": self.a2, "alpha": 0, "d": 0, "theta": 0.0, "variable": "theta"},
+            {"a": self.a3, "alpha": 0, "d": 0, "theta": 0.0, "variable": "theta"},
+            {"a": 0, "alpha": pi / 2,  "d": self.d4, "theta": 0.0, "variable": "theta"},
+            {"a": 0, "alpha": -pi / 2, "d": self.d5, "theta": 0.0, "variable": "theta"},
+            {"a": 0, "alpha": 0,   "d": self.d6, "theta": 0.0, "variable": "theta"},
+        ]  
+         
+
     def ik_ur5_closed_form(self, T06: np.ndarray):
-        d1, d4, d5, d6 = self.d[0], self.d[3], self.d[4], self.d[5]
-        a2, a3 = self.a[2], self.a[3]
+        d1, a2, a3, d4, d5, d6 = self.d1, self.a2, self.a3, self.d4, self.d5, self.d6
 
         R06 = T06[:3, :3]
         p06 = T06[:3, 3]
+        px, py, pz = float(p06[0]), float(p06[1]), float(p06[2])
 
         sols = []
 
@@ -344,8 +344,9 @@ class UR5(RoboticManipulator):
 
         # θ1 (two solutions)
         c = d4 / rxy
-        if abs(c) > 1.0:
+        if abs(c) > 1.0 + 1e-9:
             return []
+        c = np.clip(c, -1.0, 1.0) 
         phi = np.arccos(c)
         psi = np.arctan2(p05[1], p05[0])
         q1_candidates = [wrap_angle(psi + phi + pi/2), wrap_angle(psi - phi + pi/2)]
@@ -354,81 +355,59 @@ class UR5(RoboticManipulator):
             s1, c1 = np.sin(q1), np.cos(q1)
 
             # θ5 (two solutions)
-            c5 = (p06[0]*s1 - p06[1]*c1 - d4) / d6
-            if abs(c5) > 1.0:
-                c5 = np.sign(c5) * 1.0
-            #c5 = np.clip(c5, -1.0, 1.0) 
-            
+            c5 = (px*s1 - py*c1 - d4) / d6
+            if abs(c5) > 1.0 + 1e-9:
+                continue
+            c5 = np.clip(c5, -1.0, 1.0) 
             q5a = np.arccos(c5)
             q5_candidates = [wrap_angle(q5a), wrap_angle(-q5a)]
 
             for q5 in q5_candidates:
                 s5 = np.sin(q5)
-                if abs(s5) < 1e-4:
-                    q6 = 0.0
-                else:
+                if abs(s5) < 1e-10:
+                    continue
+
                 # θ6
-                    q6 = np.arctan2( 
-                        (-1 * R06[0,1]*s1 + R06[1,1]*c1) / s5,
-                        (R06[0,0]*s1 - R06[1,0]*c1) / s5
-                    )
+                q6 = np.arctan2( 
+                    (-R06[0,1]*s1 + R06[1,1]*c1) / s5,
+                    (R06[0,0]*s1 - R06[1,0]*c1) / s5
+                )
                 q6 = wrap_angle(q6)
 
                 # Compute T14 = inv(T01)*T06*inv(T45*T56)
-                T01 = dh_Craig(q1, self.d[0], self.a[0], self.alpha[0], sym=False)
-                T45 = dh_Craig(q5, self.d[4], self.a[4], self.alpha[4], sym=False)
-                T56 = dh_Craig(q6, self.d[5], self.a[5], self.alpha[5], sym=False)
+                T01 = dhA(q1, d1, 0.0, pi/2, sym=False)
+                T45 = dhA(q5, d5, 0.0, -pi/2, sym=False)
+                T56 = dhA(q6, d6, 0.0, 0.0, sym=False)
 
-                T54 = np.linalg.inv(T45)
-                T65 = np.linalg.inv(T56)
+                T14 = np.linalg.inv(T01) @ T06 @ np.linalg.inv(T45 @ T56)
 
-                T14 = np.linalg.inv(T01) @ T06 @ T65 @ T54
                 # θ2, θ3 from planar in frame1: use x,z (NOT x,y)
                 p14 = T14[:3, 3]
-                x, z = float(p14[0]), float(p14[2])
+                x, y = float(p14[0]), float(p14[1])
 
-                D = (x*x + z*z - a2*a2 - a3*a3) / (2*a2*a3)
-                if abs(D) > 1.0 :
+                D = (x*x + y*y - a2*a2 - a3*a3) / (2*a2*a3)
+                if abs(D) > 1.0 + 1e-9:
                     continue
+                D = np.clip(D, -1.0, 1.0)
 
                 for q3 in [np.arccos(D), -np.arccos(D)]:
-                    q2 = np.arctan2(z, x) - np.arctan2(a3*np.sin(q3), a2 + a3*np.cos(q3))
+                    q2 = np.arctan2(y, x) - np.arctan2(a3*np.sin(q3), a2 + a3*np.cos(q3))
                     q2, q3 = wrap_angle(q2), wrap_angle(q3)
 
                     # θ4 from rotation
-                    # qtemp = [q1, q2, q3, 0.0, 0.0, 0.0]
-                    # _, cumulative_Ts, _ = self.fk_all(qtemp, sym=False)
-                    # R03 = cumulative_Ts[2][:3, :3]
-                    # R04 = (T01 @ T14)[:3, :3]
-                    # R34 = R03.T @ R04
-                    # q4 = wrap_angle(np.arctan2(R34[1,0], R34[0,0]))
-                    R14 = T14[:3, :3]
-                    # Project R14 into the planar rotation angle
-                    # usually arctan2(R21, R11) or similar depending on axes
-                    angle_234 = np.arctan2(R14[2,0], R14[0,0])
-                    
-                    q4 = wrap_angle(angle_234 - q2 - q3)
-                    
-                    candidate = [q1, q2, q3, q4, q5, q6]
+                    qtemp = [q1, q2, q3, 0.0, 0.0, 0.0]
+                    _, cumulative_Ts, _ = self.fk_all(qtemp, sym=False)
+                    R03 = cumulative_Ts[2][:3, :3]
+                    R04 = (T01 @ T14)[:3, :3]
+                    R34 = R03.T @ R04
+                    q4 = wrap_angle(np.arctan2(R34[1,0], R34[0,0]))
+
+                    candidate = [wrap_angle(q1), wrap_angle(q2), wrap_angle(q3), wrap_angle(q4), wrap_angle(q5), wrap_angle(q6)]
+
                     # Validate by FK to guarantee consistency
                     _, _, Tchk = self.fk_all(candidate, sym=False)
-                    
-                    if not np.allclose(Tchk, T06, atol=1e-4, rtol=1e-4):
-                        # Attempt q4 fix if 180 off
-                        candidate[3] = wrap_angle(q4 + pi)
-                        _, _, Tchk = self.fk_all(candidate, sym=False)
-                        
-                    if np.allclose(Tchk, T06, atol=1e-4, rtol=0):
-                        valid = True
-                        for k, angle in enumerate(candidate):
-                            limit_min, limit_max = self.lim[k]
-                            # Allow small tolerance
-                            if not (limit_min - 1e-4 <= angle <= limit_max + 1e-4):
-                                valid = False
-                                break
-                        
-                        if valid:
-                            sols.append(candidate)
+                    if np.allclose(Tchk, T06, atol=1e-6, rtol=0):
+                        sols.append(candidate)
 
         # Remove duplicates (wrap-aware)
         uniq = []
@@ -436,8 +415,7 @@ class UR5(RoboticManipulator):
             if not any(sum((wrap_angle(si-ui))**2 for si,ui in zip(s,u)) < 1e-10 for u in uniq):
                 uniq.append(s)
         return uniq
- 
-
+    
 
     def do_ik_symbolic(self):
         #  Convention: R = Rz(γ) * Ry(β) * Rx(α)
@@ -463,13 +441,13 @@ class UR5(RoboticManipulator):
         p05x = self.x - self.d6 * r13
         p05y = self.y - self.d6 * r23
         p05z = self.z - self.d6 * r33
-
+        
         # "Wrist center = p06 - d6 * R06[:, 2]"
         
         #"[2/6] Solving for θ1..."
         rxy = sp.sqrt(p05x**2 + p05y**2)
         psi = sp.atan2(p05y, p05x)
-        phi = sp.acos(self.d4 / rxy)
+        phi = sp.acos(sp.simplify(self.d4 / rxy))
 
         
         theta1_sol1 = psi + phi + pi/2
@@ -481,6 +459,7 @@ class UR5(RoboticManipulator):
         
         #"[3/6] Solving for θ5..."
         cos_theta5 = (self.x * s1 - self.y * c1 - self.d4) / self.d6
+        
         theta5_sol1 = sp.acos(cos_theta5)
         theta5_sol2 = -sp.acos(cos_theta5)
         
@@ -490,43 +469,39 @@ class UR5(RoboticManipulator):
         s5 = sp.sin(theta5)
         
         #"[4/6] Solving for θ6..."
+        r01, r11 = R06[0, 0], R06[1, 0]
+        r02, r12 = R06[0, 1], R06[1, 1]
+        
+        theta6 = sp.atan2((-r02*s1 + r12*c1) / s5, (r01*s1 - r11*c1) / s5)
+        
         #"  θ6 = atan2((−R06[0,1]*sin(θ1) + R06[1,1]*cos(θ1))/sin(θ5), ...)")
-        num6 = -R06[0,1]*s1 + R06[1,1]*c1
-        den6 = R06[0,0]*s1 - R06[1,0]*c1
-        theta6 = sp.atan2(num6, den6)
         
         #"[5/6] Computing p14 position..."
-       
-        p14x= c1*p05x + s1*p05y - self.d4
-        p14z = p05z - self.d1
-
+        p14x = (p05x)*c1 + (p05y)*s1 - self.d4
+        p14y = (p05z - self.d1)
         
-        # [6/6] Solving for θ2 and θ3...
-        # Use X and Z in the cosine rule
-        D = (p14x**2 + p14z**2 - self.a2**2 - self.a3**2) / (2*self.a2*self.a3)
+        #"Project wrist center to frame 1"
+        
+        #"[6/6] Solving for θ2 and θ3..."
+        D = (p14x**2 + p14y**2 - self.a2**2 - self.a3**2) / (2*self.a2*self.a3)
+        
         theta3_sol1 = sp.acos(D)
         theta3_sol2 = -sp.acos(D)
         
         theta3 = theta3_sol1
         s3, c3 = sp.sin(theta3), sp.cos(theta3)
         
-        theta2 = sp.atan2(p14z, p14x) - sp.atan2(self.a3*s3, self.a2 + self.a3*c3)
+        theta2 = sp.atan2(p14y, p14x) - sp.atan2(self.a3*s3, self.a2 + self.a3*c3)
         
         #"  θ3 = ±acos(D), D = (p14x² + p14y² - a2² - a3²)/(2*a2*a3)"
         #"  θ2 = atan2(p14y, p14x) - atan2(a3*sin(θ3), a2 + a3*cos(θ3))"
         
         #"[7/7] θ4 from rotation constraint..."
-       
-        
-        # theta4 = pitch - theta2 - theta3
-        R14_00 = sp.Symbol('R14_00', real=True)
-        R14_20 = sp.Symbol('R14_20', real=True)
-
-        angle_234 = sp.atan2(R14_20, R14_00)
-        theta4 = angle_234 - theta2 - theta3
+        theta4 = sp.Symbol('θ4_from_R34', real=True)
         #"  θ4 = [Computed from rotation matrices R03, R04]"
         
         #"SYMBOLIC DERIVATION COMPLETE"
+        
         result = {
             'theta1': [theta1_sol1, theta1_sol2],
             'theta2': theta2,
@@ -538,10 +513,13 @@ class UR5(RoboticManipulator):
             'R06': R06
         }
         return result, T
-    
-    #ABB IRB1600 industrial manipulator
-class ABB_IRB_1600(RoboticManipulator):
 
+
+
+
+#ABB IRB1600 industrial manipulator
+class ABB_IRB_1600(RoboticManipulator):
+    
     def __init__(self):
         super().__init__()
         self.name = "ABB_IRB_1600"
@@ -553,8 +531,8 @@ class ABB_IRB_1600(RoboticManipulator):
         self.d1 = 0.72
         self.d4 = 1.002
         self.d6 = 0.25
-        self.a=[0.0, self.a1, self.a2, self.a3, 0.0, 0.0]
-        self.alpha=[0.0, -pi/2, 0.0, -pi/2, pi/2, -pi/2]
+        self.a=[self.a1, self.a2, self.a3, 0.0, 0.0, 0.0]
+        self.alpha=[-pi/2, 0.0, -pi/2, pi/2, -pi/2, 0.0]
         self.d=[self.d1, 0.0, 0.0, self.d4, 0.0, self.d6]
         self.lim = [
             (np.deg2rad(-180), np.deg2rad(180)),
@@ -565,28 +543,23 @@ class ABB_IRB_1600(RoboticManipulator):
             (np.deg2rad(-360), np.deg2rad(360))
         ]
         return [
-            {"a": 0, "alpha": 0,  "d": self.d1, "theta": 0.0, "variable": "theta"},
-            {"a": self.a1, "alpha": -pi / 2, "d": 0, "theta": 0.0, "variable": "theta"},
-            {"a": self.a2, "alpha": 0 , "d": 0, "theta": 0.0, "variable": "theta"},
-            {"a": self.a3, "alpha": -pi / 2, "d": self.d4, "theta": 0.0, "variable": "theta"},
-            {"a": 0, "alpha": pi / 2,  "d": 0, "theta": 0.0, "variable": "theta"},
-            {"a": 0, "alpha": -pi / 2, "d": self.d6, "theta": 0.0, "variable": "theta"},
+            {"a": self.a1, "alpha": -pi / 2,  "d": self.d1, "theta": 0.0, "variable": "theta"},
+            {"a": self.a2, "alpha": 0, "d": 0, "theta": 0.0, "variable": "theta"},
+            {"a": self.a3, "alpha": -pi / 2 , "d": 0, "theta": 0.0, "variable": "theta"},
+            {"a": 0, "alpha": pi / 2, "d": self.d4, "theta": 0.0, "variable": "theta"},
+            {"a": 0, "alpha": -pi / 2,  "d": 0, "theta": 0.0, "variable": "theta"},
+            {"a": 0, "alpha": 0, "d": self.d6, "theta": 0.0, "variable": "theta"},
         ]
         
 
-# using Pieper's method (with kinamatic decoupling)     
+    
     def ik_irb1600_closed_form(self, T06: np.ndarray):
         """
         Closed-form IK for the 6R ABB IRB1600-style arm (spherical wrist), consistent with THIS file's DH.
 
         Returns up to 8 solutions: (theta1 2 branches) × (theta3 2 branches) × (theta5 flip 2 branches)
         """
-        d1 = self.d[0]
-        a1 = self.a[1]
-        a2 = self.a[2]
-        a3 = self.a[3]
-        d4 = self.d[3]
-        d6 = self.d[5]
+        a1, a2, a3, d1, d4, d6 = self.a1, self.a2, self.a3, self.d1, self.d4, self.d6
         R06, p06 = T06[:3, :3], T06[:3, 3]
 
         # Wrist center (origin of frame-5). Here a6=0, alpha6=0 => tool offset is along z6 only.
@@ -604,16 +577,15 @@ class ABB_IRB_1600(RoboticManipulator):
         th1_candidates = [wrap_angle(th1_base), wrap_angle(th1_base + pi)]
 
         for th1 in th1_candidates:
-            T01 = dh_Craig(th1, d1, 0.0, 0.0, sym=False)
+            T01 = dhA(th1, d1, a1, -pi/2, sym=False)
             p1 = np.linalg.inv(T01) @ np.array([pwc[0], pwc[1], pwc[2], 1.0])
 
             # IMPORTANT: for THIS DH, joints 2&3 triangle is in (x1,y1) plane
-            x = float(p1[0]) - a1
-            y = -1 *float(p1[2])
+            x, y = float(p1[0]), float(p1[1])
 
              # Law of cosines for elbow
             D = (x * x + y * y - L2 * L2 - L3 * L3) / (2 * L2 * L3)
-            if abs(D) > 1.0 + 1e-6:
+            if abs(D) > 1.0 + 1e-9:
                 continue
             D = np.clip(D, -1.0, 1.0)
 
@@ -629,43 +601,44 @@ class ABB_IRB_1600(RoboticManipulator):
                 R36 = R03.T @ R06
 
                 # Wrist extraction 
-                th5 = np.arctan2(np.hypot(R36[1, 0], R36[1, 1]), R36[1, 2])
+                th5 = np.arctan2(np.hypot(R36[2, 0], R36[2, 1]), R36[2, 2])
 
                 # 2 wrist flip branches
                 for sgn in [1, -1]:
                     th5c = sgn * th5
-                    sign = 1.0 if sgn > 0 else -1.0
-                    
-                    if abs(np.sin(th5c)) < 1e-6:
-                            th4 = 0.0
-                            th6 = np.arctan2(-R36[0, 1], R36[0, 0])
-                            wrist_candidates = [(th4, th6)]
-                    else: # Singularity check
-                        th4 = np.arctan2(sign * R36[2, 2], sign * -R36[0, 2])
-                        th6 = np.arctan2(sign * -R36[1, 1], sign * R36[1, 0])
+                    if abs(np.sin(th5c)) < 1e-10:
+                        # Wrist singularity: choose a valid pair (theta4, theta6)
+                        th4 = np.arctan2(R36[1, 0], R36[0, 0])
+                        th6 = 0.0
+                    else:
+                        if sgn > 0:
+                            th4 = np.arctan2(R36[1, 2], R36[0, 2])
+                            th6 = np.arctan2(-R36[2, 1], R36[2, 0])
+                        else:
+                            th4 = np.arctan2(-R36[1, 2], -R36[0, 2])
+                            th6 = np.arctan2(R36[2, 1], -R36[2, 0])
 
+                    # DH frame convention in this file requires +pi on theta4
+                    th4 = wrap_angle(th4 + pi)
+                    
                     candidate = [
-                        wrap_angle(th1), wrap_angle(th2), wrap_angle(th3),
-                        wrap_angle(th4), wrap_angle(th5c), wrap_angle(th6)
+                        wrap_angle(th1),
+                        wrap_angle(th2),
+                        wrap_angle(th3),
+                        wrap_angle(th4),
+                        wrap_angle(th5c),
+                        wrap_angle(th6)
                     ]
-                        
-                    _, _, T_chk = self.fk_all(candidate, sym=False)
-                    if np.allclose(T_chk, T06, atol=1e-3):
-                        valid = True
-                        for k, angle in enumerate(candidate):
-                            limit_min, limit_max = self.lim[k]
-                            # Allow small tolerance
-                            if not (limit_min - 1e-4 <= angle <= limit_max + 1e-4):
-                                valid = False
-                                break  
-                        if valid:
-                            solutions.append(candidate)
+                    
+                    _, _, Tchk = self.fk_all(candidate, sym=False)
+                    if allclose(Tchk, T06, t=1e-6):
+                        solutions.append(candidate)
 
 
         # # Remove near-duplicates
         unique_solutions = []
         for s in solutions:
-            if not any(sum((wrap_angle(si-ui))**2 for si, ui in zip(s, u)) < 1e-3
+            if not any(sum((wrap_angle(si-ui))**2 for si, ui in zip(s, u)) < 1e-10 
                       for u in unique_solutions):
                 unique_solutions.append(s)
         
@@ -715,7 +688,7 @@ class ABB_IRB_1600(RoboticManipulator):
         
         # Position in frame 1
         x1_approx = c1*pwcx + s1*pwcy - self.a1
-        y1_approx = -pwcz
+        y1_approx = -s1*pwcx + c1*pwcy
         
         #"  x1 ≈ cos(θ1)*pwcx + sin(θ1)*pwcy - a1")
         #"  y1 ≈ -sin(θ1)*pwcx + cos(θ1)*pwcy")
@@ -748,21 +721,24 @@ class ABB_IRB_1600(RoboticManipulator):
         # R36 = R03^T @ R06
         
         # θ5 from spherical wrist
-        r36_02 = sp.Symbol('R36_02') # Row 0, Col 2
-        r36_10 = sp.Symbol('R36_10') # Row 1, Col 0
-        r36_11 = sp.Symbol('R36_11') # Row 1, Col 1
-        r36_12 = sp.Symbol('R36_12') # Row 1, Col 2
-        r36_22 = sp.Symbol('R36_22') # Row 2, Col 2
+        r36_20 = sp.Symbol('R36_20', real=True)
+        r36_21 = sp.Symbol('R36_21', real=True)
+        r36_22 = sp.Symbol('R36_22', real=True)
         
-        theta5 = sp.atan2(sp.sqrt(r36_10**2 + r36_11**2), r36_12)
+        theta5 = sp.atan2(sp.sqrt(r36_20**2 + r36_21**2), r36_22)
         theta5_sol1 = theta5
         theta5_sol2 = -theta5
         
-        theta4 = sp.atan2(r36_22, -r36_02)
+        s5 = sp.sin(theta5)
         
-        theta6_raw = sp.atan2(-r36_11, r36_10)
+        # For IRB1600, there's a +π offset on θ4
+        r36_02 = sp.Symbol('R36_02', real=True)
+        r36_12 = sp.Symbol('R36_12', real=True)
         
-        theta6 = theta6_raw + sp.pi
+        theta4_raw = sp.atan2(r36_12, r36_02)
+        theta4 = theta4_raw + pi  # DH frame convention offset
+        
+        theta6 = sp.atan2(-r36_21, r36_20)
         
         #"  θ5 = ±atan2(sqrt(R36[2,0]² + R36[2,1]²), R36[2,2])"
         #"  θ4 = atan2(R36[1,2], R36[0,2]) + π  [DH convention]"
@@ -779,7 +755,6 @@ class ABB_IRB_1600(RoboticManipulator):
             'wrist_center': (pwcx, pwcy, pwcz),
             'L2': L2,
             'L3': L3,
-            'planar_coords': (x1_approx, y1_approx),
             'gamma': gamma,
             'R06': R06
         }
@@ -806,20 +781,20 @@ class KUKA_KR16(RoboticManipulator):
         self.d4 = 0.67
         self.d6 = 0.115
         
-        self.a = [0.0, self.a1, self.a2, self.a3, 0.0, 0.0]
-        self.alpha = [0.0, pi/2, 0.0, pi/2, -pi/2, pi/2]
+        self.a = [self.a1, self.a2, self.a3, 0.0, 0.0, 0.0]
+        self.alpha = [pi/2, 0.0, pi/2, -pi/2, pi/2, 0.0]
         self.d = [self.d1, 0.0, 0.0, self.d4, 0.0, self.d6]
         
         self.lim=[(np.deg2rad(-185), np.deg2rad(185)), (np.deg2rad(-35),np.deg2rad(158)), (np.deg2rad(-120), np.deg2rad(158)),
                   (np.deg2rad(-350), np.deg2rad(350)), (np.deg2rad(-130),np.deg2rad(130)), (np.deg2rad(-350), np.deg2rad(350))]
     
         return [
-            {"a": 0.0, "alpha": 0.0,  "d": self.d1, "theta": 0.0, "variable": "theta"},
-            {"a": self.a1, "alpha":  pi / 2, "d": 0, "theta": 0.0, "variable": "theta"},
-            {"a": self.a2, "alpha": 0.0 , "d": 0, "theta": 0.0, "variable": "theta"},
-            {"a": self.a3, "alpha":  pi / 2, "d": self.d4, "theta": 0.0, "variable": "theta"},
-            {"a": 0.0, "alpha": -pi / 2,  "d": 0, "theta": 0.0, "variable": "theta"},
-            {"a": 0.0, "alpha":  pi / 2, "d": self.d6, "theta": 0.0, "variable": "theta"},
+            {"a": self.a1, "alpha": pi / 2,  "d": self.d1, "theta": 0.0, "variable": "theta"},
+            {"a": self.a2, "alpha":  0.0, "d": 0, "theta": 0.0, "variable": "theta"},
+            {"a": self.a3, "alpha": pi / 2 , "d": 0, "theta": 0.0, "variable": "theta"},
+            {"a": 0.0, "alpha":  -pi / 2, "d": self.d4, "theta": 0.0, "variable": "theta"},
+            {"a": 0.0, "alpha": pi / 2,  "d": 0, "theta": 0.0, "variable": "theta"},
+            {"a": 0.0, "alpha":  0.0, "d": self.d6, "theta": 0.0, "variable": "theta"},
         ]
         
         """
@@ -837,131 +812,111 @@ class KUKA_KR16(RoboticManipulator):
         """
         
 
-# using Pieper's method (with kinamatic decoupling)    
+
     # Analytical IK for KUKA KR16 with spherical wrist.
     # Returns unique solutions (up to 8) that pass FK verification.
     # DH pattern assumed (as in this script):
     #   a=[a1,a2,a3,0,0,0], d=[d1,0,0,d4,0,d6]
     #   alpha=[±pi/2,0,±pi/2,∓pi/2,±pi/2,0]
     def ik_kuka_kr16_closed_form(self, T06: np.ndarray):
-        """
-        Closed-form IK for the KUKA KR16 (Modified DH).
+        a,d,alpha = self.a, self.d, self.alpha
+        R06, p06 = T06[:3,:3], T06[:3,3]
+
+        # Wrist center (frame 5 origin)
+        a1,a2,a3 = a[0], a[1], a[2]
+        d1, d4, d6 = self.d1, self.d4, self.d6
         
-        FIXES:
-        1. Plane: Kept X-Z (Vertical) because Sol 3 proved it yields correct Theta 2.
-        2. Gamma: CHANGED sign to (+ gamma). The previous error of ~3.03 rad 
-           corresponds exactly to 2*gamma, indicating the offset was subtracted 
-           instead of added.
-        """
-        # Load Parameters
-        a1, a2, a3 = self.a[1], self.a[2], self.a[3]
-        d1, d4, d6 = self.d[0], self.d[3], self.d[5]
+        pwc = p06 - d6 * R06[:,2]
+
+
+        # q1 candidates (account for shoulder offset a1)
+        xw,yw,zw = pwc.tolist()
+        r_xy = np.hypot(xw, yw)
         
-        # Base twist alpha[0] is 0 for KUKA KR16
-        alp0 = 0.0
+        th1_list = []
+        if abs(a1) < 1e-10:
+            th1_list = [np.arctan2(yw, xw)]
+        else:
+            if r_xy < abs(a1) - 1e-9:
+                return []
+            phi = np.arctan2(yw, xw)
+            s = np.sqrt(max(0.0, r_xy*r_xy - a1*a1))
+            # Two geometric solutions
+            th1_list = [phi - np.arctan2(a1,  s),
+                        phi - np.arctan2(a1, -s)]
 
-        R06, p06 = T06[:3, :3], T06[:3, 3]
-
-        # 1. Wrist Center
-        pwc = p06 - d6 * R06[:, 2]
-        xw, yw, zw = pwc[0], pwc[1], pwc[2]
-
-        solutions = []
-
-        # --- JOINT 1 (Base) ---
-        # a1 is a forward link length. Point directly at target.
-        th1_base = np.arctan2(yw, xw)
-        th1_candidates = [wrap_angle(th1_base), wrap_angle(th1_base + np.pi)]
-
-        # Arm Geometry
+        sols = []
+        # Precompute helpers
         L2 = abs(a2)
         L3 = np.hypot(a3, d4)
-        gamma = np.arctan2(d4, a3)
+        gamma = np.arctan2(d4, a3)  # elbow offset between a3 and d4
 
-        for th1 in th1_candidates:
-            # Transform to Frame 1
-            # T01 uses a=0 (Link 0). a1 (Link 1) is handled in the triangle subtraction.
-            T01 = dh_Craig(th1, d1, 0.0, alp0, sym=False)
-            p1 = np.linalg.inv(T01) @ np.array([xw, yw, zw, 1.0])
+        for th1 in th1_list:
+            # Transform wrist center into frame1
+            T01 = dhA(th1, d1, a1, alpha[0], False)
+            p1 = np.linalg.inv(T01) @ np.array([xw,yw,zw,1.0])
+            x1, y1, z1 = p1[0], p1[1], p1[2]
 
+            # For this DH family, the 2R "arm" lies in the x1-z1 plane
+            r = np.hypot(x1, z1)
 
-            x_tri = float(p1[0]) - a1
-            y_tri = float(p1[2]) # Z is height
-            
-            # Law of Cosines for Elbow
-            r_sq = x_tri**2 + y_tri**2
-            D = (r_sq - L2**2 - L3**2) / (2 * L2 * L3)
-            
-            if abs(D) > 1.0 + 1e-6:
+            # Reachability (with tolerance)
+            if r > (L2 + L3) + 1e-8 or r < abs(L2 - L3) - 1e-8:
                 continue
-            D = np.clip(D, -1.0, 1.0)
 
-            for th3p in [np.arccos(D), -np.arccos(D)]:
-                th3 = th3p + gamma
-                
-                # Theta 2 (Shoulder)
-                phi_arm = np.arctan2(y_tri, x_tri)
-                beta = np.arctan2(L3 * np.sin(th3p), L2 + L3 * np.cos(th3p))
-                th2 = phi_arm - beta
+            cos_th3p = (r*r - L2*L2 - L3*L3) / (2*L2*L3)
+            cos_th3p = np.clip(cos_th3p, -1.0, 1.0)
 
-                # --- WRIST ORIENTATION ---
-                qtmp = [th1, th2, th3, 0.0, 0.0, 0.0]
-                _, cumulative_Ts, _ = self.fk_all(qtmp, sym=False)
+            for th3p in [np.arccos(cos_th3p), -np.arccos(cos_th3p)]:
+                th3 = th3p - gamma
+
+                phi = np.arctan2(z1, x1)
+                psi = np.arctan2(L3*np.sin(th3p), L2 + L3*np.cos(th3p))
+                th2 = phi - psi
+
+                # Wrist orientation
+                qtemp = [th1, th2, th3, 0.0, 0.0, 0.0]
+                _, cumulative_Ts, _ = self.fk_all(qtemp, sym=False)
                 R03 = cumulative_Ts[2][:3, :3]
                 R36 = R03.T @ R06
 
-                # KUKA Z-Y-Z Wrist
-                c5 = np.clip(-R36[1, 2], -1.0, 1.0)
-                s5_mag = np.hypot(R36[0, 2], R36[2, 2])
-                th5_base = np.arctan2(s5_mag, c5)
-
-                for sgn in [1, -1]:
-                    th5 = sgn * th5_base
-                    sign = 1.0 if sgn > 0 else -1.0
-                    
-                    if abs(np.sin(th5)) < 1e-6:
-                        th4 = 0.0
-                        th6 = np.arctan2(R36[2, 0], R36[0, 0])
+                # th5 from R36[2,2], th4/th6 from remaining terms
+                c5 = np.clip(R36[2, 2], -1.0, 1.0)
+                th5_base = np.arccos(c5)
+                for th5 in [th5_base, -th5_base]:
+                    s5 = np.sin(th5)
+                    if abs(s5) < 1e-10:
+                        th4 = wrap_angle(np.arctan2(-R36[1,0], R36[0,0]))
+                        th6 = 0.0
                     else:
-                        # Z-Y-Z Extraction
-                        # Theta 4 (Yaw): atan2(R12, R02)
-                        th4 = np.arctan2(sign * R36[2, 2], sign * R36[0, 2])
-                        # Theta 6 (Roll): atan2(R21, -R20)
-                        th6 = np.arctan2(sign * R36[1, 1], sign * -R36[1, 0])
+                        th4 = wrap_angle(np.arctan2(R36[1,2]/s5, R36[0,2]/s5))
+                        th6 = wrap_angle(np.arctan2(R36[2,1]/s5, -R36[2,0]/s5))
 
                     candidate = [
-                        wrap_angle(th1), wrap_angle(th2), wrap_angle(th3),
-                        wrap_angle(th4), wrap_angle(th5), wrap_angle(th6)
+                        wrap_angle(th1),
+                        wrap_angle(th2),
+                        wrap_angle(th3),
+                        wrap_angle(th4),
+                        wrap_angle(th5),
+                        wrap_angle(th6)
                     ]
 
-                    # Verification
-                    _, _, T_chk = self.fk_all(candidate, sym=False)
-                    if np.allclose(T_chk, T06, atol=10):
-                        valid = True
-                        for k, angle in enumerate(candidate):
-                            limit_min, limit_max = self.lim[k]
-                            # Allow small tolerance
-                            if not (limit_min - 1e-4 <= angle <= limit_max + 1e-4):
-                                valid = False
-                                break
+                    # FK verification
+                    _, _, Tchk = self.fk_all(candidate, sym=False)
+                    if allclose(Tchk, T06, t=1e-5):
+                        sols.append(candidate)
                         
-                        if valid:
-                            solutions.append(candidate)
-
-        # Remove duplicates
         unique_solutions = []
-        for s in solutions:
-            if not any(np.allclose(s, u, atol=1e-4) for u in unique_solutions):
+        for s in sols:
+            # Wrap-aware duplicate check
+            is_duplicate = any(
+                np.allclose(np.array(s), np.array(u), atol=1e-4, rtol=0)
+                for u in unique_solutions
+            )
+            if not is_duplicate:
                 unique_solutions.append(s)
         
         return unique_solutions
-
-
-
-
-
-
-
 
     def do_ik_symbolic(self):
         #  Convention: R = Rz(γ) * Ry(β) * Rx(α)
@@ -991,10 +946,15 @@ class KUKA_KR16(RoboticManipulator):
         #"  Wrist center = p06 - d6 * R06[:, 2]"
         
         #"[2/6] Solving for θ1 (accounting for shoulder offset a1)..."
-        th1_base = sp.atan2(pwcy, pwcx)
-        theta1_sol1 = th1_base
-        theta1_sol2 = th1_base + sp.pi
-
+        r_xy = sp.sqrt(pwcx**2 + pwcy**2)
+        phi = sp.atan2(pwcy, pwcx)
+        s = sp.sqrt(r_xy**2 - self.a1**2)
+        
+        theta1_sol1 = phi - sp.atan2(self.a1, s)
+        theta1_sol2 = phi - sp.atan2(self.a1, -s)
+        
+        #"  θ1 = atan2(pwcy, pwcx) - atan2(a1, ±sqrt(r_xy² - a1²))"
+        
         theta1 = theta1_sol1
         
         #"[3/6] Transform wrist center to frame 1..."
@@ -1020,8 +980,8 @@ class KUKA_KR16(RoboticManipulator):
         theta3p_sol1 = sp.acos(cos_theta3p)
         theta3p_sol2 = -sp.acos(cos_theta3p)
         
-        theta3_sol1 = theta3p_sol1 + gamma
-        theta3_sol2 = theta3p_sol2 + gamma
+        theta3_sol1 = theta3p_sol1 - gamma
+        theta3_sol2 = theta3p_sol2 - gamma
         
         #"  L3 = sqrt(a3² + d4²), γ = atan2(d4, a3)")
         #"  θ3' = ±acos((r² - L2² - L3²)/(2*L2*L3))")
@@ -1042,23 +1002,22 @@ class KUKA_KR16(RoboticManipulator):
         # For symbolic form, we note the structure
         
         # θ5 from R36[2,2]
-        r36_02 = sp.Symbol('R36_02', real=True)  # Row 0, Col 2
-        r36_10 = sp.Symbol('R36_10', real=True)  # Row 1, Col 0  
-        r36_11 = sp.Symbol('R36_11', real=True)  # Row 1, Col 1
-        r36_12 = sp.Symbol('R36_12', real=True)  # Row 1, Col 2
-        r36_22 = sp.Symbol('R36_22', real=True)  # Row 2, Col 2
-        cos_theta5 = -r36_12
-        theta5_sol1 = sp.acos(cos_theta5)
-        theta5_sol2 = -sp.acos(cos_theta5)
+        r36_22 = sp.Symbol('R36_22', real=True)  # Would be computed from R03^T @ R06
+        
+        theta5_sol1 = sp.acos(r36_22)
+        theta5_sol2 = -sp.acos(r36_22)
         
         theta5 = theta5_sol1
         s5 = sp.sin(theta5)
         
         # θ4 and θ6 from other elements
-
+        r36_02 = sp.Symbol('R36_02', real=True)
+        r36_12 = sp.Symbol('R36_12', real=True)
+        r36_21 = sp.Symbol('R36_21', real=True)
+        r36_20 = sp.Symbol('R36_20', real=True)
         
-        theta4 = sp.atan2(r36_22, r36_02)
-        theta6 = sp.atan2(r36_11, -r36_10)
+        theta4 = sp.atan2(r36_12 / s5, r36_02 / s5)
+        theta6 = sp.atan2(r36_21 / s5, -r36_20 / s5)
         
         #"  θ5 = ±acos(R36[2,2])"
         #"  θ4 = atan2(R36[1,2]/sin(θ5), R36[0,2]/sin(θ5))"
@@ -1102,6 +1061,3 @@ def create_manipulator(name):
         return manipulator_class()
     else:
         raise ValueError(f"Unknown manipulator: {name}")
-    
-
- 
