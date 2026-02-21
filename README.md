@@ -45,8 +45,16 @@ A comprehensive desktop application for forward and inverse kinematics analysis 
   - Position & Orientation (x, y, z, α, β, γ)
   - 4×4 Homogeneous Transformation Matrix
 
-<video src="readme_srcs/forward_kinematics.mp4" width="800"></video>
-<video src="readme_srcs/inverse_kinematics.mp4" width="800"></video>
+<!-- <video src="readme_srcs/forward_kinematics.mp4" width="800"></video>
+<video src="readme_srcs/inverse_kinematics.mp4" width="800"></video> -->
+
+
+https://github.com/user-attachments/assets/a080c655-02f5-476e-8a5e-5a8307a356ca
+
+
+
+https://github.com/user-attachments/assets/92b728af-ef8a-4c09-a745-8aa91d42be6d
+
 
 ### Visualization
 
@@ -66,7 +74,14 @@ A comprehensive desktop application for forward and inverse kinematics analysis 
 - Cross-sectional views and technical specifications
 - High-quality engineering drawings
 
-<video src="readme_srcs/visualization.mp4" width="800"></video>
+<!-- <video src="readme_srcs/visualization.mp4" width="800"></video> -->
+
+
+https://github.com/user-attachments/assets/c88eaf2f-2a25-4226-9889-15318be613ed
+
+
+
+
 
 ### User Interface
 
@@ -287,7 +302,7 @@ python main.py
 
 
 ### Tab 3: 3D CAD Model
-<video src="readme_srcs/visualization.mp4" width="800"></video>
+<!-- <video src="readme_srcs/visualization.mp4" width="800"></video> -->
  
  
  - The DH parameter reference diagrams showing frame assignments for the manipulator are presented in this Tab
