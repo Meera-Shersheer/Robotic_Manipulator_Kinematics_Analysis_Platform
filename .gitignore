@@ -176,13 +176,6 @@ cython_debug/
 .cursorindexingignore
 
 
-# Project outputs
-output/
-results/
-figures/
-logs/
-*.csv
-*.mp4
 
 # React Component Preview
 previewConfig.json
