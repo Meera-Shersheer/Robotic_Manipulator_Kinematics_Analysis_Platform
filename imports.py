@@ -46,3 +46,4 @@ from random import randint
 from typing import List, Dict, Tuple
 from base_manipulator import *
 from input_constrains import *
+import ctypes

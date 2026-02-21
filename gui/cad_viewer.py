@@ -47,7 +47,7 @@ class OpenGLViewer(QOpenGLWidget):
         self.last_pos = None
         self.show_edges = True
         self.wireframe_mode = False
-        
+        self.vbo_ready = False
         self.show_axes = True
         
         # Vertex and color data
@@ -64,9 +64,9 @@ class OpenGLViewer(QOpenGLWidget):
         
         # --- rotation parameters ---
         self.mouse_sensitivity = 0.5      # lower → slower, more controlled rotation
-        self.smoothing_factor = 0.15      # lower → smoother, floaty rotation
-        self.momentum_decay = 0.85        # closer to 1 → longer glide after release
-        self.velocity_threshold = 0.01
+        self.smoothing_factor = 0.8      # lower → smoother, floaty rotation
+        self.momentum_decay = 0.5        # closer to 1 → longer glide after release
+        self.velocity_threshold = 0.1
 
         self.is_dragging = False
         
@@ -116,10 +116,17 @@ class OpenGLViewer(QOpenGLWidget):
         self.draw_axes()
         
         if self.mesh is not None and self.vertices is not None:
+            if not self.vbo_ready: 
+                self._build_vbo()
             self.draw_mesh()
             
     def draw_mesh(self):
         """Draw the 3D mesh"""
+        if not self.vbo_ready:
+            return
+
+        stride = 9 * 4  # 9 floats × 4 bytes
+
         if self.wireframe_mode:
             glDisable(GL_LIGHTING)
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
@@ -128,41 +135,38 @@ class OpenGLViewer(QOpenGLWidget):
             glEnable(GL_LIGHTING)
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
-        glBegin(GL_TRIANGLES)
-        for i in range(len(self.faces)):
-            face = self.faces[i]
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_id)
 
-            if self.colors is not None and i < len(self.colors):
-                color = self.colors[i]
-                glColor3f(float(color[0]), float(color[1]), float(color[2]))
-            else:
-                glColor3f(0.7, 0.7, 0.7)
+        glEnableClientState(GL_VERTEX_ARRAY)
+        glEnableClientState(GL_NORMAL_ARRAY)
+        glEnableClientState(GL_COLOR_ARRAY)
 
-            for j in range(len(face)):
-                vertex_idx = face[j]
+        glVertexPointer(3, GL_FLOAT, stride, ctypes.c_void_p(0))
+        glNormalPointer(GL_FLOAT,    stride, ctypes.c_void_p(12))
+        glColorPointer (3, GL_FLOAT, stride, ctypes.c_void_p(24))
 
-                if self.normals is not None and i < len(self.normals):
-                    normal = self.normals[i]
-                    glNormal3f(float(normal[0]), float(normal[1]), float(normal[2]))
+        glDrawArrays(GL_TRIANGLES, 0, self.vbo_count)
 
-                vertex = self.vertices[vertex_idx]
-                glVertex3f(float(vertex[0]), float(vertex[1]), float(vertex[2]))
-        glEnd()
+        glDisableClientState(GL_VERTEX_ARRAY)
+        glDisableClientState(GL_NORMAL_ARRAY)
+        glDisableClientState(GL_COLOR_ARRAY)
 
+        glBindBuffer(GL_ARRAY_BUFFER, 0)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+
+        # Edge overlay
         if self.show_edges and not self.wireframe_mode:
             glDisable(GL_LIGHTING)
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
             glColor3f(0.3, 0.3, 0.3)
             glLineWidth(1.0)
 
-            glBegin(GL_TRIANGLES)
-            for i in range(len(self.faces)):
-                face = self.faces[i]
-                for j in range(len(face)):
-                    vertex_idx = face[j]
-                    vertex = self.vertices[vertex_idx]
-                    glVertex3f(float(vertex[0]), float(vertex[1]), float(vertex[2]))
-            glEnd()
+            glBindBuffer(GL_ARRAY_BUFFER, self.vbo_id)
+            glEnableClientState(GL_VERTEX_ARRAY)
+            glVertexPointer(3, GL_FLOAT, stride, ctypes.c_void_p(0))
+            glDrawArrays(GL_TRIANGLES, 0, self.vbo_count)
+            glDisableClientState(GL_VERTEX_ARRAY)
+            glBindBuffer(GL_ARRAY_BUFFER, 0)
 
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
             glEnable(GL_LIGHTING)
@@ -217,14 +221,36 @@ class OpenGLViewer(QOpenGLWidget):
                 return mesh
     
     def prepare_mesh_data(self):
-        """Extract and prepare mesh data for rendering"""
         self.vertices = np.array(self.mesh.vertices, dtype=np.float32)
-        self.faces = np.array(self.mesh.faces, dtype=np.int32)
-    # Extract colors
-        self.colors = self.get_face_colors()
-    # Calculate face normals for lighting
-        self.normals = np.array(self.mesh.face_normals, dtype=np.float32)
-        
+        self.faces    = np.array(self.mesh.faces,    dtype=np.uint32)
+        self.colors   = self.get_face_colors()
+        self.normals  = np.array(self.mesh.face_normals, dtype=np.float32)
+        self.vbo_ready = False  # will be built on first draw
+
+
+    def _build_vbo(self):
+        # Build flat vertex array: position + normal + color per vertex
+        faces_flat = self.faces.flatten()
+        verts  = self.vertices[faces_flat]               # (N*3, 3)
+        norms  = np.repeat(self.normals, 3, axis=0)      # (N*3, 3)
+
+        # Colors per face → per vertex
+        if self.colors is not None:
+            cols = np.repeat(self.colors, 3, axis=0)     # (N*3, 3)
+        else:
+            cols = np.full_like(verts, 0.7)
+
+        self.vbo_data = np.hstack([verts, norms, cols]).astype(np.float32)
+        self.vbo_count = len(verts)
+
+        # Upload to GPU
+        self.vbo_id = glGenBuffers(1)
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_id)
+        glBufferData(GL_ARRAY_BUFFER, self.vbo_data.nbytes,
+                    self.vbo_data, GL_STATIC_DRAW)
+        glBindBuffer(GL_ARRAY_BUFFER, 0)
+        self.vbo_ready = True
+
     def get_face_colors(self):
         """Extract face colors from mesh"""
         try:
@@ -301,8 +327,8 @@ class OpenGLViewer(QOpenGLWidget):
             self.target_rotation_x += dy * self.mouse_sensitivity
             self.target_rotation_y += dx * self.mouse_sensitivity
             if self.is_dragging:
-                self.velocity_x = dy * self.mouse_sensitivity * 0.2
-                self.velocity_y = dx * self.mouse_sensitivity * 0.2
+                self.velocity_x = dy * self.mouse_sensitivity * 0.3
+                self.velocity_y = dx * self.mouse_sensitivity * 0.3
         elif event.buttons() & Qt.MouseButton.RightButton:
             self.target_zoom += dy * 0.01
         
@@ -310,30 +336,29 @@ class OpenGLViewer(QOpenGLWidget):
         
     def update_rotation(self):
         self.target_zoom = max(-20.0, min(-1.0, self.target_zoom))
-        # Smoothly move rotation toward target
-        self.rotation_x += (self.target_rotation_x - self.rotation_x) * self.smoothing_factor
-        self.rotation_y += (self.target_rotation_y - self.rotation_y) * self.smoothing_factor
 
+        # Exponential smoothing — no spring, no oscillation
+        alpha = 0.35  # 0.1 = very smooth/slow, 0.3 = snappy
+
+        self.rotation_x = self.rotation_x + (self.target_rotation_x - self.rotation_x) * alpha
+        self.rotation_y = self.rotation_y + (self.target_rotation_y - self.rotation_y) * alpha
+        self.zoom       = self.zoom       + (self.target_zoom       - self.zoom)        * alpha
+
+        # Momentum decay when not dragging
         if not self.is_dragging:
-            # Stop momentum if velocity is very small
-            if abs(self.velocity_x) < self.velocity_threshold:
-                self.velocity_x = 0.0
-            if abs(self.velocity_y) < self.velocity_threshold:
-                self.velocity_y = 0.0
-                
-        # Apply momentum
-        self.rotation_x += self.velocity_x
-        self.rotation_y += self.velocity_y
-        self.target_rotation_x += self.velocity_x
-        self.target_rotation_y += self.velocity_y
-        
-        self.velocity_x *= self.momentum_decay
-        self.velocity_y *= self.momentum_decay
+            self.target_rotation_x += self.velocity_x
+            self.target_rotation_y += self.velocity_y
+            self.velocity_x *= 0.65
+            self.velocity_y *= 0.65
 
-        # Smooth zoom
-        self.zoom += (self.target_zoom - self.zoom) * self.smoothing_factor
+        moving = (
+            abs(self.target_rotation_x - self.rotation_x) > 0.01 or
+            abs(self.target_rotation_y - self.rotation_y) > 0.01 or
+            abs(self.target_zoom - self.zoom) > 0.001
+        )
+        if moving:
+            self.update()
 
-        self.update()
 
     def wheelEvent(self, event):
         """Handle mouse wheel for zoom"""
