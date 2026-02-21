@@ -14,13 +14,16 @@ A comprehensive desktop application for forward and inverse kinematics analysis 
 
 - [Features](#-features)
 - [Supported Robot Models](#-supported-robot-models)
-- [System Requirements](#-system-requirements)
 - [Installation](#-installation)
-- [Quick Start](#-quick-start)
 - [User Guide](#-user-guide)
-- [Project Structure](#-project-structure)
 - [Technical Details](#-technical-details)
-- [Troubleshooting](#-troubleshooting)
+- [Makefile Commands](#-makefile-commands)
+- [Contributors](#-contributors)
+- [Contact and support](#-contact-and-support)
+- [Citation](#-citation)
+- [License](#-license)
+- [Comprehensive Documentation](#-comprehensive-documentation)
+- [Acknowledgments](#-acknowledgments)
 
 ---
 
@@ -398,6 +401,6 @@ For an in-depth understanding of the mathematical framework, including step-by-s
 ## Acknowledgments
 We thank the open-source community for the excellent libraries used in this project
 
-
+---
 
 **Enjoy exploring robotic kinematics!✨**
