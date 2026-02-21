@@ -1,6 +1,12 @@
 # 🤖 Robotic Manipulator Kinematics Analysis Platform
 
-A comprehensive desktop application for forward and inverse kinematics analysis of industrial robotic manipulators, featuring both symbolic and numeric computation modes with interactive 3D visualization.
+
+A comprehensive desktop application for forward and inverse kinematics analysis of industrial robotic manipulators (UR5, ABB IRB 1600, KUKA KR16), featuring both symbolic and numeric computation modes with interactive 3D visualization.
+
+---
+![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
+![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)
+![Libraries](https://img.shields.io/badge/Libraries-NumPy%20|%20SymPy%20|%20SciPy-orange)
 
 ---
 
@@ -29,7 +35,7 @@ A comprehensive desktop application for forward and inverse kinematics analysis 
 - **Individual & Cumulative Transformations**: View both link-to-link and base-to-frame transformations
 
 #### Inverse Kinematics (IK)
-- **Closed-Form Solutions**: Analytical IK for all supported robots
+- **Closed-Form Solutions**: Analytical IK for all supported robots, leveraging geometric kinematic decoupling to separate the positioning problem (first three joints) from the orientation problem (wrist joints).
 - **Multiple Solutions**: Find all valid configurations (up to 8 solutions per target)
 - **Symbolic Derivation**: Step-by-step symbolic solution with detailed explanation
 - **Two Input Methods**:
@@ -68,25 +74,41 @@ A comprehensive desktop application for forward and inverse kinematics analysis 
 
 ### 1. Universal Robots UR5
 - **Type**: 6-DOF Industrial Collaborative Robot
-- **Reach**: ~850mm
+- **Reach**: 850mm
+- **Payload**: 5 kg
 - **Configuration**: All revolute joints
 - **DH Convention**: Modified DH parameters
-- **Applications**: Assembly, pick-and-place, machine tending
+- **Applications**: Assembly, pick-and-place, machine tending, quality inspection, and packaging
+
+<p align="center">
+  <img src="readme_imgs/ur5.png"/>
+  <img src="cad_models/UR5_2D.png"/>
+</p>
 
 ### 2. ABB IRB 1600
 - **Type**: 6-DOF Industrial Robot
-- **Reach**: ~1.45m (with 10kg payload variant)
+- **Reach**: 1450mm 
+- **Payload**: 10 kg
 - **Configuration**: All revolute joints
 - **Workspace**: Large working envelope
-- **Applications**: Material handling, welding, assembly
+- **Applications**: Material handling, arc welding, machine loading and unloading, palletizing, and assembly
+
+<p align="center">
+  <img src="cad_models/ABB_2D.png"/>
+  <img src="readme_imgs/ABB_IRB_1600.png" />
+</p>
 
 ### 3. KUKA KR16
 - **Type**: 6-DOF Industrial Robot
-- **Reach**: ~1.6m
+- **Reach**: 2013 mm
+- **Payload**: 16 kg
 - **Configuration**: All revolute joints
-- **Payload**: 16kg
-- **Applications**: Arc welding, handling, assembly
+- **Applications**: Spot welding, assembly, material handling, packaging, and quality inspection
 
+<p align="center">
+  <img src="cad_models/KUKA_2D.png"/>
+  <img src="readme_imgs/KUKA_KR16.png" />
+</p>
 
 ## 🚀 Installation
 
@@ -110,7 +132,7 @@ A comprehensive desktop application for forward and inverse kinematics analysis 
 
 ### Manual Installation (Without Make)
 
-If Make is not available:
+If Make is not working:
 
 ```bash
 
@@ -123,8 +145,6 @@ python main.py
 ```
 
 ---
-
-## 🎮 Quick Start
 
 ### Running the Application
 
@@ -154,7 +174,7 @@ python main.py
 4. **Enter Input**: Joint values (FK) or target pose (IK)
 5. **Calculate**: Click the "Calculate" button
 6. **View Results**: Check the "Outputs" tab for detailed results
-7. **Visualize**: Switch to "3D CAD Model" tab to see the robot
+7. **Visualize**: Switch to "3D CAD Model" tab for 3D visualization and  "2D Sections" tab to see the 2D sections of the selected manipulator.
 
 ---
 
@@ -227,6 +247,7 @@ python main.py
    - Solution branches explanation
 
 ### Tab 3: 3D CAD Model
+ - The DH parameter reference diagrams showing frame assignments for the manipulator are presented in this Tab
 
 #### Model Controls
 - **Mouse Controls**:
@@ -255,41 +276,8 @@ python main.py
   - Blue: Z-axis
 
 ### Tab 4: 2D Sections
-
-- View engineering drawings and DH parameter diagrams
+- View engineering drawings
 - Technical cross-sections for each robot
-- Reference diagrams showing frame assignments
-
----
-
-## 📁 Project Structure
-
-```
-robotics-kinematics/
-├── main.py                    # Application entry point
-├── imports.py                 # Centralized imports
-├── base_manipulator.py        # Robot base class & implementations
-├── input_constrains.py        # Input validators
-├── requirements.txt           # Python dependencies
-├── Makefile                   # Build automation
-├── .gitignore                # Git exclusions
-│
-├── gui/
-│   ├── main_window.py        # Main application window
-│   ├── output.py             # Result display functions
-│   └── cad_viewer.py         # 3D OpenGL viewer
-│
-└── cad_models/
-    ├── ur5.obj               # UR5 3D model
-    ├── UR5_DH.jpeg           # UR5 DH diagram
-    ├── UR5_2D.png            # UR5 2D sections
-    ├── irb_1600_10kg_1.45m.obj
-    ├── ABB_IRB_1600_DH.jpeg
-    ├── ABB_2D.png
-    ├── kuka_kr16_assembly.obj
-    ├── KUKA_DH.jpeg
-    └── KUKA_2D.png
-```
 
 ---
 
@@ -307,8 +295,8 @@ Transformation matrix formula:
 ```
 T = [ cos(θ)  -sin(θ)cos(α)   sin(θ)sin(α)   a·cos(θ) ]
     [ sin(θ)   cos(θ)cos(α)  -cos(θ)sin(α)   a·sin(θ) ]
-    [   0         sin(α)          cos(α)          d     ]
-    [   0           0               0            1     ]
+    [   0         sin(α)          cos(α)         d    ]
+    [   0           0               0            1    ]
 ```
 
 ### Inverse Kinematics Algorithm
@@ -357,99 +345,15 @@ make all       # Full setup and run (default)
 
 ---
 
-## 🐛 Troubleshooting
-
-### Common Issues
-
-#### 1. **"Python not found" or "python3 not found"**
-**Solution**: Ensure Python 3.8+ is installed and in your PATH
-```bash
-# Check Python version
-python --version  # or python3 --version
-```
-
-#### 2. **OpenGL/Graphics Issues**
-**Symptoms**: Black screen, graphics glitches, slow rendering
-
-**Solutions**:
-- Update graphics drivers
-- Install OpenGL libraries:
-  ```bash
-  # Ubuntu/Debian
-  sudo apt install libgl1-mesa-glx libglu1-mesa
-  
-  # macOS - usually pre-installed
-  ```
-
-#### 3. **"ModuleNotFoundError" when running**
-**Solution**: Activate virtual environment first
-```bash
-# Windows
-.venv\Scripts\activate
-
-# Linux/macOS
-source .venv/bin/activate
-```
-
-#### 4. **CAD Models Not Loading**
-**Solution**: Ensure `cad_models/` folder exists with all .obj and image files
-
-#### 5. **Make Commands Not Working on Windows**
-**Solutions**:
-- Install Make for Windows via [Chocolatey](https://chocolatey.org/):
-  ```bash
-  choco install make
-  ```
-- Or use manual installation commands (see Installation section)
-
-#### 6. **High DPI Display Issues**
-**Solution**: Add this to your Python environment before running:
-```bash
-export QT_AUTO_SCREEN_SCALE_FACTOR=1  # Linux/macOS
-set QT_AUTO_SCREEN_SCALE_FACTOR=1     # Windows
-```
-
-### Performance Tips
-
-1. **3D Viewer Lag**:
-   - Models are automatically simplified if they have >50,000 faces
-   - Try disabling "Show Edges" for complex models
-   - Close other GPU-intensive applications
-
-2. **Symbolic Computation Speed**:
-   - Symbolic mode is slower due to mathematical expression manipulation
-   - For quick calculations, use Numeric mode
-
----
-
-### Project Highlights
-
-- **No External Dependencies for DH Parameters**: All robot configurations are hardcoded
-- **Efficient 3D Rendering**: Automatic mesh simplification for performance
-- **Robust IK Solver**: Multiple solution branches with FK verification
-- **User-Friendly**: Intuitive interface with helpful tooltips and visual feedback
-
----
-
-## 🎓 Educational Valuek
-
-This application is ideal for:
-- **Robotics Students**: Understanding FK/IK concepts with visualization
-- **Engineers**: Quick calculations for robot programming
-- **Researchers**: Prototyping and verification of kinematic algorithms
-- **Educators**: Demonstrating robotics principles with interactive examples
-
----
-
 ## 👥 Contributors
 Note: This project was developed as part of academic coursework under the Robotic Systems Course given by Professor Zaer Abu Hammour
-at the mechatronics engineering department at the University of Jordan in First Semester of the acadimic year of 2025/2026 by the amazing students:
+at the mechatronics engineering department at the University of Jordan in the First Semester of the academic year of 2025/2026 by:
 
-Meera Qasem Shersheer
+- Meera Qasem Shersheer : GUI Development, System Integration and Visualization
 
-Rama Fathi Haddad
+- Rama Fathi Haddad : Kinematics Algorithm Development & Analytical Modeling
 
-Own Mathhar Al-Mazahreh
+- Own Mathhar Al-Mazahreh : CAD Modeling & Mechanical Representation
 
 
 ---
@@ -463,7 +367,7 @@ For questions or feedback about this project, please contact:
 If you use this project in your research or academic work, please cite:
 bibtex@software{robotics_kinematics_2025,
   title = {Robotic Manipulator Kinematics Analysis Platform},
-  author = {Shersheer, Meera Qasem and Haddad, Rama Fathi and Al-Mazahreh, Own Mathhar},
+  author = {Shersheer, Meera and Haddad, Rama and Al-Mazahreh, Own},
   year = {2025},
   note = {Course Project for Robotic Systems, First Semester 2025/2026},
   instructor = {Prof. Zaer Abu Hammour},
@@ -472,16 +376,28 @@ bibtex@software{robotics_kinematics_2025,
 }
 
 ---
-## 🙏 Acknowledgments
+## 📄 License
+
+**Copyright (c) 2025 Meera Qasem Shersheer, Rama Fathi Haddad, Own Mathhar Al-Mazahreh. All Rights Reserved.**
+
+This software and associated documentation files are proprietary and closed-source. It was developed as part of academic coursework for the Robotic Systems course at the Mechatronics Engineering Department, University of Jordan. 
+
+No part of this Software may be reproduced, distributed, or transmitted in any form or by any means without the prior written permission of the copyright holders.
+
+For full legal details and permission requests, please refer to the **[LICENSE.txt](./LICENSE.txt)** file included in this repository.
+
+---
+
+## 📄 Comprehensive Documentation
+
+For an in-depth understanding of the mathematical framework, including step-by-step analytical inverse kinematics derivations, full Denavit-Hartenberg parameter breakdowns, and numerical validation data, please refer to our complete project report:
+
+**[Read the Full Documentation PDF](./Robotics_project_G05_pdf.pdf)**
+
+---
+## Acknowledgments
 We thank the open-source community for the excellent libraries used in this project
 
 
 
-
-## 📄 License
-
-[Add your license information here]
-
----
-
-**Enjoy exploring robotic kinematics! 🤖✨**
+**Enjoy exploring robotic kinematics!✨**

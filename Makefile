@@ -48,7 +48,7 @@ RESET  = \033[0m
 #  DEFAULT TARGET
 # ================================
 
-all: banner run
+all: banner venv install run
 
 # ================================
 #  BANNER

@@ -1,4 +1,32 @@
+# ************************************************************************** *#
+#                                                                             #
+#   Robotic Manipulator Kinematics Analysis Platform                          #
+#                                                                             #
+#   Written By: Meera Qasem Shersheer  <meera04qasemshersheer@gmail.com>      #
+#               Rama Fathi Haddad                                             #
+#                                                                             #
+#   Institution : University of Jordan — Mechatronics Engineering Dept.       #
+#   Course      : Robotic Systems | Instructor: Prof. Zaer Abu Hammour        #
+#   Academic Year: 2025/2026 — First Semester                                 #
+#                                                                             #
+#   Description : A desktop application for forward and inverse kinematics    #
+#                 analysis of industrial robotic manipulators (UR5, ABB       #
+#                 IRB 1600, KUKA KR16). Supports symbolic and numeric         #
+#                 computation modes with interactive 3D visualization.        #
+#                                                                             #
+#   Convention  : Standard Denavit-Hartenberg (DH) parameters are used        #
+#                 throughout. Each frame transformation is defined by         #
+#                 four parameters: θ (joint angle), d (link offset),          #
+#                 a (link length), and α (link twist). Transformation         #
+#                 matrices follow the standard DH formulation.                #
+#                                                                             #
+#   Copyright (c) 2025 — All Rights Reserved                                  #
+#                                                                             #
+# ************************************************************************** *#
+
 from imports import *
+import numpy as np
+import sympy as sp
 
 def wrap_angle(angle):
     """Wrap angle to [-pi, pi]"""
@@ -762,7 +790,7 @@ class KUKA_KR16(RoboticManipulator):
         self.d = [self.d1, 0.0, 0.0, self.d4, 0.0, self.d6]
         
         self.lim=[(np.deg2rad(-185), np.deg2rad(185)), (np.deg2rad(-35),np.deg2rad(158)), (np.deg2rad(-120), np.deg2rad(158)),
-                  (np.deg2rad(-350), np.deg2rad(350)), (np.deg2rad(-130),np.deg2rad(130)), (np.deg2rad(-350), np.deg2rad(350))]
+                (np.deg2rad(-350), np.deg2rad(350)), (np.deg2rad(-130),np.deg2rad(130)), (np.deg2rad(-350), np.deg2rad(350))]
     
         return [
             {"a": self.a1, "alpha": pi / 2,  "d": self.d1, "theta": 0.0, "variable": "theta"},
@@ -907,9 +935,9 @@ class KUKA_KR16(RoboticManipulator):
         R = rpy_to_R(self.alph, self.beta, self.gamma, sym=True)
         
         T = sp.Matrix([[R[0,0],R[0,1],R[0,2],self.x],
-                       [R[1,0],R[1,1],R[1,2],self.y],
-                       [R[2,0],R[2,1],R[2,2],self.z],
-                       [0,0,0,1]])
+                    [R[1,0],R[1,1],R[1,2],self.y],
+                    [R[2,0],R[2,1],R[2,2],self.z],
+                    [0,0,0,1]])
         R06 = T
         
         #"\n[1/6] Computing wrist center..."
@@ -1015,7 +1043,7 @@ class KUKA_KR16(RoboticManipulator):
         }
         return result, T
 
-   
+
 
 
 
@@ -1025,7 +1053,6 @@ class KUKA_KR16(RoboticManipulator):
     # Returns:
     #     Instance of the appropriate manipulator class
 def create_manipulator(name):
-
     manipulators = {
         "UR5": UR5,
         "ABB_IRB_1600": ABB_IRB_1600,
