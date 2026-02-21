@@ -6,7 +6,7 @@ A comprehensive desktop application for forward and inverse kinematics analysis 
 ---
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
 ![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)
-![Libraries](https://img.shields.io/badge/Libraries-NumPy%20|%20SymPy%20)
+![Libraries](https://img.shields.io/badge/Libraries-NumPy%20|%20SymPy)
 
 ---
 
