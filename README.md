@@ -45,6 +45,9 @@ A comprehensive desktop application for forward and inverse kinematics analysis 
   - Position & Orientation (x, y, z, α, β, γ)
   - 4×4 Homogeneous Transformation Matrix
 
+<video src="readme_srcs/forward_kinematics.mp4" width="800"></video>
+<video src="readme_srcs/inverse_kinematics.mp4" width="800"></video>
+
 ### Visualization
 
 #### 3D CAD Viewer
@@ -62,6 +65,8 @@ A comprehensive desktop application for forward and inverse kinematics analysis 
 - DH parameter diagrams for each robot
 - Cross-sectional views and technical specifications
 - High-quality engineering drawings
+
+<video src="readme_srcs/visualization.mp4" width="800"></video>
 
 ### User Interface
 
@@ -84,7 +89,7 @@ A comprehensive desktop application for forward and inverse kinematics analysis 
 - **Applications**: Assembly, pick-and-place, machine tending, quality inspection, and packaging
 
 <p align="center">
-  <img src="readme_imgs/ur5.png"/>
+  <img src="readme_srcs/ur5.png"/>
   <img src="cad_models/UR5_2D.png"/>
 </p>
 
@@ -98,7 +103,7 @@ A comprehensive desktop application for forward and inverse kinematics analysis 
 
 <p align="center">
   <img src="cad_models/ABB_2D.png"/>
-  <img src="readme_imgs/ABB_IRB_1600.png" />
+  <img src="readme_srcs/ABB_IRB_1600.png" />
 </p>
 
 ### 3. KUKA KR16
@@ -110,7 +115,7 @@ A comprehensive desktop application for forward and inverse kinematics analysis 
 
 <p align="center">
   <img src="cad_models/KUKA_2D.png"/>
-  <img src="readme_imgs/KUKA_KR16.png" />
+  <img src="readme_srcs/KUKA_KR16.png" />
 </p>
 
 ## 🚀 Installation
@@ -185,6 +190,12 @@ python main.py
 
 ### Tab 1: Inputs
 
+
+<p align="center">
+  <img src="readme_srcs/Input_tab.png"/>
+</p>
+
+
 #### Robot Selection
 - Use the **"Select a manipulator"** list to choose your robot
 - The DH parameters table updates automatically
@@ -218,11 +229,19 @@ python main.py
 - Enter Roll (α), Pitch (β), Yaw (γ) angles
 - Convention: ZYX Euler angles
 
+<p align="center">
+  <img src="readme_srcs/input1_num_IK.png"/>
+</p>
+
 **Method 2: Transformation Matrix**
 - Enter full 4×4 homogeneous transformation matrix
 - Rotation part (3×3, top-left)
 - Translation part (3×1, top-right)
 - Homogeneous row [0, 0, 0, 1]
+
+<p align="center">
+  <img src="readme_srcs/input2_num_IK.png"/>
+</p>
 
 ### Tab 2: Outputs
 
@@ -236,6 +255,11 @@ python main.py
    - Position in X, Y, Z (meters)
    - Orientation in Roll, Pitch, Yaw
 
+<p align="center">
+  <img src="readme_srcs/Num_FK.png"/>
+  <img src="readme_srcs/Sym_FK.png"/>
+</p>
+
 **Inverse Kinematics Results**
 1. **Target Pose**: Input transformation matrix and pose breakdown
 2. **Solution Count**: Number of valid configurations found
@@ -243,13 +267,29 @@ python main.py
    - All 6 joint angles
    - Validation status (✓ or ⚠)
    - FK verification error
+
+<p align="center">
+  <img src="readme_srcs/NUM_IK1.png"/>
+  <img src="readme_srcs/NUM_IK3.png"/>
+</p>
+
+
 4. **Symbolic Derivation** (Symbolic mode):
    - Step-by-step solution procedure
    - Wrist center calculation
    - Joint angle derivations
    - Solution branches explanation
 
+<p align="center">
+  <img src="readme_srcs/Sym_IK.png"/>
+</p>
+
+
+
 ### Tab 3: 3D CAD Model
+<video src="readme_srcs/visualization.mp4" width="800"></video>
+ 
+ 
  - The DH parameter reference diagrams showing frame assignments for the manipulator are presented in this Tab
 
 #### Model Controls
